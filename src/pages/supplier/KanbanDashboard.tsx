@@ -13,11 +13,13 @@ import { Filter, LayoutGrid, List, Loader2 } from 'lucide-react';
 // Status mapping from API to Kanban UI
 const STATUS_MAP: Record<ApiOrderStatus, OrderStatus> = {
     'LANCADO_PELA_MARCA': OrderStatus.NEW,
-    'ACEITO_PELA_FACCAO': OrderStatus.NEGOTIATION,
-    'EM_PREPARACAO_SAIDA_MARCA': OrderStatus.WAITING,
-    'EM_PREPARACAO_ENTRADA_FACCAO': OrderStatus.WAITING,
+    'ACEITO_PELA_FACCAO': OrderStatus.ACCEPTED,
+    'EM_PREPARACAO_SAIDA_MARCA': OrderStatus.PREPARING_BRAND,
+    'EM_TRANSITO_PARA_FACCAO': OrderStatus.TRANSIT_TO_SUPPLIER,
+    'EM_PREPARACAO_ENTRADA_FACCAO': OrderStatus.RECEIVED_SUPPLIER,
     'EM_PRODUCAO': OrderStatus.PRODUCTION,
     'PRONTO': OrderStatus.READY_SEND,
+    'EM_TRANSITO_PARA_MARCA': OrderStatus.TRANSIT_TO_BRAND,
     'FINALIZADO': OrderStatus.FINALIZED,
     'RECUSADO_PELA_FACCAO': OrderStatus.REJECTED,
     'DISPONIVEL_PARA_OUTRAS': OrderStatus.NEW,
@@ -25,21 +27,26 @@ const STATUS_MAP: Record<ApiOrderStatus, OrderStatus> = {
 
 const REVERSE_STATUS_MAP: Record<OrderStatus, ApiOrderStatus> = {
     [OrderStatus.NEW]: 'LANCADO_PELA_MARCA',
-    [OrderStatus.NEGOTIATION]: 'ACEITO_PELA_FACCAO',
-    [OrderStatus.WAITING]: 'EM_PREPARACAO_SAIDA_MARCA',
+    [OrderStatus.ACCEPTED]: 'ACEITO_PELA_FACCAO',
+    [OrderStatus.PREPARING_BRAND]: 'EM_PREPARACAO_SAIDA_MARCA',
+    [OrderStatus.TRANSIT_TO_SUPPLIER]: 'EM_TRANSITO_PARA_FACCAO',
+    [OrderStatus.RECEIVED_SUPPLIER]: 'EM_PREPARACAO_ENTRADA_FACCAO',
     [OrderStatus.PRODUCTION]: 'EM_PRODUCAO',
     [OrderStatus.READY_SEND]: 'PRONTO',
-    [OrderStatus.TRANSIT_TO_BRAND]: 'PRONTO',
+    [OrderStatus.TRANSIT_TO_BRAND]: 'EM_TRANSITO_PARA_MARCA',
     [OrderStatus.FINALIZED]: 'FINALIZADO',
     [OrderStatus.REJECTED]: 'RECUSADO_PELA_FACCAO',
 };
 
 const STATUS_COLUMNS = [
     { id: OrderStatus.NEW, label: '▪ Novos Pedidos' },
-    { id: OrderStatus.NEGOTIATION, label: '▪ Em Negociação' },
-    { id: OrderStatus.WAITING, label: '▪ Aguardando' },
+    { id: OrderStatus.ACCEPTED, label: '▪ Aceitos' },
+    { id: OrderStatus.PREPARING_BRAND, label: '▪ Preparação (Marca)' },
+    { id: OrderStatus.TRANSIT_TO_SUPPLIER, label: '▪ Trânsito → Facção' },
+    { id: OrderStatus.RECEIVED_SUPPLIER, label: '▪ Recebido' },
     { id: OrderStatus.PRODUCTION, label: '▪ Em Produção' },
     { id: OrderStatus.READY_SEND, label: '▪ Pronto / Envio' },
+    { id: OrderStatus.TRANSIT_TO_BRAND, label: '▪ Trânsito → Marca' },
     { id: OrderStatus.FINALIZED, label: '▪ Finalizados' },
 ];
 
@@ -68,10 +75,16 @@ const convertApiOrder = (apiOrder: ApiOrder): Order => ({
     materialsProvided: apiOrder.materialsProvided,
     createdAt: apiOrder.createdAt,
     timeline: [
-        { step: 'Pedido Recebido', completed: true, date: new Date(apiOrder.createdAt).toLocaleDateString('pt-BR') },
-        { step: 'Em Produção', completed: apiOrder.status === 'EM_PRODUCAO' || apiOrder.status === 'PRONTO' || apiOrder.status === 'FINALIZADO' },
-        { step: 'Pronto para Envio', completed: apiOrder.status === 'PRONTO' || apiOrder.status === 'FINALIZADO' },
-        { step: 'Finalizado', completed: apiOrder.status === 'FINALIZADO' },
+        { step: 'Pedido Criado', completed: true, date: new Date(apiOrder.createdAt).toLocaleDateString('pt-BR'), icon: 'check' },
+        { step: 'Aceite da Facção', completed: ['ACEITO_PELA_FACCAO', 'EM_PREPARACAO_SAIDA_MARCA', 'EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'check' },
+        { step: 'Preparação (Marca)', completed: ['EM_PREPARACAO_SAIDA_MARCA', 'EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'box' },
+        { step: 'Em Trânsito → Facção', completed: ['EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'truck' },
+        { step: 'Recebimento na Facção', completed: ['EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'box' },
+        { step: 'Em Produção', completed: ['EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'scissors' },
+        { step: 'Pronto p/ Envio', completed: ['PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'box' },
+        { step: 'Em Trânsito → Marca', completed: ['EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'truck' },
+        { step: 'Entrega / Finalização', completed: apiOrder.status === 'FINALIZADO', icon: 'check' },
+        { step: 'Avaliação', completed: false, icon: 'check' }
     ],
 });
 
@@ -216,7 +229,7 @@ const SupplierKanbanDashboard: React.FC = () => {
         try {
             await ordersService.accept(orderId);
             setOrders(prev => prev.map(o =>
-                o.id === orderId ? { ...o, status: OrderStatus.NEGOTIATION } : o
+                o.id === orderId ? { ...o, status: OrderStatus.ACCEPTED } : o
             ));
         } catch (error) {
             console.error('Error accepting order:', error);

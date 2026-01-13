@@ -13,11 +13,13 @@ import { Filter, LayoutGrid, List, Loader2, Plus } from 'lucide-react';
 // Status mapping from API to Kanban UI (Brand perspective)
 const STATUS_MAP: Record<ApiOrderStatus, OrderStatus> = {
     'LANCADO_PELA_MARCA': OrderStatus.NEW,
-    'ACEITO_PELA_FACCAO': OrderStatus.NEGOTIATION,
-    'EM_PREPARACAO_SAIDA_MARCA': OrderStatus.WAITING,
-    'EM_PREPARACAO_ENTRADA_FACCAO': OrderStatus.WAITING,
+    'ACEITO_PELA_FACCAO': OrderStatus.ACCEPTED,
+    'EM_PREPARACAO_SAIDA_MARCA': OrderStatus.PREPARING_BRAND,
+    'EM_TRANSITO_PARA_FACCAO': OrderStatus.TRANSIT_TO_SUPPLIER,
+    'EM_PREPARACAO_ENTRADA_FACCAO': OrderStatus.RECEIVED_SUPPLIER,
     'EM_PRODUCAO': OrderStatus.PRODUCTION,
     'PRONTO': OrderStatus.READY_SEND,
+    'EM_TRANSITO_PARA_MARCA': OrderStatus.TRANSIT_TO_BRAND,
     'FINALIZADO': OrderStatus.FINALIZED,
     'RECUSADO_PELA_FACCAO': OrderStatus.REJECTED,
     'DISPONIVEL_PARA_OUTRAS': OrderStatus.NEW,
@@ -25,10 +27,13 @@ const STATUS_MAP: Record<ApiOrderStatus, OrderStatus> = {
 
 const STATUS_COLUMNS = [
     { id: OrderStatus.NEW, label: '▪ Aguardando Facção' },
-    { id: OrderStatus.NEGOTIATION, label: '▪ Aceito' },
-    { id: OrderStatus.WAITING, label: '▪ Em Preparação' },
+    { id: OrderStatus.ACCEPTED, label: '▪ Aceito' },
+    { id: OrderStatus.PREPARING_BRAND, label: '▪ Preparando Envio' },
+    { id: OrderStatus.TRANSIT_TO_SUPPLIER, label: '▪ Trânsito → Facção' },
+    { id: OrderStatus.RECEIVED_SUPPLIER, label: '▪ Recebido' },
     { id: OrderStatus.PRODUCTION, label: '▪ Em Produção' },
     { id: OrderStatus.READY_SEND, label: '▪ Pronto / Envio' },
+    { id: OrderStatus.TRANSIT_TO_BRAND, label: '▪ Trânsito → Marca' },
     { id: OrderStatus.FINALIZED, label: '▪ Finalizados' },
 ];
 
@@ -57,11 +62,16 @@ const convertApiOrder = (apiOrder: ApiOrder): Order => ({
     materialsProvided: apiOrder.materialsProvided,
     createdAt: apiOrder.createdAt,
     timeline: [
-        { step: 'Pedido Criado', completed: true, date: new Date(apiOrder.createdAt).toLocaleDateString('pt-BR') },
-        { step: 'Aceito pela Facção', completed: ['ACEITO_PELA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'FINALIZADO'].includes(apiOrder.status) },
-        { step: 'Em Produção', completed: ['EM_PRODUCAO', 'PRONTO', 'FINALIZADO'].includes(apiOrder.status) },
-        { step: 'Pronto para Envio', completed: ['PRONTO', 'FINALIZADO'].includes(apiOrder.status) },
-        { step: 'Finalizado', completed: apiOrder.status === 'FINALIZADO' },
+        { step: 'Pedido Criado', completed: true, date: new Date(apiOrder.createdAt).toLocaleDateString('pt-BR'), icon: 'check' },
+        { step: 'Aceite da Facção', completed: ['ACEITO_PELA_FACCAO', 'EM_PREPARACAO_SAIDA_MARCA', 'EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'check' },
+        { step: 'Preparação (Marca)', completed: ['EM_PREPARACAO_SAIDA_MARCA', 'EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'box' },
+        { step: 'Em Trânsito → Facção', completed: ['EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'truck' },
+        { step: 'Recebimento na Facção', completed: ['EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'box' },
+        { step: 'Em Produção', completed: ['EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'scissors' },
+        { step: 'Pronto p/ Envio', completed: ['PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'box' },
+        { step: 'Em Trânsito → Marca', completed: ['EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'truck' },
+        { step: 'Entrega / Finalização', completed: apiOrder.status === 'FINALIZADO', icon: 'check' },
+        { step: 'Avaliação', completed: false, icon: 'check' }
     ],
 });
 
