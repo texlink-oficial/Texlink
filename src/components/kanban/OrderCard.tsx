@@ -63,7 +63,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
     };
 
     const getWaitingBadge = () => {
-        if (order.status === OrderStatus.WAITING) {
+        if (order.status === OrderStatus.TRANSIT_TO_SUPPLIER || order.status === OrderStatus.PREPARING_BRAND) {
             if (order.missingItems && order.missingItems.length > 0) {
                 return (
                     <div className="mt-2.5">
