@@ -1,0 +1,345 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  ADMIN
+  BRAND
+  SUPPLIER
+}
+
+enum CompanyType {
+  BRAND
+  SUPPLIER
+}
+
+enum CompanyStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum CompanyUserRole {
+  OWNER
+  MANAGER
+  MEMBER
+}
+
+enum DocumentType {
+  ALVARA
+  CERTIFICACAO
+  FOTO_OPERACAO
+  FOTO_PRODUTO
+  OUTRO
+}
+
+enum OrderStatus {
+  LANCADO_PELA_MARCA
+  ACEITO_PELA_FACCAO
+  EM_PREPARACAO_SAIDA_MARCA
+  EM_PREPARACAO_ENTRADA_FACCAO
+  EM_PRODUCAO
+  PRONTO
+  FINALIZADO
+  RECUSADO_PELA_FACCAO
+  DISPONIVEL_PARA_OUTRAS
+}
+
+enum OrderAssignmentType {
+  DIRECT
+  BIDDING
+}
+
+enum OrderTargetStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum AttachmentType {
+  TECH_SHEET
+  VIDEO
+  IMAGE
+  DOC
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDENTE
+  PARCIAL
+  PAGO
+  ATRASADO
+}
+
+enum MessageType {
+  TEXT
+  PROPOSAL
+}
+
+enum ProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+// ==================== MODELS ====================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  companyUsers         CompanyUser[]
+  orderStatusChanges   OrderStatusHistory[]
+  messages             Message[]
+  ordersAccepted       Order[]              @relation("AcceptedBy")
+
+  @@map("users")
+}
+
+model Company {
+  id         String        @id @default(uuid())
+  legalName  String
+  tradeName  String?
+  document   String        @unique // CNPJ or CPF
+  type       CompanyType
+  city       String
+  state      String
+  phone      String?
+  email      String?
+  logoUrl    String?
+  avgRating  Decimal       @default(0) @db.Decimal(2, 1)
+  status     CompanyStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  // Relations
+  companyUsers    CompanyUser[]
+  supplierProfile SupplierProfile?
+  documents       Document[]
+  ordersAsBrand   Order[]              @relation("BrandOrders")
+  ordersAsSupplier Order[]             @relation("SupplierOrders")
+  targetedOrders  OrderTargetSupplier[]
+  ratingsGiven    Rating[]             @relation("RatingsGiven")
+  ratingsReceived Rating[]             @relation("RatingsReceived")
+
+  @@map("companies")
+}
+
+model CompanyUser {
+  id        String          @id @default(uuid())
+  userId    String
+  companyId String
+  role      CompanyUserRole @default(MEMBER)
+  createdAt DateTime        @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@map("company_users")
+}
+
+model SupplierProfile {
+  id                    String   @id @default(uuid())
+  companyId             String   @unique
+  onboardingPhase       Int      @default(1) // 1, 2, or 3
+  onboardingComplete    Boolean  @default(false)
+  
+  // Phase 2: Business Qualification
+  businessQualification Json?    // { interesse, faturamentoDesejado, maturidadeGestao, qtdColaboradores }
+  
+  // Phase 3: Production Capacity
+  productionCapacity    Json?    // { tiposProduto, subcategorias, especialidades }
+  productTypes          String[] // e.g., ["Infantil", "Adulto", "Fitness"]
+  specialties           String[] // e.g., ["Jeans", "Malha", "Tricô"]
+  
+  monthlyCapacity       Int?     // peças/mês
+  currentOccupancy      Int      @default(0) // % ocupação atual
+  desiredRevenue        Decimal? @db.Decimal(12, 2)
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("supplier_profiles")
+}
+
+model Document {
+  id        String       @id @default(uuid())
+  companyId String
+  type      DocumentType
+  name      String
+  url       String
+  mimeType  String
+  size      Int          // bytes
+  createdAt DateTime     @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model Order {
+  id                String              @id @default(uuid())
+  displayId         String              @unique // TX-YYYYMMDD-XXXX
+  brandId           String
+  supplierId        String?             // null until accepted in BIDDING mode
+  
+  status            OrderStatus         @default(LANCADO_PELA_MARCA)
+  assignmentType    OrderAssignmentType @default(DIRECT)
+  
+  // Product info
+  productType       String              // e.g., "Infantil"
+  productCategory   String?             // e.g., "Camiseta"
+  productName       String
+  description       String?
+  
+  quantity          Int
+  pricePerUnit      Decimal             @db.Decimal(10, 2)
+  totalValue        Decimal             @db.Decimal(12, 2)
+  
+  deliveryDeadline  DateTime
+  paymentTerms      String?             // e.g., "50% adiantado, 50% na entrega"
+  materialsProvided Boolean             @default(false)
+  
+  techSheetUrl      String?
+  observations      String?
+  rejectionReason   String?
+  
+  acceptedAt        DateTime?
+  acceptedById      String?
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  // Relations
+  brand             Company             @relation("BrandOrders", fields: [brandId], references: [id])
+  supplier          Company?            @relation("SupplierOrders", fields: [supplierId], references: [id])
+  acceptedBy        User?               @relation("AcceptedBy", fields: [acceptedById], references: [id])
+  
+  statusHistory     OrderStatusHistory[]
+  attachments       OrderAttachment[]
+  targetSuppliers   OrderTargetSupplier[]
+  messages          Message[]
+  payments          Payment[]
+  ratings           Rating[]
+
+  @@map("orders")
+}
+
+model OrderTargetSupplier {
+  id          String            @id @default(uuid())
+  orderId     String
+  supplierId  String
+  status      OrderTargetStatus @default(PENDING)
+  respondedAt DateTime?
+  createdAt   DateTime          @default(now())
+
+  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  supplier Company @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, supplierId])
+  @@map("order_target_suppliers")
+}
+
+model OrderStatusHistory {
+  id             String      @id @default(uuid())
+  orderId        String
+  previousStatus OrderStatus?
+  newStatus      OrderStatus
+  changedById    String?
+  notes          String?
+  createdAt      DateTime    @default(now())
+
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy User? @relation(fields: [changedById], references: [id])
+
+  @@map("order_status_history")
+}
+
+model OrderAttachment {
+  id            String         @id @default(uuid())
+  orderId       String
+  type          AttachmentType
+  name          String
+  url           String
+  mimeType      String
+  size          Int            // bytes
+  downloadCount Int            @default(0)
+  createdAt     DateTime       @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_attachments")
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  orderId   String
+  amount    Decimal       @db.Decimal(12, 2)
+  dueDate   DateTime
+  paidDate  DateTime?
+  status    PaymentStatus @default(PENDENTE)
+  method    String?       // e.g., "PIX", "Boleto", "Transferência"
+  proofUrl  String?
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Rating {
+  id            String   @id @default(uuid())
+  orderId       String
+  fromCompanyId String
+  toCompanyId   String
+  score         Int      // 1 to 5
+  comment       String?
+  createdAt     DateTime @default(now())
+
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromCompany Company @relation("RatingsGiven", fields: [fromCompanyId], references: [id])
+  toCompany   Company @relation("RatingsReceived", fields: [toCompanyId], references: [id])
+
+  @@unique([orderId, fromCompanyId]) // Each company can rate once per order
+  @@map("ratings")
+}
+
+model Message {
+  id           String       @id @default(uuid())
+  orderId      String
+  senderId     String
+  type         MessageType  @default(TEXT)
+  content      String?
+  
+  // For proposals
+  proposalData Json?        // { originalValues, newValues, status }
+  
+  read         Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sender User  @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
