@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { ordersService, suppliersService } from '../../services';
+import { ordersService, suppliersService, uploadService } from '../../services';
 import {
     ArrowLeft, Package, DollarSign, Calendar,
-    Send, Loader2, Factory, FileText, Upload, X, Image
+    Send, Loader2, Factory, FileText, Upload, X, Image, CheckCircle, AlertCircle
 } from 'lucide-react';
 
 interface SupplierOption {
@@ -21,6 +21,7 @@ const CreateOrderPage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const preselectedSupplierId = searchParams.get('supplierId');
     const [isLoading, setIsLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
     const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
     const [loadingSuppliers, setLoadingSuppliers] = useState(true);
     const [techSheetFiles, setTechSheetFiles] = useState<File[]>([]);
@@ -78,19 +79,31 @@ const CreateOrderPage: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        setUploadProgress('idle');
 
         try {
-            await ordersService.create({
+            // 1. Create order
+            const order = await ordersService.create({
                 ...formData,
                 quantity: Number(formData.quantity),
                 pricePerUnit: Number(formData.pricePerUnit),
                 supplierId: formData.assignmentType === 'DIRECT' ? formData.supplierId : undefined,
                 targetSupplierIds: formData.assignmentType === 'BIDDING' ? formData.targetSupplierIds : undefined,
             });
-            // TODO: Upload tech sheet files after order creation
-            // if (techSheetFiles.length > 0) {
-            //     await uploadService.uploadFiles(orderId, techSheetFiles);
-            // }
+
+            // 2. Upload files if any
+            if (techSheetFiles.length > 0 && order?.id) {
+                setUploadProgress('uploading');
+                try {
+                    await uploadService.uploadFiles(order.id, techSheetFiles);
+                    setUploadProgress('done');
+                } catch (uploadError) {
+                    console.error('Error uploading files:', uploadError);
+                    setUploadProgress('error');
+                    // Continue anyway - order was created
+                }
+            }
+
             navigate('/brand/pedidos');
         } catch (error) {
             console.error('Error creating order:', error);
@@ -207,8 +220,8 @@ const CreateOrderPage: React.FC = () => {
                             onDrop={handleDrop}
                             onClick={() => fileInputRef.current?.click()}
                             className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${dragActive
-                                    ? 'border-brand-500 bg-brand-500/10'
-                                    : 'border-brand-700 hover:border-brand-600 hover:bg-brand-800/30'
+                                ? 'border-brand-500 bg-brand-500/10'
+                                : 'border-brand-700 hover:border-brand-600 hover:bg-brand-800/30'
                                 }`}
                         >
                             <input

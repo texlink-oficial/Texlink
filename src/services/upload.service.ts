@@ -3,7 +3,7 @@ import api from './api';
 export interface UploadedAttachment {
     id: string;
     orderId: string;
-    type: string;
+    type: 'TECH_SHEET' | 'IMAGE' | 'OTHER';
     name: string;
     url: string;
     mimeType: string;
@@ -13,12 +13,17 @@ export interface UploadedAttachment {
 }
 
 export const uploadService = {
-    async uploadOrderAttachment(orderId: string, file: File): Promise<UploadedAttachment> {
+    /**
+     * Upload multiple files to an order as attachments
+     */
+    async uploadFiles(orderId: string, files: File[]): Promise<UploadedAttachment[]> {
         const formData = new FormData();
-        formData.append('file', file);
+        files.forEach(file => {
+            formData.append('files', file);
+        });
 
-        const response = await api.post<UploadedAttachment>(
-            `/upload/orders/${orderId}/attachments`,
+        const response = await api.post<UploadedAttachment[]>(
+            `/orders/${orderId}/attachments`,
             formData,
             {
                 headers: {
@@ -29,21 +34,26 @@ export const uploadService = {
         return response.data;
     },
 
-    async uploadMultipleAttachments(orderId: string, files: File[]): Promise<UploadedAttachment[]> {
-        const uploads = files.map(file => this.uploadOrderAttachment(orderId, file));
-        return Promise.all(uploads);
-    },
-
-    async getOrderAttachments(orderId: string): Promise<UploadedAttachment[]> {
+    /**
+     * Get all attachments for an order
+     */
+    async getAttachments(orderId: string): Promise<UploadedAttachment[]> {
         const response = await api.get<UploadedAttachment[]>(`/orders/${orderId}/attachments`);
         return response.data;
     },
 
-    async incrementDownloadCount(attachmentId: string): Promise<void> {
-        await api.post(`/attachments/${attachmentId}/download`);
+    /**
+     * Delete an attachment
+     */
+    async deleteAttachment(orderId: string, attachmentId: string): Promise<void> {
+        await api.delete(`/orders/${orderId}/attachments/${attachmentId}`);
     },
 
-    async deleteAttachment(attachmentId: string): Promise<void> {
-        await api.delete(`/attachments/${attachmentId}`);
+    /**
+     * Track download (for analytics)
+     */
+    async trackDownload(orderId: string, attachmentId: string): Promise<void> {
+        await api.post(`/orders/${orderId}/attachments/${attachmentId}/download`);
     },
 };
+
