@@ -269,7 +269,7 @@ const BrandKanbanDashboard: React.FC = () => {
                                     {STATUS_COLUMNS.map(col => (
                                         <div
                                             key={col.id}
-                                            className="min-w-[280px] w-[280px] flex flex-col h-full bg-gray-100/50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex-shrink-0"
+                                            className="min-w-[400px] w-[400px] flex flex-col h-full bg-gray-100/50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex-shrink-0"
                                         >
                                             <div className="p-3 rounded-t-xl border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-between items-center sticky top-0 z-10">
                                                 <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-200">{col.label}</h3>

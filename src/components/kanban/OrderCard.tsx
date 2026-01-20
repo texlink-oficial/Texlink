@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Order, OrderStatus } from '../../types';
-import { Clock, AlertCircle, CheckCircle2, ChevronRight, Package, MapPin, Calendar, DollarSign, GripVertical, Scissors, Circle, Layers, Check, X } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, ChevronRight, Package, MapPin, Calendar, DollarSign, GripVertical, Scissors, Circle, Layers, Check, X, Paperclip } from 'lucide-react';
 
 interface OrderCardProps {
     order: Order;
@@ -165,7 +165,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 draggable={draggable}
                 onDragStart={(e) => draggable && onDragStart && onDragStart(e, order)}
                 onClick={() => onClick(order)}
-                className={`relative bg-white dark:bg-gray-800 p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border transition-all group active:scale-[0.99] active:shadow-sm
+                className={`relative bg-white dark:bg-gray-800 p-5 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.06)] border transition-all group active:scale-[0.99] active:shadow-sm
         ${isFinalized
                         ? 'border-green-100 dark:border-green-900/50 hover:border-green-300 dark:hover:border-green-700'
                         : isNewOrder
@@ -177,23 +177,23 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
                 {/* NEW badge for new orders */}
                 {isNewOrder && (
-                    <div className="absolute -top-2 -right-2 bg-brand-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md">
+                    <div className="absolute -top-2.5 -right-2.5 bg-brand-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md z-10 border-2 border-white dark:border-gray-900">
                         NOVO
                     </div>
                 )}
 
                 {/* Top Row: ID & Brand */}
-                <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-2.5">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
                         {/* Drag Handle */}
-                        <div className="md:hidden lg:group-hover:block hidden text-gray-300 dark:text-gray-600 -ml-2 cursor-grab">
+                        <div className="md:hidden lg:group-hover:block hidden text-gray-300 dark:text-gray-600 -ml-3 cursor-grab p-1">
                             <GripVertical className="h-4 w-4" />
                         </div>
 
                         <div className="relative">
-                            <img src={order.brand.image} alt={order.brand.name} className="h-9 w-9 rounded-full border border-gray-100 dark:border-gray-600 shadow-sm" />
-                            <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5 border border-gray-100 dark:border-gray-600 text-[8px] font-bold flex items-center shadow-sm px-1">
-                                <span className="text-yellow-500">★</span><span className="dark:text-gray-300">{order.brand.rating}</span>
+                            <img src={order.brand.image} alt={order.brand.name} className="h-10 w-10 rounded-full border border-gray-100 dark:border-gray-600 shadow-sm object-cover" />
+                            <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5 border border-gray-100 dark:border-gray-600 text-[9px] font-bold flex items-center shadow-sm px-1.5">
+                                <span className="text-yellow-500 mr-0.5">★</span><span className="dark:text-gray-300">{order.brand.rating}</span>
                             </div>
                         </div>
 
@@ -203,15 +203,15 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                             onMouseLeave={() => setShowTooltip(false)}
                             className="relative"
                         >
-                            <div className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-0.5">{order.brand.name}</div>
-                            <div className="text-xs font-bold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded w-fit group-hover:bg-brand-50 dark:group-hover:bg-brand-900/50 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
+                            <div className="text-sm text-gray-600 dark:text-gray-300 font-medium mb-0.5">{order.brand.name}</div>
+                            <div className="text-xs font-bold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded w-fit group-hover:bg-brand-50 dark:group-hover:bg-brand-900/50 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
                                 {order.displayId}
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-1">
-                        <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide border border-gray-100 dark:border-gray-700 px-1.5 py-0.5 rounded">
+                    <div className="flex flex-col items-end gap-1.5">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide border border-gray-100 dark:border-gray-700 px-2 py-0.5 rounded bg-gray-50 dark:bg-gray-700/50">
                             {order.type}
                         </span>
                         {getPaymentBadge()}
@@ -219,19 +219,25 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 </div>
 
                 {/* Main Content */}
-                <div className="mb-3">
-                    <h4 className="text-base font-bold text-gray-900 dark:text-white leading-snug line-clamp-2">
+                <div className="mb-4">
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white leading-tight line-clamp-2 mb-3">
                         {order.productName}
                     </h4>
 
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded">
-                            <Package className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
-                            <span className="font-semibold text-gray-700 dark:text-gray-300">{order.quantity}</span> pçs
+                    <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/30 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700/50">
+                            <Package className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">{order.quantity}</span> <span className="text-xs">pçs</span>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2 py-1">
-                            <span className="text-gray-300 dark:text-gray-600">|</span>
-                            <span>Total:</span>
+                        {order.attachments && order.attachments.length > 0 && (
+                            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/30 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700/50" title={`${order.attachments.length} anexo(s)`}>
+                                <Paperclip className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                <span className="font-semibold text-gray-700 dark:text-gray-300">{order.attachments.length}</span>
+                            </div>
+                        )}
+                        <div className="flex items-center gap-1.5 px-1 py-1">
+                            <span className="text-gray-300 dark:text-gray-600 text-lg font-light">|</span>
+                            <span className="text-xs text-gray-500">Total:</span>
                             <span className="font-semibold text-gray-900 dark:text-gray-200">R$ {order.totalValue.toLocaleString('pt-BR')}</span>
                         </div>
                     </div>
@@ -241,11 +247,11 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
                 {/* Accept/Reject Buttons for NEW orders */}
                 {showAcceptReject && (
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-4 flex gap-3">
                         <button
                             onClick={handleAccept}
                             disabled={isProcessing}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm font-medium rounded-lg transition-colors"
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                         >
                             <Check className="h-4 w-4" />
                             Aceitar
@@ -253,7 +259,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                         <button
                             onClick={handleReject}
                             disabled={isProcessing}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm font-medium rounded-lg transition-colors"
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                         >
                             <X className="h-4 w-4" />
                             Recusar
@@ -262,13 +268,13 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 )}
 
                 {/* Footer / Deadline */}
-                <div className={`${showAcceptReject ? 'mt-3' : 'mt-3'} pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center`}>
-                    <div className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 font-medium transition-colors ${getUrgencyColor(order.deliveryDeadline)}`}>
+                <div className={`${showAcceptReject ? 'mt-4' : 'mt-4'} pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center`}>
+                    <div className={`text-xs px-3 py-1.5 rounded-lg border flex items-center gap-2 font-medium transition-colors ${getUrgencyColor(order.deliveryDeadline)}`}>
                         {isFinalized ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
                         {getDaysLeft(order.deliveryDeadline)}
                     </div>
 
-                    <div className="flex items-center text-[11px] font-medium text-gray-400 dark:text-gray-500">
+                    <div className="flex items-center text-xs font-medium text-gray-400 dark:text-gray-500">
                         Entregar: {new Date(order.deliveryDeadline).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                     </div>
                 </div>
