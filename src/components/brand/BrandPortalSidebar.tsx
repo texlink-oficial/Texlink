@@ -44,8 +44,7 @@ const navItems: NavItem[] = [
         label: 'Pedidos',
         icon: <Package className="h-5 w-5" />,
         children: [
-            { label: 'Kanban', path: '/brand/pedidos' },
-            { label: 'Lista', path: '/brand/pedidos/lista' },
+            { label: 'Gerenciamento', path: '/brand/pedidos' },
             { label: 'Novo Pedido', path: '/brand/pedidos/novo' },
         ],
     },
