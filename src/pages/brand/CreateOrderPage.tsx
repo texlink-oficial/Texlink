@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { ordersService, suppliersService, uploadService } from '../../services';
 import {
     ArrowLeft, Package, DollarSign, Calendar,
-    Send, Loader2, Factory, FileText, Upload, X, Image, CheckCircle, AlertCircle
+    Send, Loader2, Factory, FileText, Upload, X, Image, CheckCircle, AlertCircle, Star
 } from 'lucide-react';
 
 interface SupplierOption {
@@ -152,32 +152,32 @@ const CreateOrderPage: React.FC = () => {
     const totalValue = (Number(formData.quantity) || 0) * (Number(formData.pricePerUnit) || 0);
 
     return (
-        <div className="min-h-screen bg-brand-950">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300">
             {/* Header */}
-            <header className="bg-brand-900/50 border-b border-brand-800 sticky top-0 z-10">
+            <header className="bg-white/80 dark:bg-gray-900/50 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10 transition-all duration-300">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center gap-4">
-                        <Link to="/brand/orders" className="text-brand-400 hover:text-white">
+                        <Link to="/brand/pedidos/lista" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                             <ArrowLeft className="w-5 h-5" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-bold text-white">Novo Pedido</h1>
-                            <p className="text-sm text-brand-400">Preencha os dados do pedido</p>
+                            <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Novo Pedido</h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Preencha os dados para iniciar uma nova produção</p>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <form onSubmit={handleSubmit} className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+            <form onSubmit={handleSubmit} className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 {/* Product Info */}
-                <Section title="Produto" icon={<Package className="w-5 h-5 text-brand-400" />}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Section title="Informações do Produto" description="Defina as características principais do item" icon={<Package className="w-5 h-5 text-brand-600 dark:text-brand-500" />}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input
                             label="Tipo de Produto *"
                             name="productType"
                             value={formData.productType}
                             onChange={handleChange}
-                            placeholder="Ex: Camiseta, Calça, Vestido"
+                            placeholder="Ex: Camiseta"
                             required
                         />
                         <Input
@@ -185,7 +185,7 @@ const CreateOrderPage: React.FC = () => {
                             name="productCategory"
                             value={formData.productCategory}
                             onChange={handleChange}
-                            placeholder="Ex: Casual, Fitness, Social"
+                            placeholder="Ex: Casual"
                         />
                     </div>
                     <Input
@@ -193,25 +193,25 @@ const CreateOrderPage: React.FC = () => {
                         name="productName"
                         value={formData.productName}
                         onChange={handleChange}
-                        placeholder="Ex: Camiseta Básica Algodão"
+                        placeholder="Ex: Camiseta Básica Premium Algodão"
                         required
                     />
                     <div>
-                        <label className="block text-sm font-medium text-brand-200 mb-2">Descrição</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descrição Detalhada</label>
                         <textarea
                             name="description"
                             value={formData.description}
                             onChange={handleChange}
-                            rows={3}
-                            className="w-full px-4 py-3 bg-brand-800/50 border border-brand-700 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
-                            placeholder="Descreva detalhes do produto, medidas, cores..."
+                            rows={4}
+                            className="w-full px-4 py-3 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all resize-none"
+                            placeholder="Descreva modelagem, acabamentos, etiquetas e outros detalhes importantes..."
                         />
                     </div>
 
                     {/* Tech Sheet Upload */}
-                    <div>
-                        <label className="block text-sm font-medium text-brand-200 mb-2">
-                            Ficha Técnica / Anexos
+                    <div className="pt-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Ficha Técnica e Anexos
                         </label>
                         <div
                             onDragEnter={handleDrag}
@@ -219,9 +219,9 @@ const CreateOrderPage: React.FC = () => {
                             onDragOver={handleDrag}
                             onDrop={handleDrop}
                             onClick={() => fileInputRef.current?.click()}
-                            className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${dragActive
-                                ? 'border-brand-500 bg-brand-500/10'
-                                : 'border-brand-700 hover:border-brand-600 hover:bg-brand-800/30'
+                            className={`group relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 overflow-hidden ${dragActive
+                                ? 'border-brand-500 bg-brand-500/5'
+                                : 'border-gray-300 dark:border-gray-700 hover:border-brand-500/50 hover:bg-gray-50 dark:hover:bg-gray-800/30'
                                 }`}
                         >
                             <input
@@ -232,37 +232,45 @@ const CreateOrderPage: React.FC = () => {
                                 onChange={handleFileChange}
                                 className="hidden"
                             />
-                            <Upload className={`w-8 h-8 mx-auto mb-2 ${dragActive ? 'text-brand-400' : 'text-brand-500'}`} />
-                            <p className="text-brand-200 font-medium">Arraste arquivos ou clique para selecionar</p>
-                            <p className="text-brand-400 text-sm mt-1">PDF, JPG, PNG (máx. 10MB cada, até 5 arquivos)</p>
+                            <div className="relative z-10 flex flex-col items-center gap-3">
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${dragActive ? 'bg-brand-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:bg-brand-500/10 group-hover:text-brand-600 dark:group-hover:text-brand-500'}`}>
+                                    <Upload className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <p className="text-gray-700 dark:text-gray-200 font-medium">Clique para fazer upload ou arraste arquivos</p>
+                                    <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">PDF, JPG, PNG (máx. 10MB)</p>
+                                </div>
+                            </div>
                         </div>
 
                         {/* File Previews */}
                         {techSheetFiles.length > 0 && (
-                            <div className="mt-3 space-y-2">
+                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {techSheetFiles.map((file, index) => (
                                     <div
                                         key={index}
-                                        className="flex items-center gap-3 p-3 bg-brand-800/50 rounded-xl"
+                                        className="flex items-center gap-3 p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl group relative overflow-hidden shadow-sm"
                                     >
-                                        {file.type.startsWith('image/') ? (
-                                            <Image className="w-5 h-5 text-brand-400" />
-                                        ) : (
-                                            <FileText className="w-5 h-5 text-brand-400" />
-                                        )}
-                                        <span className="flex-1 text-brand-200 text-sm truncate">{file.name}</span>
-                                        <span className="text-brand-400 text-xs">
-                                            {(file.size / 1024 / 1024).toFixed(2)} MB
-                                        </span>
+                                        <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 text-gray-500 dark:text-gray-400">
+                                            {file.type.startsWith('image/') ? (
+                                                <Image className="w-5 h-5" />
+                                            ) : (
+                                                <FileText className="w-5 h-5" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-gray-900 dark:text-gray-200 truncate">{file.name}</p>
+                                            <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                        </div>
                                         <button
                                             type="button"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 removeFile(index);
                                             }}
-                                            className="p-1 hover:bg-brand-700 rounded-lg transition-colors"
+                                            className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 dark:hover:bg-red-500/10 dark:text-gray-500 rounded-lg transition-colors"
                                         >
-                                            <X className="w-4 h-4 text-brand-400" />
+                                            <X className="w-4 h-4" />
                                         </button>
                                     </div>
                                 ))}
@@ -272,39 +280,39 @@ const CreateOrderPage: React.FC = () => {
                 </Section>
 
                 {/* Order Details */}
-                <Section title="Detalhes do Pedido" icon={<DollarSign className="w-5 h-5 text-brand-400" />}>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Section title="Detalhes da Produção" description="Quantidades, valores e prazos" icon={<DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />}>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <Input
                             label="Quantidade *"
                             name="quantity"
                             type="number"
                             value={formData.quantity}
                             onChange={handleChange}
-                            placeholder="100"
+                            placeholder="0"
                             min="1"
                             required
                         />
                         <Input
-                            label="Preço por Unidade (R$) *"
+                            label="Preço Alvo / Unidade *"
                             name="pricePerUnit"
                             type="number"
                             step="0.01"
                             value={formData.pricePerUnit}
                             onChange={handleChange}
-                            placeholder="15.00"
+                            placeholder="R$ 0,00"
                             min="0.01"
                             required
                         />
-                        <div className="flex flex-col justify-end">
-                            <p className="text-sm text-brand-400 mb-1">Valor Total</p>
-                            <p className="text-2xl font-bold text-brand-300">
+                        <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex flex-col justify-center">
+                            <p className="text-sm text-gray-500 mb-1">Valor Total Estimado</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
                             </p>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input
-                            label="Data de Entrega *"
+                            label="Data de Entrega Desejada *"
                             name="deliveryDeadline"
                             type="date"
                             value={formData.deliveryDeadline}
@@ -316,128 +324,160 @@ const CreateOrderPage: React.FC = () => {
                             name="paymentTerms"
                             value={formData.paymentTerms}
                             onChange={handleChange}
-                            placeholder="Ex: 50% adiantado, 50% na entrega"
+                            placeholder="Ex: 50% entrada, 50% entrega"
                         />
                     </div>
-                    <div className="flex items-center gap-3">
-                        <input
-                            type="checkbox"
-                            id="materialsProvided"
-                            name="materialsProvided"
-                            checked={formData.materialsProvided}
-                            onChange={handleChange}
-                            className="w-5 h-5 rounded border-brand-700 bg-brand-800 text-brand-500 focus:ring-brand-500"
-                        />
-                        <label htmlFor="materialsProvided" className="text-brand-200">
-                            Materiais serão fornecidos pela marca
-                        </label>
-                    </div>
+                    <label className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-xl border border-gray-200 dark:border-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900/50 transition-colors">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                name="materialsProvided"
+                                checked={formData.materialsProvided}
+                                onChange={handleChange}
+                                className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-500 focus:ring-brand-500 focus:ring-offset-white dark:focus:ring-offset-gray-900"
+                            />
+                        </div>
+                        <span className="text-gray-700 dark:text-gray-300 font-medium">
+                            Materiais (tecidos/aviamentos) serão fornecidos pela marca
+                        </span>
+                    </label>
                 </Section>
 
                 {/* Supplier Selection */}
-                <Section title="Selecionar Facção" icon={<Factory className="w-5 h-5 text-brand-400" />}>
-                    <div className="flex gap-4 mb-4">
+                <Section title="Definição de Facção" description="Escolha quem irá produzir este pedido" icon={<Factory className="w-5 h-5 text-purple-600 dark:text-purple-500" />}>
+                    <div className="grid grid-cols-2 gap-4 mb-6">
                         <button
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, assignmentType: 'DIRECT', targetSupplierIds: [] }))}
-                            className={`flex-1 py-3 rounded-xl font-medium transition-all ${formData.assignmentType === 'DIRECT'
-                                ? 'bg-brand-600 text-white'
-                                : 'bg-brand-800 text-brand-300 hover:bg-brand-700'
+                            className={`p-4 rounded-xl border text-left transition-all ${formData.assignmentType === 'DIRECT'
+                                ? 'bg-brand-50 dark:bg-brand-500/10 border-brand-500/50 ring-1 ring-brand-500/50'
+                                : 'bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                                 }`}
                         >
-                            Direto (1 facção)
+                            <div className="flex items-center justify-between mb-2">
+                                <span className={`font-semibold ${formData.assignmentType === 'DIRECT' ? 'text-brand-600 dark:text-brand-400' : 'text-gray-700 dark:text-gray-300'}`}>Direto</span>
+                                {formData.assignmentType === 'DIRECT' && <CheckCircle className="w-5 h-5 text-brand-600 dark:text-brand-500" />}
+                            </div>
+                            <p className="text-sm text-gray-500">Escolha uma facção específica para o trabalho</p>
                         </button>
                         <button
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, assignmentType: 'BIDDING', supplierId: '' }))}
-                            className={`flex-1 py-3 rounded-xl font-medium transition-all ${formData.assignmentType === 'BIDDING'
-                                ? 'bg-brand-600 text-white'
-                                : 'bg-brand-800 text-brand-300 hover:bg-brand-700'
+                            className={`p-4 rounded-xl border text-left transition-all ${formData.assignmentType === 'BIDDING'
+                                ? 'bg-brand-50 dark:bg-brand-500/10 border-brand-500/50 ring-1 ring-brand-500/50'
+                                : 'bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                                 }`}
                         >
-                            Licitação (múltiplas)
+                            <div className="flex items-center justify-between mb-2">
+                                <span className={`font-semibold ${formData.assignmentType === 'BIDDING' ? 'text-brand-600 dark:text-brand-400' : 'text-gray-700 dark:text-gray-300'}`}>Licitação / Cotação</span>
+                                {formData.assignmentType === 'BIDDING' && <CheckCircle className="w-5 h-5 text-brand-600 dark:text-brand-500" />}
+                            </div>
+                            <p className="text-sm text-gray-500">Solicite orçamentos de múltiplas facções</p>
                         </button>
                     </div>
 
                     {loadingSuppliers ? (
-                        <div className="flex justify-center py-8">
-                            <Loader2 className="w-6 h-6 text-brand-500 animate-spin" />
+                        <div className="flex justify-center py-12">
+                            <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
                         </div>
                     ) : suppliers.length === 0 ? (
-                        <p className="text-brand-400 text-center py-4">Nenhuma facção disponível</p>
+                        <div className="text-center py-8 text-gray-500 bg-gray-50 dark:bg-gray-900/30 rounded-xl border border-gray-200 dark:border-gray-800 border-dashed">
+                            Nenhuma facção encontrada
+                        </div>
                     ) : (
-                        <div className="space-y-2">
-                            {suppliers.map((supplier) => (
-                                <div
-                                    key={supplier.id}
-                                    onClick={() => {
-                                        if (formData.assignmentType === 'DIRECT') {
-                                            setFormData(prev => ({ ...prev, supplierId: supplier.id }));
-                                        } else {
-                                            handleSupplierToggle(supplier.id);
-                                        }
-                                    }}
-                                    className={`p-4 rounded-xl border cursor-pointer transition-all ${(formData.assignmentType === 'DIRECT' && formData.supplierId === supplier.id) ||
-                                        (formData.assignmentType === 'BIDDING' && formData.targetSupplierIds.includes(supplier.id))
-                                        ? 'bg-brand-600/20 border-brand-500'
-                                        : 'bg-brand-800/50 border-brand-700 hover:border-brand-600'
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-white font-medium">{supplier.tradeName}</p>
-                                            <p className="text-sm text-brand-400">
-                                                ⭐ {supplier.avgRating?.toFixed(1) || 'N/A'} •
-                                                {supplier.supplierProfile?.productTypes?.join(', ') || 'Diversos'}
-                                            </p>
+                        <div className="max-h-96 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                            {suppliers.map((supplier) => {
+                                const isSelected = (formData.assignmentType === 'DIRECT' && formData.supplierId === supplier.id) ||
+                                    (formData.assignmentType === 'BIDDING' && formData.targetSupplierIds.includes(supplier.id));
+
+                                return (
+                                    <div
+                                        key={supplier.id}
+                                        onClick={() => {
+                                            if (formData.assignmentType === 'DIRECT') {
+                                                setFormData(prev => ({ ...prev, supplierId: supplier.id }));
+                                            } else {
+                                                handleSupplierToggle(supplier.id);
+                                            }
+                                        }}
+                                        className={`flex items-center p-4 rounded-xl border cursor-pointer transition-all group ${isSelected
+                                            ? 'bg-brand-50 dark:bg-brand-500/10 border-brand-500/50'
+                                            : 'bg-white dark:bg-gray-900/30 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                            }`}
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mr-4 border border-gray-200 dark:border-gray-700">
+                                            <Factory className={`w-5 h-5 ${isSelected ? 'text-brand-600 dark:text-brand-400' : 'text-gray-500'}`} />
                                         </div>
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${(formData.assignmentType === 'DIRECT' && formData.supplierId === supplier.id) ||
-                                            (formData.assignmentType === 'BIDDING' && formData.targetSupplierIds.includes(supplier.id))
-                                            ? 'bg-brand-500 border-brand-500'
-                                            : 'border-brand-600'
+                                        <div className="flex-1">
+                                            <p className={`font-medium ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>{supplier.tradeName}</p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <div className="flex items-center text-xs text-yellow-600 dark:text-yellow-500 bg-yellow-100 dark:bg-yellow-500/10 px-1.5 py-0.5 rounded">
+                                                    <Star className="w-3 h-3 fill-current mr-1" />
+                                                    {supplier.avgRating ? Number(supplier.avgRating).toFixed(1) : 'N/A'}
+                                                </div>
+                                                <span className="text-xs text-gray-400 dark:text-gray-500">•</span>
+                                                <p className="text-xs text-gray-500 truncate max-w-[200px]">
+                                                    {supplier.supplierProfile?.productTypes?.join(', ') || 'Diversos'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected
+                                            ? 'bg-brand-600 dark:bg-brand-500 border-brand-600 dark:border-brand-500'
+                                            : 'border-gray-300 dark:border-gray-600 group-hover:border-gray-400 dark:group-hover:border-gray-500'
                                             }`}>
-                                            {((formData.assignmentType === 'DIRECT' && formData.supplierId === supplier.id) ||
-                                                (formData.assignmentType === 'BIDDING' && formData.targetSupplierIds.includes(supplier.id))) && (
-                                                    <div className="w-2 h-2 bg-white rounded-full" />
-                                                )}
+                                            {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </Section>
 
-                {/* Submit */}
-                <button
-                    type="submit"
-                    disabled={isLoading ||
-                        (formData.assignmentType === 'DIRECT' && !formData.supplierId) ||
-                        (formData.assignmentType === 'BIDDING' && formData.targetSupplierIds.length === 0)}
-                    className="w-full py-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                    {isLoading ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                        <>
-                            <Send className="w-5 h-5" />
-                            Enviar Pedido
-                        </>
-                    )}
-                </button>
+                {/* Footer Actions */}
+                <div className="sticky bottom-0 bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg border-t border-gray-200 dark:border-gray-800 p-4 -mx-4 sm:mx-0 sm:p-0 sm:bg-transparent sm:border-0 sm:relative flex justify-end gap-3 pt-6">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/brand/pedidos/lista')}
+                        className="px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-white transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={isLoading ||
+                            (formData.assignmentType === 'DIRECT' && !formData.supplierId) ||
+                            (formData.assignmentType === 'BIDDING' && formData.targetSupplierIds.length === 0)}
+                        className="px-8 py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/20 transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {isLoading ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                            <>
+                                <Send className="w-5 h-5" />
+                                Enviar Pedido
+                            </>
+                        )}
+                    </button>
+                </div>
             </form>
         </div>
     );
 };
 
 // Helper Components
-const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
-    <div className="bg-brand-900/50 rounded-2xl border border-brand-800 p-6">
-        <div className="flex items-center gap-2 mb-4">
-            {icon}
-            <h2 className="text-lg font-semibold text-white">{title}</h2>
+const Section: React.FC<{ title: string; description?: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, description, icon, children }) => (
+    <div className="bg-white/50 dark:bg-gray-900/40 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-800/60 p-6 md:p-8 hover:border-gray-300 dark:hover:border-gray-700/60 transition-colors shadow-sm dark:shadow-none">
+        <div className="flex items-start gap-4 mb-6">
+            <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50">
+                {icon}
+            </div>
+            <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{title}</h2>
+                {description && <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">{description}</p>}
+            </div>
         </div>
-        <div className="space-y-4">{children}</div>
+        <div className="space-y-5 content-section">{children}</div>
     </div>
 );
 
@@ -446,11 +486,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 const Input: React.FC<InputProps> = ({ label, ...props }) => (
-    <div>
-        <label className="block text-sm font-medium text-brand-200 mb-2">{label}</label>
+    <div className="group">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 group-focus-within:text-brand-600 dark:group-focus-within:text-brand-400 transition-colors">{label}</label>
         <input
             {...props}
-            className="w-full px-4 py-3 bg-brand-800/50 border border-brand-700 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full px-4 py-3 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all shadow-sm dark:shadow-none"
         />
     </div>
 );
