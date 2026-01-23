@@ -3,7 +3,7 @@ import api from './api';
 export interface UploadedAttachment {
     id: string;
     orderId: string;
-    type: 'TECH_SHEET' | 'IMAGE' | 'OTHER';
+    type: 'TECH_SHEET' | 'IMAGE' | 'VIDEO' | 'OTHER';
     name: string;
     url: string;
     mimeType: string;

@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { ordersService, suppliersService, uploadService } from '../../services';
 import {
     ArrowLeft, Package, DollarSign, Calendar,
-    Send, Loader2, Factory, FileText, Upload, X, Image, CheckCircle, AlertCircle, Star
+    Send, Loader2, Factory, FileText, Upload, X, Image, CheckCircle, AlertCircle, Star, Film
 } from 'lucide-react';
 
 interface SupplierOption {
@@ -138,9 +138,15 @@ const CreateOrderPage: React.FC = () => {
     };
 
     const handleFiles = (files: File[]) => {
+        const validTypes = [
+            'image/jpeg', 'image/png', 'image/webp', 'application/pdf',
+            'video/mp4', 'video/webm', 'video/quicktime'
+        ];
+        const getMaxSize = (type: string) => {
+            return type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+        };
         const validFiles = files.filter(file => {
-            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-            return validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024; // 10MB max
+            return validTypes.includes(file.type) && file.size <= getMaxSize(file.type);
         });
         setTechSheetFiles(prev => [...prev, ...validFiles].slice(0, 5)); // Max 5 files
     };
@@ -228,7 +234,7 @@ const CreateOrderPage: React.FC = () => {
                                 ref={fileInputRef}
                                 type="file"
                                 multiple
-                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov"
                                 onChange={handleFileChange}
                                 className="hidden"
                             />
@@ -238,7 +244,7 @@ const CreateOrderPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <p className="text-gray-700 dark:text-gray-200 font-medium">Clique para fazer upload ou arraste arquivos</p>
-                                    <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">PDF, JPG, PNG (máx. 10MB)</p>
+                                    <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">PDF, JPG, PNG (máx. 10MB) | Vídeos MP4, WebM, MOV (máx. 50MB)</p>
                                 </div>
                             </div>
                         </div>
@@ -252,7 +258,9 @@ const CreateOrderPage: React.FC = () => {
                                         className="flex items-center gap-3 p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl group relative overflow-hidden shadow-sm"
                                     >
                                         <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 text-gray-500 dark:text-gray-400">
-                                            {file.type.startsWith('image/') ? (
+                                            {file.type.startsWith('video/') ? (
+                                                <Film className="w-5 h-5 text-purple-500" />
+                                            ) : file.type.startsWith('image/') ? (
                                                 <Image className="w-5 h-5" />
                                             ) : (
                                                 <FileText className="w-5 h-5" />

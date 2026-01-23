@@ -8,9 +8,17 @@ const ALLOWED_MIME_TYPES = [
     'image/png',
     'image/webp',
     'application/pdf',
+    'video/mp4',
+    'video/webm',
+    'video/quicktime', // .mov
 ];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_IMAGE_PDF_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+
+const getMaxFileSize = (mimetype: string): number => {
+    return mimetype.startsWith('video/') ? MAX_VIDEO_SIZE : MAX_IMAGE_PDF_SIZE;
+};
 
 @Injectable()
 export class UploadService {
@@ -33,8 +41,11 @@ export class UploadService {
             );
         }
 
-        if (file.size > MAX_FILE_SIZE) {
-            throw new BadRequestException('Arquivo muito grande. Máximo: 10MB');
+        const maxSize = getMaxFileSize(file.mimetype);
+        if (file.size > maxSize) {
+            throw new BadRequestException(
+                `Arquivo muito grande. Máximo: ${maxSize / (1024 * 1024)}MB`,
+            );
         }
 
         // Check order exists and user has access
@@ -48,9 +59,14 @@ export class UploadService {
         }
 
         // Determine attachment type
-        const type: AttachmentType = file.mimetype === 'application/pdf'
-            ? AttachmentType.TECH_SHEET
-            : AttachmentType.IMAGE;
+        let type: AttachmentType;
+        if (file.mimetype === 'application/pdf') {
+            type = AttachmentType.TECH_SHEET;
+        } else if (file.mimetype.startsWith('video/')) {
+            type = AttachmentType.VIDEO;
+        } else {
+            type = AttachmentType.IMAGE;
+        }
 
         // Upload to storage
         const { url, key } = await this.storage.upload(file, `orders/${orderId}`);

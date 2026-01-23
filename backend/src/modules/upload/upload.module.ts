@@ -11,7 +11,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
         MulterModule.register({
             storage: memoryStorage(), // Store in memory for processing before saving
             limits: {
-                fileSize: 10 * 1024 * 1024, // 10MB
+                fileSize: 50 * 1024 * 1024, // 50MB (para acomodar vídeos)
                 files: 5,
             },
         }),
