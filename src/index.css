@@ -25,23 +25,75 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - Light mode */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--brand-900);
+    background: #e5e7eb;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--brand-700);
+    background: #9ca3af;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+/* Custom scrollbar - Dark mode */
+.dark ::-webkit-scrollbar-track,
+:root.dark ::-webkit-scrollbar-track {
+    background: var(--brand-900);
+}
+
+.dark ::-webkit-scrollbar-thumb,
+:root.dark ::-webkit-scrollbar-thumb {
+    background: var(--brand-700);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover,
+:root.dark ::-webkit-scrollbar-thumb:hover {
     background: var(--brand-600);
+}
+
+/* No scrollbar utility class */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Kanban scrollbar - subtle horizontal scroll */
+.kanban-scroll::-webkit-scrollbar {
+    height: 6px;
+}
+
+.kanban-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.4);
+    border-radius: 3px;
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.6);
+}
+
+.dark .kanban-scroll::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.4);
+}
+
+.dark .kanban-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.6);
 }
 
 /* Focus styles */
@@ -57,4 +109,12 @@ input:-webkit-autofill:focus {
     -webkit-text-fill-color: white;
     -webkit-box-shadow: 0 0 0px 1000px var(--brand-800) inset;
     transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Light mode autofill */
+:not(.dark) input:-webkit-autofill,
+:not(.dark) input:-webkit-autofill:hover,
+:not(.dark) input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #1f2937;
+    -webkit-box-shadow: 0 0 0px 1000px #f3f4f6 inset;
 }

@@ -265,7 +265,7 @@ const BrandKanbanDashboard: React.FC = () => {
                         <StatsOverview orders={orders} />
                         <div className="h-full flex-1">
                             {viewMode === 'kanban' ? (
-                                <div className="flex gap-4 overflow-x-auto pb-4 h-full items-start no-scrollbar">
+                                <div className="flex gap-4 overflow-x-auto pb-4 h-full items-start kanban-scroll">
                                     {STATUS_COLUMNS.map(col => (
                                         <div
                                             key={col.id}
@@ -275,7 +275,7 @@ const BrandKanbanDashboard: React.FC = () => {
                                                 <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-200">{col.label}</h3>
                                                 <span className="text-xs font-bold text-gray-400 bg-gray-50 dark:bg-gray-700 px-2 py-0.5 rounded-full">{ordersByStatus[col.id]?.length || 0}</span>
                                             </div>
-                                            <div className="p-2 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
+                                            <div className="p-2 space-y-3">
                                                 {ordersByStatus[col.id]?.map(order => (
                                                     <OrderCard
                                                         key={order.id}
