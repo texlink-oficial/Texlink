@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogIn, Mail, Lock, Loader2 } from 'lucide-react';
+import { LogIn, Mail, Lock, Loader2, Users, Building2, Shield } from 'lucide-react';
+import { MOCK_MODE, DEMO_CREDENTIALS } from '../../services/mockMode';
 
 const LoginPage: React.FC = () => {
     const navigate = useNavigate();
@@ -20,10 +21,16 @@ const LoginPage: React.FC = () => {
             await login(email, password);
             navigate('/dashboard');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Erro ao fazer login');
+            setError(err.message || err.response?.data?.message || 'Erro ao fazer login');
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const fillDemoCredentials = (type: 'brand' | 'supplier' | 'admin') => {
+        setEmail(DEMO_CREDENTIALS[type].email);
+        setPassword(DEMO_CREDENTIALS[type].password);
+        setError('');
     };
 
     return (
@@ -34,6 +41,41 @@ const LoginPage: React.FC = () => {
                     <h1 className="text-4xl font-bold text-white mb-2">TEXLINK</h1>
                     <p className="text-brand-300">Conectando marcas e facções</p>
                 </div>
+
+                {/* Demo Mode Banner */}
+                {MOCK_MODE && (
+                    <div className="bg-amber-500/20 border border-amber-500/50 rounded-xl p-4 mb-4 backdrop-blur-sm">
+                        <p className="text-amber-200 text-sm font-medium text-center mb-3">
+                            🎭 Modo Demonstração Ativo
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => fillDemoCredentials('brand')}
+                                className="flex flex-col items-center gap-1 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-white text-xs"
+                            >
+                                <Building2 className="w-4 h-4" />
+                                <span>Marca</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => fillDemoCredentials('supplier')}
+                                className="flex flex-col items-center gap-1 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-white text-xs"
+                            >
+                                <Users className="w-4 h-4" />
+                                <span>Facção</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => fillDemoCredentials('admin')}
+                                className="flex flex-col items-center gap-1 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-white text-xs"
+                            >
+                                <Shield className="w-4 h-4" />
+                                <span>Admin</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Card */}
                 <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 shadow-2xl">
