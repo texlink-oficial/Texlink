@@ -113,14 +113,38 @@ enum OrderStatus {
   EM_PRODUCAO
   PRONTO
   EM_TRANSITO_PARA_MARCA
+  EM_REVISAO                    // Em revisão de qualidade
+  PARCIALMENTE_APROVADO         // Parte aprovada, parte com problemas
+  REPROVADO                     // Totalmente reprovado
+  AGUARDANDO_RETRABALHO         // Aguardando pedido filho ser aceito
   FINALIZADO
   RECUSADO_PELA_FACCAO
   DISPONIVEL_PARA_OUTRAS
 }
 
+// Origem do pedido (original ou retrabalho)
+enum OrderOrigin {
+  ORIGINAL        // Pedido original
+  REWORK          // Retrabalho de pedido reprovado
+}
+
+// Tipo de revisão
+enum ReviewType {
+  QUALITY_CHECK   // Verificação de qualidade durante produção
+  FINAL_REVIEW    // Revisão final antes de finalizar
+}
+
+// Resultado da revisão
+enum ReviewResult {
+  APPROVED        // 100% aprovado
+  PARTIAL         // Parcialmente aprovado
+  REJECTED        // 100% reprovado
+}
+
 enum OrderAssignmentType {
   DIRECT
   BIDDING
+  HYBRID
 }
 
 enum OrderTargetStatus {
@@ -173,6 +197,7 @@ model User {
   messages             Message[]
   ordersAccepted       Order[]              @relation("AcceptedBy")
   invitationsSent      Invitation[]         @relation("InvitationsSent")
+  reviewsPerformed     OrderReview[]        @relation("ReviewedBy")
 
   @@map("users")
 }
@@ -307,12 +332,19 @@ model Document {
 
 model Order {
   id                String              @id @default(uuid())
-  displayId         String              @unique // TX-YYYYMMDD-XXXX
+  displayId         String              @unique // TX-YYYYMMDD-XXXX ou TX-YYYYMMDD-XXXX-R1
   brandId           String
   supplierId        String?             // null until accepted in BIDDING mode
   
   status            OrderStatus         @default(LANCADO_PELA_MARCA)
   assignmentType    OrderAssignmentType @default(DIRECT)
+  
+  // Hierarquia de pedidos (pai/filho para retrabalho)
+  parentOrderId     String?
+  parentOrder       Order?              @relation("OrderHierarchy", fields: [parentOrderId], references: [id])
+  childOrders       Order[]             @relation("OrderHierarchy")
+  revisionNumber    Int                 @default(0)  // 0 = original, 1+ = retrabalho
+  origin            OrderOrigin         @default(ORIGINAL)
   
   // Product info
   productType       String              // e.g., "Infantil"
@@ -335,6 +367,12 @@ model Order {
   acceptedAt        DateTime?
   acceptedById      String?
   
+  // Métricas de revisão agregadas
+  totalReviewCount    Int               @default(0)
+  approvalCount       Int               @default(0)
+  rejectionCount      Int               @default(0)
+  secondQualityCount  Int               @default(0)
+  
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
@@ -349,6 +387,8 @@ model Order {
   messages          Message[]
   payments          Payment[]
   ratings           Rating[]
+  reviews           OrderReview[]
+  secondQualityItems SecondQualityItem[]
 
   @@map("orders")
 }
@@ -504,4 +544,64 @@ model PaymentTermsPreset {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("payment_terms_presets")
+}
+
+// ==================== ORDER REVIEW SYSTEM ====================
+
+// Revisão de qualidade do pedido
+model OrderReview {
+  id                    String       @id @default(uuid())
+  orderId               String
+  type                  ReviewType
+  result                ReviewResult
+  totalQuantity         Int          // Quantidade total revisada
+  approvedQuantity      Int          @default(0)
+  rejectedQuantity      Int          @default(0)
+  secondQualityQuantity Int          @default(0)
+  notes                 String?
+  reviewedAt            DateTime     @default(now())
+  reviewedById          String
+  
+  // Se gerou pedido filho de retrabalho
+  childOrderId          String?      // ID do pedido filho gerado (se houver)
+  
+  order                 Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reviewedBy            User         @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  rejectedItems         ReviewRejectedItem[]
+  createdAt             DateTime     @default(now())
+
+  @@map("order_reviews")
+}
+
+// Itens reprovados em uma revisão (detalhes)
+model ReviewRejectedItem {
+  id                String       @id @default(uuid())
+  reviewId          String
+  reason            String       // Motivo da reprovação
+  quantity          Int
+  defectDescription String?      // Descrição detalhada do defeito
+  requiresRework    Boolean      @default(true) // Se precisa de retrabalho
+  
+  review            OrderReview  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  
+  @@map("review_rejected_items")
+}
+
+// Itens de segunda qualidade gerados por revisões
+model SecondQualityItem {
+  id                  String   @id @default(uuid())
+  orderId             String
+  reviewId            String?  // Referência à revisão que gerou (opcional)
+  quantity            Int
+  defectType          String   // Tipo do defeito (ex: "Costura", "Manchado")
+  defectDescription   String?
+  originalUnitValue   Decimal  @db.Decimal(10, 2) // Valor original da peça
+  discountPercentage  Decimal  @default(0) @db.Decimal(5, 2) // % de desconto aplicado
+  finalUnitValue      Decimal? @db.Decimal(10, 2) // Valor final com desconto
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  order               Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("second_quality_items")
 }
