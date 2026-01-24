@@ -14,6 +14,7 @@ import {
     Menu,
     X,
     User,
+    Users,
     Bell,
     Gauge,
     PanelLeftClose,
@@ -75,6 +76,12 @@ const navItems: NavItem[] = [
             { label: 'Frequência de Repasse', path: '/portal/financeiro/frequencia' },
             { label: 'Antecipação', path: '/portal/financeiro/antecipacao' },
         ],
+    },
+    {
+        id: 'equipe',
+        label: 'Equipe',
+        icon: <Users className="h-5 w-5" />,
+        path: '/portal/equipe',
     },
 ];
 

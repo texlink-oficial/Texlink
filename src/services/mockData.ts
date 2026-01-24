@@ -17,6 +17,8 @@ export const MOCK_USERS = {
         password: 'demo123',
         companyUsers: [{
             role: 'OWNER',
+            companyRole: 'ADMIN',
+            isCompanyAdmin: true,
             company: {
                 id: 'company-brand-001',
                 tradeName: 'Fashion Style Ltda',
@@ -34,6 +36,8 @@ export const MOCK_USERS = {
         password: 'demo123',
         companyUsers: [{
             role: 'OWNER',
+            companyRole: 'ADMIN',
+            isCompanyAdmin: true,
             company: {
                 id: 'company-supplier-001',
                 tradeName: 'Confecções Silva',

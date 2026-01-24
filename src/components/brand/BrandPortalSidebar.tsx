@@ -14,6 +14,7 @@ import {
     Menu,
     X,
     User,
+    Users,
     Bell,
     PanelLeftClose,
     PanelLeft,
@@ -77,6 +78,12 @@ const navItems: NavItem[] = [
         label: 'Relatórios',
         icon: <BarChart3 className="h-5 w-5" />,
         path: '/brand/relatorios',
+    },
+    {
+        id: 'equipe',
+        label: 'Equipe',
+        icon: <Users className="h-5 w-5" />,
+        path: '/brand/equipe',
     },
 ];
 

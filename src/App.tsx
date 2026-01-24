@@ -2,11 +2,16 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PermissionProvider } from './contexts/PermissionContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+const AcceptInvitePage = React.lazy(() => import('./pages/auth/AcceptInvitePage'));
+
+// Settings pages
+const TeamPage = React.lazy(() => import('./pages/settings/TeamPage'));
 
 // Supplier pages
 const SupplierKanbanDashboard = React.lazy(() => import('./pages/supplier/KanbanDashboard'));
@@ -66,6 +71,7 @@ const App: React.FC = () => {
     return (
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
+                <PermissionProvider>
                 <BrowserRouter>
                     <React.Suspense
                         fallback={
@@ -78,6 +84,7 @@ const App: React.FC = () => {
                             {/* Public routes */}
                             <Route path="/login" element={<LoginPage />} />
                             <Route path="/register" element={<RegisterPage />} />
+                            <Route path="/convite/:token" element={<AcceptInvitePage />} />
 
                             {/* Onboarding routes (protected, supplier only) */}
                             <Route path="/onboarding" element={<ProtectedRoute allowedRoles={['SUPPLIER']}><OnboardingLayout /></ProtectedRoute>}>
@@ -106,6 +113,8 @@ const App: React.FC = () => {
                                 <Route path="financeiro/dados-bancarios" element={<BankDetailsPage />} />
                                 <Route path="financeiro/frequencia" element={<PayoutFrequencyPage />} />
                                 <Route path="financeiro/antecipacao" element={<AdvancePage />} />
+                                {/* Configurações */}
+                                <Route path="equipe" element={<TeamPage />} />
                             </Route>
 
                             {/* Legacy supplier routes - redirect to portal */}
@@ -136,6 +145,8 @@ const App: React.FC = () => {
                                 <Route path="financeiro/historico" element={<BrandPaymentHistory />} />
                                 {/* Relatórios */}
                                 <Route path="relatorios" element={<BrandReports />} />
+                                {/* Configurações */}
+                                <Route path="equipe" element={<TeamPage />} />
                             </Route>
 
                             {/* Legacy brand routes - redirect to new portal */}
@@ -154,6 +165,7 @@ const App: React.FC = () => {
                         </Routes>
                     </React.Suspense>
                 </BrowserRouter>
+                </PermissionProvider>
             </AuthProvider>
         </QueryClientProvider>
     );

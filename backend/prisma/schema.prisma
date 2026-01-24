@@ -34,6 +34,68 @@ enum CompanyUserRole {
   MEMBER
 }
 
+// Roles pré-definidos para membros da empresa
+enum CompanyRole {
+  ADMIN               // Todas as permissões + gestão de equipe
+  OPERATIONS_MANAGER  // Pedidos, fornecedores, mensagens, relatórios
+  FINANCIAL_MANAGER   // Financeiro, relatórios
+  SALES               // Criar pedidos, ver fornecedores, mensagens
+  PRODUCTION_MANAGER  // (Facção) Pedidos, capacidade, mensagens
+  VIEWER              // Apenas visualização
+}
+
+// Permissões granulares
+enum Permission {
+  // Pedidos
+  ORDERS_VIEW
+  ORDERS_CREATE
+  ORDERS_EDIT
+  ORDERS_DELETE
+  ORDERS_ACCEPT_REJECT      // Aceitar/rejeitar (facção)
+  ORDERS_UPDATE_STATUS
+
+  // Fornecedores/Parceiros
+  SUPPLIERS_VIEW
+  SUPPLIERS_ADD
+  SUPPLIERS_REMOVE
+  SUPPLIERS_RATE
+
+  // Financeiro
+  FINANCIAL_VIEW
+  FINANCIAL_MANAGE
+  FINANCIAL_EXPORT
+
+  // Mensagens
+  MESSAGES_VIEW
+  MESSAGES_SEND
+
+  // Relatórios
+  REPORTS_VIEW
+  REPORTS_EXPORT
+
+  // Gestão de Equipe
+  TEAM_VIEW
+  TEAM_INVITE
+  TEAM_MANAGE
+  TEAM_MANAGE_PERMISSIONS
+
+  // Configurações
+  SETTINGS_VIEW
+  SETTINGS_EDIT
+
+  // Capacidade (Facção)
+  CAPACITY_VIEW
+  CAPACITY_MANAGE
+}
+
+// Status de convite
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
 enum DocumentType {
   ALVARA
   CERTIFICACAO
@@ -110,6 +172,7 @@ model User {
   orderStatusChanges   OrderStatusHistory[]
   messages             Message[]
   ordersAccepted       Order[]              @relation("AcceptedBy")
+  invitationsSent      Invitation[]         @relation("InvitationsSent")
 
   @@map("users")
 }
@@ -131,30 +194,68 @@ model Company {
   updatedAt  DateTime      @updatedAt
 
   // Relations
-  companyUsers    CompanyUser[]
-  supplierProfile SupplierProfile?
-  documents       Document[]
-  ordersAsBrand   Order[]              @relation("BrandOrders")
-  ordersAsSupplier Order[]             @relation("SupplierOrders")
-  targetedOrders  OrderTargetSupplier[]
-  ratingsGiven    Rating[]             @relation("RatingsGiven")
-  ratingsReceived Rating[]             @relation("RatingsReceived")
+  companyUsers     CompanyUser[]
+  supplierProfile  SupplierProfile?
+  documents        Document[]
+  ordersAsBrand    Order[]              @relation("BrandOrders")
+  ordersAsSupplier Order[]              @relation("SupplierOrders")
+  targetedOrders   OrderTargetSupplier[]
+  ratingsGiven     Rating[]             @relation("RatingsGiven")
+  ratingsReceived  Rating[]             @relation("RatingsReceived")
+  invitations      Invitation[]
 
   @@map("companies")
 }
 
 model CompanyUser {
-  id        String          @id @default(uuid())
-  userId    String
-  companyId String
-  role      CompanyUserRole @default(MEMBER)
-  createdAt DateTime        @default(now())
+  id             String          @id @default(uuid())
+  userId         String
+  companyId      String
+  role           CompanyUserRole @default(MEMBER)    // Mantido para compatibilidade
+  companyRole    CompanyRole     @default(VIEWER)    // Role pré-definido
+  isCompanyAdmin Boolean         @default(false)     // Flag de admin
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user        User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company     Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  permissions CompanyUserPermission[]   // Overrides individuais
 
   @@unique([userId, companyId])
   @@map("company_users")
+}
+
+// Override de permissão individual por usuário
+model CompanyUserPermission {
+  id            String     @id @default(uuid())
+  companyUserId String
+  permission    Permission
+  granted       Boolean    @default(true)  // true = conceder, false = negar
+  createdAt     DateTime   @default(now())
+
+  companyUser CompanyUser @relation(fields: [companyUserId], references: [id], onDelete: Cascade)
+
+  @@unique([companyUserId, permission])
+  @@map("company_user_permissions")
+}
+
+// Sistema de convites
+model Invitation {
+  id          String           @id @default(uuid())
+  companyId   String
+  email       String
+  companyRole CompanyRole      @default(VIEWER)
+  invitedById String
+  token       String           @unique @default(uuid())
+  status      InvitationStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime         @default(now())
+
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invitedBy User    @relation("InvitationsSent", fields: [invitedById], references: [id])
+
+  @@unique([companyId, email, status])  // Um convite pendente por email/empresa
+  @@map("invitations")
 }
 
 model SupplierProfile {

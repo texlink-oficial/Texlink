@@ -13,6 +13,8 @@ import { RatingsModule } from './modules/ratings/ratings.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
+import { TeamModule } from './modules/team/team.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -26,6 +28,7 @@ import configuration from './config/configuration';
       serveRoot: '/uploads',
     }),
     PrismaModule,
+    PermissionsModule,
     AuthModule,
     UsersModule,
     CompaniesModule,
@@ -36,6 +39,7 @@ import configuration from './config/configuration';
     PaymentsModule,
     AdminModule,
     UploadModule,
+    TeamModule,
   ],
 })
 export class AppModule { }

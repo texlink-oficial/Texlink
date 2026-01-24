@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaClient, UserRole, CompanyType, CompanyStatus, OrderStatus, OrderAssignmentType } from '@prisma/client';
+import { PrismaClient, UserRole, CompanyType, CompanyStatus, OrderStatus, OrderAssignmentType, CompanyRole } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
@@ -50,8 +50,8 @@ async function main() {
 
         await prisma.companyUser.upsert({
             where: { userId_companyId: { userId: user.id, companyId: company.id } },
-            update: {},
-            create: { userId: user.id, companyId: company.id, role: 'OWNER' },
+            update: { companyRole: CompanyRole.ADMIN, isCompanyAdmin: true },
+            create: { userId: user.id, companyId: company.id, role: 'OWNER', companyRole: CompanyRole.ADMIN, isCompanyAdmin: true },
         });
 
         brands.push({ user, company });
@@ -84,8 +84,8 @@ async function main() {
 
         await prisma.companyUser.upsert({
             where: { userId_companyId: { userId: user.id, companyId: company.id } },
-            update: {},
-            create: { userId: user.id, companyId: company.id, role: 'OWNER' },
+            update: { companyRole: CompanyRole.ADMIN, isCompanyAdmin: true },
+            create: { userId: user.id, companyId: company.id, role: 'OWNER', companyRole: CompanyRole.ADMIN, isCompanyAdmin: true },
         });
 
         await prisma.supplierProfile.upsert({
