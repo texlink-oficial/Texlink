@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ordersService, Order } from '../../services';
 import {
     BarChart3, Loader2, Package, DollarSign, Factory,
-    TrendingUp, Calendar, Download
+    TrendingUp, Calendar, Download, CheckCircle
 } from 'lucide-react';
 
 const ReportsPage: React.FC = () => {
@@ -154,9 +154,9 @@ const ReportsPage: React.FC = () => {
                             {topSuppliers.map(([name, data], index) => (
                                 <div key={name} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm ${index === 0 ? 'bg-amber-500' :
-                                        index === 1 ? 'bg-gray-400' :
-                                            index === 2 ? 'bg-orange-600' :
-                                                'bg-gray-300'
+                                            index === 1 ? 'bg-gray-400' :
+                                                index === 2 ? 'bg-orange-600' :
+                                                    'bg-gray-300'
                                         }`}>
                                         {index + 1}
                                     </div>
@@ -207,6 +207,54 @@ const ReportsPage: React.FC = () => {
                         total={stats.totalOrders}
                         color="blue"
                     />
+                </div>
+            </div>
+
+            {/* Quality Metrics - NEW */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-gray-400" />
+                    Métricas de Qualidade
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                        <p className="text-sm text-green-700 dark:text-green-400 mb-1">Taxa de Aprovação</p>
+                        <p className="text-2xl font-bold text-green-800 dark:text-green-300">
+                            {stats.totalOrders > 0
+                                ? Math.round((stats.finalized / stats.totalOrders) * 100)
+                                : 0}%
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                            Aprovados na 1ª revisão
+                        </p>
+                    </div>
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                        <p className="text-sm text-blue-700 dark:text-blue-400 mb-1">Retrabalhos</p>
+                        <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">
+                            {orders.filter(o => o.status === 'AGUARDANDO_RETRABALHO' || o.status === 'REPROVADO').length}
+                        </p>
+                        <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">
+                            Pedidos com retrabalho
+                        </p>
+                    </div>
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                        <p className="text-sm text-amber-700 dark:text-amber-400 mb-1">2ª Qualidade</p>
+                        <p className="text-2xl font-bold text-amber-800 dark:text-amber-300">
+                            {orders.reduce((sum, o) => sum + (o.secondQualityCount || 0), 0)}
+                        </p>
+                        <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                            Peças com defeito menor
+                        </p>
+                    </div>
+                    <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                        <p className="text-sm text-purple-700 dark:text-purple-400 mb-1">Em Revisão</p>
+                        <p className="text-2xl font-bold text-purple-800 dark:text-purple-300">
+                            {orders.filter(o => o.status === 'EM_REVISAO' || o.status === 'PARCIALMENTE_APROVADO').length}
+                        </p>
+                        <p className="text-xs text-purple-600 dark:text-purple-500 mt-1">
+                            Aguardando avaliação
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
