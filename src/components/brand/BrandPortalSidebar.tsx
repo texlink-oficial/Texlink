@@ -22,7 +22,8 @@ import {
     Sun,
     Settings,
     Plus,
-    MessageSquare
+    MessageSquare,
+    Star
 } from 'lucide-react';
 
 interface NavItem {
@@ -78,6 +79,12 @@ const navItems: NavItem[] = [
         label: 'Relatórios',
         icon: <BarChart3 className="h-5 w-5" />,
         path: '/brand/relatorios',
+    },
+    {
+        id: 'favoritos',
+        label: 'Favoritos',
+        icon: <Star className="h-5 w-5" />,
+        path: '/brand/favoritos',
     },
     {
         id: 'equipe',

@@ -15,6 +15,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { TeamModule } from './modules/team/team.module';
+import { FavoritesModule } from './modules/favorites/favorites.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -40,6 +41,7 @@ import configuration from './config/configuration';
     AdminModule,
     UploadModule,
     TeamModule,
+    FavoritesModule,
   ],
 })
 export class AppModule { }

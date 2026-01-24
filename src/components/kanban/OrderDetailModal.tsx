@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Order, OrderStatus } from '../../types';
 import { ChatInterface } from './ChatInterface';
-import { X, CheckCircle, AlertOctagon, FileText, Truck, MapPin, DollarSign, Calendar, Scissors, Box, Clock, MessageCircle, Video, Image as ImageIcon, Download, ChevronRight, CreditCard, Play, PackageCheck, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle, AlertOctagon, FileText, Truck, MapPin, DollarSign, Calendar, Scissors, Box, Clock, MessageCircle, Video, Image as ImageIcon, Download, ChevronRight, CreditCard, Play, PackageCheck, AlertTriangle, Copy } from 'lucide-react';
 
 interface OrderDetailModalProps {
     order: Order;
@@ -13,8 +14,29 @@ interface OrderDetailModalProps {
 type ConfirmActionType = 'accept' | 'reject' | 'negotiate' | 'advance' | 'receipt' | null;
 
 export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onStatusChange, onTimelineStepToggle }) => {
+    const navigate = useNavigate();
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [confirmAction, setConfirmAction] = useState<ConfirmActionType>(null);
+
+    const handleDuplicateOrder = () => {
+        // Prepare order data for duplication (excluding fields that should not be copied)
+        const duplicateData = {
+            productType: order.type,
+            productCategory: order.category || '',
+            productName: order.productName,
+            description: order.description || '',
+            pricePerUnit: order.pricePerUnit,
+            paymentTerms: order.paymentTerms || '',
+            materialsProvided: order.materialsProvided,
+            observations: order.observations || '',
+            // Do not copy: quantity, deliveryDeadline, attachments
+        };
+
+        navigate('/brand/pedidos/novo', {
+            state: { duplicateFrom: duplicateData }
+        });
+        onClose();
+    };
 
     if (!order) return null;
 
@@ -185,9 +207,19 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Criado em {order.createdAt}</p>
                                 </div>
                             </div>
-                            <button onClick={onClose} className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full p-2 text-gray-500 dark:text-gray-400 transition-colors focus:outline-none">
-                                <X className="h-5 w-5" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleDuplicateOrder}
+                                    title="Duplicar Pedido"
+                                    className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-brand-50 dark:hover:bg-brand-900/30 hover:text-brand-600 dark:hover:text-brand-400 rounded-lg text-gray-600 dark:text-gray-400 text-sm font-medium transition-colors focus:outline-none"
+                                >
+                                    <Copy className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Duplicar</span>
+                                </button>
+                                <button onClick={onClose} className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full p-2 text-gray-500 dark:text-gray-400 transition-colors focus:outline-none">
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
                         </div>
 
                         <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">

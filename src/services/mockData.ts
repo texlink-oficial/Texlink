@@ -644,3 +644,131 @@ export const MOCK_REPORT_DATA = {
         { name: 'Malhas Express', orders: 12, value: 18000, rating: 4.5 }
     ]
 };
+
+// =============================================================================
+// FAVORITES & TEMPLATES
+// =============================================================================
+
+export const MOCK_PRODUCT_TEMPLATES = [
+    {
+        id: 'template-001',
+        companyId: 'company-brand-001',
+        name: 'Camiseta Básica Algodão',
+        productType: 'Camiseta',
+        productCategory: 'Básico',
+        productName: 'Camiseta Básica',
+        description: 'Camiseta 100% algodão, meia malha, 160g',
+        materialsProvided: false,
+        defaultPrice: 18.50,
+        observations: '',
+        isActive: true,
+        createdAt: formatDate(-30),
+        updatedAt: formatDate(-30),
+    },
+    {
+        id: 'template-002',
+        companyId: 'company-brand-001',
+        name: 'Calça Jeans Skinny',
+        productType: 'Calça Jeans',
+        productCategory: 'Feminino',
+        productName: 'Calça Skinny',
+        description: 'Calça jeans skinny, elastano 2%',
+        materialsProvided: true,
+        defaultPrice: 55.00,
+        observations: 'Lavagem escura padrão',
+        isActive: true,
+        createdAt: formatDate(-20),
+        updatedAt: formatDate(-20),
+    },
+    {
+        id: 'template-003',
+        companyId: 'company-brand-001',
+        name: 'Moletom Canguru',
+        productType: 'Moletom',
+        productCategory: 'Casual',
+        productName: 'Moletom Canguru com Capuz',
+        description: 'Moletom canguru com capuz e bolso frontal, 100% algodão felpado',
+        materialsProvided: true,
+        defaultPrice: 75.00,
+        observations: '',
+        isActive: true,
+        createdAt: formatDate(-10),
+        updatedAt: formatDate(-10),
+    },
+];
+
+export const MOCK_FAVORITE_SUPPLIERS = [
+    {
+        id: 'fav-001',
+        companyId: 'company-brand-001',
+        supplierId: 'supplier-001',
+        notes: 'Excelente qualidade em malhas',
+        priority: 1,
+        createdAt: formatDate(-60),
+        supplier: {
+            id: 'supplier-001',
+            tradeName: 'Confecções Silva',
+            avgRating: 4.8,
+            city: 'São Paulo',
+            state: 'SP',
+            supplierProfile: {
+                productTypes: ['Camisetas', 'Moletons', 'Jaquetas'],
+                monthlyCapacity: 5000,
+            },
+        },
+    },
+    {
+        id: 'fav-002',
+        companyId: 'company-brand-001',
+        supplierId: 'supplier-002',
+        notes: 'Especialista em peças femininas',
+        priority: 2,
+        createdAt: formatDate(-45),
+        supplier: {
+            id: 'supplier-002',
+            tradeName: 'Têxtil Premium',
+            avgRating: 4.9,
+            city: 'Blumenau',
+            state: 'SC',
+            supplierProfile: {
+                productTypes: ['Vestidos', 'Blusas', 'Saias'],
+                monthlyCapacity: 3000,
+            },
+        },
+    },
+];
+
+export const MOCK_PAYMENT_PRESETS = [
+    {
+        id: 'preset-001',
+        companyId: 'company-brand-001',
+        name: 'À Vista',
+        terms: 'Pagamento à vista na entrega',
+        isDefault: true,
+        createdAt: formatDate(-90),
+    },
+    {
+        id: 'preset-002',
+        companyId: 'company-brand-001',
+        name: 'Parcelado 30/60',
+        terms: '50% em 30 dias, 50% em 60 dias',
+        isDefault: false,
+        createdAt: formatDate(-90),
+    },
+    {
+        id: 'preset-003',
+        companyId: 'company-brand-001',
+        name: 'Parcelado 30/60/90',
+        terms: '33% em 30 dias, 33% em 60 dias, 34% em 90 dias',
+        isDefault: false,
+        createdAt: formatDate(-90),
+    },
+    {
+        id: 'preset-004',
+        companyId: 'company-brand-001',
+        name: 'Entrada + Entrega',
+        terms: '50% de entrada na aprovação, 50% na entrega',
+        isDefault: false,
+        createdAt: formatDate(-90),
+    },
+];

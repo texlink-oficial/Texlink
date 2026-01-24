@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { ordersService, suppliersService, uploadService } from '../../services';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
+import { ordersService, suppliersService, uploadService, favoritesService } from '../../services';
+import { ProductTemplate } from '../../services/favorites.service';
 import {
     ArrowLeft, Package, DollarSign, Calendar,
-    Send, Loader2, Factory, FileText, Upload, X, Image, CheckCircle, AlertCircle, Star, Film
+    Send, Loader2, Factory, FileText, Upload, X, Image, CheckCircle, AlertCircle, Star, Film, Copy, Info, Bookmark
 } from 'lucide-react';
+import { ProductTemplateSelector, PaymentTermsSelector, FavoriteSupplierBadge, SaveAsTemplateModal } from '../../components/favorites';
 
 interface SupplierOption {
     id: string;
@@ -16,8 +18,20 @@ interface SupplierOption {
     };
 }
 
+interface DuplicateOrderData {
+    productType?: string;
+    productCategory?: string;
+    productName?: string;
+    description?: string;
+    pricePerUnit?: number;
+    paymentTerms?: string;
+    materialsProvided?: boolean;
+    observations?: string;
+}
+
 const CreateOrderPage: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
     const preselectedSupplierId = searchParams.get('supplierId');
     const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +41,13 @@ const CreateOrderPage: React.FC = () => {
     const [techSheetFiles, setTechSheetFiles] = useState<File[]>([]);
     const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isDuplicate, setIsDuplicate] = useState(false);
+    const [favoriteSupplierIds, setFavoriteSupplierIds] = useState<string[]>([]);
+    const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+    const [orderCreated, setOrderCreated] = useState(false);
+
+    // Check for duplicate order data from navigation state
+    const duplicateFrom = (location.state as { duplicateFrom?: DuplicateOrderData })?.duplicateFrom;
 
     const [formData, setFormData] = useState({
         productType: '',
@@ -44,9 +65,39 @@ const CreateOrderPage: React.FC = () => {
         targetSupplierIds: [] as string[],
     });
 
+    // Pre-fill form when duplicating an order
+    useEffect(() => {
+        if (duplicateFrom) {
+            setFormData(prev => ({
+                ...prev,
+                productType: duplicateFrom.productType || '',
+                productCategory: duplicateFrom.productCategory || '',
+                productName: duplicateFrom.productName || '',
+                description: duplicateFrom.description || '',
+                pricePerUnit: duplicateFrom.pricePerUnit?.toString() || '',
+                paymentTerms: duplicateFrom.paymentTerms || '',
+                materialsProvided: duplicateFrom.materialsProvided || false,
+                observations: duplicateFrom.observations || '',
+            }));
+            setIsDuplicate(true);
+            // Clear the location state to prevent re-applying on refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [duplicateFrom]);
+
     useEffect(() => {
         loadSuppliers();
+        loadFavoriteSuppliers();
     }, []);
+
+    const loadFavoriteSuppliers = async () => {
+        try {
+            const ids = await favoritesService.getFavoriteSupplierIds();
+            setFavoriteSupplierIds(ids);
+        } catch (error) {
+            console.error('Error loading favorite suppliers:', error);
+        }
+    };
 
     const loadSuppliers = async () => {
         try {
@@ -104,7 +155,8 @@ const CreateOrderPage: React.FC = () => {
                 }
             }
 
-            navigate('/brand/pedidos');
+            // Show success and option to save as template
+            setOrderCreated(true);
         } catch (error) {
             console.error('Error creating order:', error);
         } finally {
@@ -157,6 +209,30 @@ const CreateOrderPage: React.FC = () => {
 
     const totalValue = (Number(formData.quantity) || 0) * (Number(formData.pricePerUnit) || 0);
 
+    // Sort suppliers: favorites first, then by rating
+    const sortedSuppliers = useMemo(() => {
+        const favorites = suppliers.filter(s => favoriteSupplierIds.includes(s.id));
+        const others = suppliers.filter(s => !favoriteSupplierIds.includes(s.id));
+        return [...favorites, ...others];
+    }, [suppliers, favoriteSupplierIds]);
+
+    const handleTemplateSelect = (template: ProductTemplate) => {
+        setFormData(prev => ({
+            ...prev,
+            productType: template.productType,
+            productCategory: template.productCategory || '',
+            productName: template.productName,
+            description: template.description || '',
+            materialsProvided: template.materialsProvided,
+            pricePerUnit: template.defaultPrice?.toString() || '',
+            observations: template.observations || '',
+        }));
+    };
+
+    const handlePaymentTermsChange = (terms: string) => {
+        setFormData(prev => ({ ...prev, paymentTerms: terms }));
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300">
             {/* Header */}
@@ -175,8 +251,29 @@ const CreateOrderPage: React.FC = () => {
             </header>
 
             <form onSubmit={handleSubmit} className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                {/* Duplicate Order Banner */}
+                {isDuplicate && (
+                    <div className="bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-xl p-4 flex items-start gap-3">
+                        <div className="p-2 bg-brand-100 dark:bg-brand-900/40 rounded-lg">
+                            <Copy className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-brand-900 dark:text-brand-100">Pedido Duplicado</h3>
+                            <p className="text-sm text-brand-700 dark:text-brand-300 mt-0.5">
+                                Dados do produto foram copiados. Ajuste a quantidade e prazo de entrega para o novo pedido.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Product Info */}
                 <Section title="Informações do Produto" description="Defina as características principais do item" icon={<Package className="w-5 h-5 text-brand-600 dark:text-brand-500" />}>
+                    {/* Template Selector */}
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Preencha manualmente ou use um template salvo</span>
+                        <ProductTemplateSelector onSelect={handleTemplateSelect} />
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input
                             label="Tipo de Produto *"
@@ -327,12 +424,9 @@ const CreateOrderPage: React.FC = () => {
                             onChange={handleChange}
                             required
                         />
-                        <Input
-                            label="Condições de Pagamento"
-                            name="paymentTerms"
+                        <PaymentTermsSelector
                             value={formData.paymentTerms}
-                            onChange={handleChange}
-                            placeholder="Ex: 50% entrada, 50% entrega"
+                            onChange={handlePaymentTermsChange}
                         />
                     </div>
                     <label className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-xl border border-gray-200 dark:border-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900/50 transition-colors">
@@ -394,48 +488,70 @@ const CreateOrderPage: React.FC = () => {
                         </div>
                     ) : (
                         <div className="max-h-96 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-                            {suppliers.map((supplier) => {
+                            {sortedSuppliers.map((supplier, index) => {
                                 const isSelected = (formData.assignmentType === 'DIRECT' && formData.supplierId === supplier.id) ||
                                     (formData.assignmentType === 'BIDDING' && formData.targetSupplierIds.includes(supplier.id));
+                                const isFavorite = favoriteSupplierIds.includes(supplier.id);
 
                                 return (
-                                    <div
-                                        key={supplier.id}
-                                        onClick={() => {
-                                            if (formData.assignmentType === 'DIRECT') {
-                                                setFormData(prev => ({ ...prev, supplierId: supplier.id }));
-                                            } else {
-                                                handleSupplierToggle(supplier.id);
-                                            }
-                                        }}
-                                        className={`flex items-center p-4 rounded-xl border cursor-pointer transition-all group ${isSelected
-                                            ? 'bg-brand-50 dark:bg-brand-500/10 border-brand-500/50'
-                                            : 'bg-white dark:bg-gray-900/30 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                                            }`}
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mr-4 border border-gray-200 dark:border-gray-700">
-                                            <Factory className={`w-5 h-5 ${isSelected ? 'text-brand-600 dark:text-brand-400' : 'text-gray-500'}`} />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className={`font-medium ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>{supplier.tradeName}</p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <div className="flex items-center text-xs text-yellow-600 dark:text-yellow-500 bg-yellow-100 dark:bg-yellow-500/10 px-1.5 py-0.5 rounded">
-                                                    <Star className="w-3 h-3 fill-current mr-1" />
-                                                    {supplier.avgRating ? Number(supplier.avgRating).toFixed(1) : 'N/A'}
+                                    <React.Fragment key={supplier.id}>
+                                        {/* Separator between favorites and others */}
+                                        {index > 0 && isFavorite === false && favoriteSupplierIds.includes(sortedSuppliers[index - 1].id) && (
+                                            <div className="flex items-center gap-2 py-2">
+                                                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                                                <span className="text-xs text-gray-400 dark:text-gray-500 px-2">Outros fornecedores</span>
+                                                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                                            </div>
+                                        )}
+                                        <div
+                                            onClick={() => {
+                                                if (formData.assignmentType === 'DIRECT') {
+                                                    setFormData(prev => ({ ...prev, supplierId: supplier.id }));
+                                                } else {
+                                                    handleSupplierToggle(supplier.id);
+                                                }
+                                            }}
+                                            className={`flex items-center p-4 rounded-xl border cursor-pointer transition-all group ${isSelected
+                                                ? 'bg-brand-50 dark:bg-brand-500/10 border-brand-500/50'
+                                                : 'bg-white dark:bg-gray-900/30 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                                }`}
+                                        >
+                                            <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mr-4 border border-gray-200 dark:border-gray-700 relative">
+                                                <Factory className={`w-5 h-5 ${isSelected ? 'text-brand-600 dark:text-brand-400' : 'text-gray-500'}`} />
+                                                {isFavorite && (
+                                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
+                                                        <Star className="w-2.5 h-2.5 text-white fill-current" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <p className={`font-medium ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>{supplier.tradeName}</p>
+                                                    {isFavorite && (
+                                                        <span className="text-[10px] font-semibold text-yellow-700 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 px-1.5 py-0.5 rounded">
+                                                            Favorito
+                                                        </span>
+                                                    )}
                                                 </div>
-                                                <span className="text-xs text-gray-400 dark:text-gray-500">•</span>
-                                                <p className="text-xs text-gray-500 truncate max-w-[200px]">
-                                                    {supplier.supplierProfile?.productTypes?.join(', ') || 'Diversos'}
-                                                </p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <div className="flex items-center text-xs text-yellow-600 dark:text-yellow-500 bg-yellow-100 dark:bg-yellow-500/10 px-1.5 py-0.5 rounded">
+                                                        <Star className="w-3 h-3 fill-current mr-1" />
+                                                        {supplier.avgRating ? Number(supplier.avgRating).toFixed(1) : 'N/A'}
+                                                    </div>
+                                                    <span className="text-xs text-gray-400 dark:text-gray-500">•</span>
+                                                    <p className="text-xs text-gray-500 truncate max-w-[200px]">
+                                                        {supplier.supplierProfile?.productTypes?.join(', ') || 'Diversos'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected
+                                                ? 'bg-brand-600 dark:bg-brand-500 border-brand-600 dark:border-brand-500'
+                                                : 'border-gray-300 dark:border-gray-600 group-hover:border-gray-400 dark:group-hover:border-gray-500'
+                                                }`}>
+                                                {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
                                             </div>
                                         </div>
-                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected
-                                            ? 'bg-brand-600 dark:bg-brand-500 border-brand-600 dark:border-brand-500'
-                                            : 'border-gray-300 dark:border-gray-600 group-hover:border-gray-400 dark:group-hover:border-gray-500'
-                                            }`}>
-                                            {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
-                                        </div>
-                                    </div>
+                                    </React.Fragment>
                                 );
                             })}
                         </div>
@@ -469,6 +585,60 @@ const CreateOrderPage: React.FC = () => {
                     </button>
                 </div>
             </form>
+
+            {/* Order Created Success Modal */}
+            {orderCreated && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                    <div className="relative bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                            <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                            Pedido Criado!
+                        </h3>
+                        <p className="text-gray-500 dark:text-gray-400 mb-6">
+                            Seu pedido foi enviado com sucesso.
+                        </p>
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => setShowSaveTemplateModal(true)}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-xl transition-colors"
+                            >
+                                <Bookmark className="w-4 h-4" />
+                                Salvar como Template
+                            </button>
+                            <button
+                                onClick={() => navigate('/brand/pedidos')}
+                                className="w-full px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-sm transition-colors"
+                            >
+                                Ver Meus Pedidos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Save as Template Modal */}
+            <SaveAsTemplateModal
+                isOpen={showSaveTemplateModal}
+                onClose={() => {
+                    setShowSaveTemplateModal(false);
+                    navigate('/brand/pedidos');
+                }}
+                orderData={{
+                    productType: formData.productType,
+                    productCategory: formData.productCategory,
+                    productName: formData.productName,
+                    description: formData.description,
+                    materialsProvided: formData.materialsProvided,
+                    pricePerUnit: Number(formData.pricePerUnit) || undefined,
+                    observations: formData.observations,
+                }}
+                onSaved={() => {
+                    // Template saved, will auto-navigate
+                }}
+            />
         </div>
     );
 };

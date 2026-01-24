@@ -35,6 +35,7 @@ const BrandMessages = React.lazy(() => import('./pages/brand/MessagesPage'));
 const BrandPayments = React.lazy(() => import('./pages/brand/PaymentsPage'));
 const BrandPaymentHistory = React.lazy(() => import('./pages/brand/PaymentHistoryPage'));
 const BrandReports = React.lazy(() => import('./pages/brand/ReportsPage'));
+const BrandFavorites = React.lazy(() => import('./pages/brand/FavoritesPage'));
 
 // Admin pages
 const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
@@ -145,6 +146,8 @@ const App: React.FC = () => {
                                 <Route path="financeiro/historico" element={<BrandPaymentHistory />} />
                                 {/* Relatórios */}
                                 <Route path="relatorios" element={<BrandReports />} />
+                                {/* Favoritos */}
+                                <Route path="favoritos" element={<BrandFavorites />} />
                                 {/* Configurações */}
                                 <Route path="equipe" element={<TeamPage />} />
                             </Route>

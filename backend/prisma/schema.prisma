@@ -204,6 +204,12 @@ model Company {
   ratingsReceived  Rating[]             @relation("RatingsReceived")
   invitations      Invitation[]
 
+  // Favorites & Templates (for BRAND)
+  productTemplates    ProductTemplate[]
+  favoriteSuppliers   FavoriteSupplier[] @relation("BrandFavorites")
+  favoritedBy         FavoriteSupplier[] @relation("FavoritedBy")
+  paymentTermsPresets PaymentTermsPreset[]
+
   @@map("companies")
 }
 
@@ -434,10 +440,10 @@ model Message {
   senderId     String
   type         MessageType  @default(TEXT)
   content      String?
-  
+
   // For proposals
   proposalData Json?        // { originalValues, newValues, status }
-  
+
   read         Boolean      @default(false)
   createdAt    DateTime     @default(now())
 
@@ -445,4 +451,57 @@ model Message {
   sender User  @relation(fields: [senderId], references: [id])
 
   @@map("messages")
+}
+
+// ==================== FAVORITES & TEMPLATES ====================
+
+// Product template for reuse when creating orders
+model ProductTemplate {
+  id                String   @id @default(uuid())
+  companyId         String
+  name              String   // Template name (e.g., "Camiseta Básica Padrão")
+  productType       String
+  productCategory   String?
+  productName       String
+  description       String?
+  materialsProvided Boolean  @default(false)
+  defaultPrice      Decimal? @db.Decimal(10, 2)
+  observations      String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("product_templates")
+}
+
+// Favorite supplier for brands
+model FavoriteSupplier {
+  id         String   @id @default(uuid())
+  companyId  String   // Brand
+  supplierId String   // Supplier (Facção)
+  notes      String?  // Personal notes
+  priority   Int      @default(0) // Preference order
+  createdAt  DateTime @default(now())
+
+  company  Company @relation("BrandFavorites", fields: [companyId], references: [id], onDelete: Cascade)
+  supplier Company @relation("FavoritedBy", fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, supplierId])
+  @@map("favorite_suppliers")
+}
+
+// Payment terms presets
+model PaymentTermsPreset {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String   // Preset name (e.g., "Parcelado 30/60/90")
+  terms       String   // Payment terms text
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("payment_terms_presets")
 }

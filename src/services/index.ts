@@ -10,3 +10,4 @@ export * from './upload.service';
 export * from './payments.service';
 export * from './portal.service';
 export * from './deposits.service';
+export * from './favorites.service';
