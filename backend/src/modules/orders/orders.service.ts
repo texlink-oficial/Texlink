@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateOrderDto, UpdateOrderStatusDto } from './dto';
-import { OrderStatus, OrderAssignmentType, CompanyType, OrderTargetStatus } from '@prisma/client';
+import { CreateOrderDto, UpdateOrderStatusDto, CreateReviewDto, CreateChildOrderDto } from './dto';
+import { OrderStatus, OrderAssignmentType, CompanyType, OrderTargetStatus, ReviewResult, OrderOrigin } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
@@ -13,6 +13,11 @@ export class OrdersService {
         const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
         const random = Math.random().toString(36).substring(2, 6).toUpperCase();
         return `TX-${dateStr}-${random}`;
+    }
+
+    // Generate child display ID: TX-YYYYMMDD-XXXX-R1, R2, etc.
+    private generateChildDisplayId(parentDisplayId: string, revisionNumber: number): string {
+        return `${parentDisplayId}-R${revisionNumber}`;
     }
 
     // Create order (Brand only)
@@ -76,6 +81,18 @@ export class OrdersService {
                     })),
                 },
             };
+        } else if (dto.assignmentType === OrderAssignmentType.HYBRID) {
+            // HYBRID: Can have target suppliers (invited) AND is open to others
+            if (dto.targetSupplierIds?.length) {
+                orderData.targetSuppliers = {
+                    createMany: {
+                        data: dto.targetSupplierIds.map((supplierId) => ({
+                            supplierId,
+                            status: OrderTargetStatus.PENDING,
+                        })),
+                    },
+                };
+            }
         }
 
         return this.prisma.order.create({
@@ -104,7 +121,18 @@ export class OrdersService {
 
         const whereClause: any = role === 'BRAND'
             ? { brandId: companyUser.companyId }
-            : { supplierId: companyUser.companyId };
+            : {
+                OR: [
+                    { supplierId: companyUser.companyId },
+                    { targetSuppliers: { some: { supplierId: companyUser.companyId } } },
+                    {
+                        assignmentType: 'HYBRID',
+                        status: 'LANCADO_PELA_MARCA', // Only show open hybrid orders if they are in initial status
+                        // Don't show if already assigned (checked by supplierId clause)
+                        supplierId: null
+                    }
+                ]
+            };
 
         if (status) {
             whereClause.status = status;
@@ -116,6 +144,10 @@ export class OrdersService {
                 brand: { select: { id: true, tradeName: true, avgRating: true } },
                 supplier: { select: { id: true, tradeName: true, avgRating: true } },
                 attachments: true,
+                targetSuppliers: {
+                    where: { supplierId: companyUser.companyId },
+                    select: { status: true }
+                },
                 _count: { select: { messages: true } },
             },
             orderBy: { createdAt: 'desc' },
@@ -357,9 +389,383 @@ export class OrdersService {
             include: {
                 brand: { select: { id: true, tradeName: true } },
                 supplier: { select: { id: true, tradeName: true } },
-                _count: { select: { messages: true, attachments: true } },
+                parentOrder: { select: { id: true, displayId: true } },
+                _count: { select: { messages: true, attachments: true, childOrders: true } },
             },
             orderBy: { createdAt: 'desc' },
         });
+    }
+
+    // ==================== ORDER REVIEW METHODS ====================
+
+    // Create a new review for an order
+    async createReview(orderId: string, userId: string, dto: CreateReviewDto) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+        });
+
+        if (!order) {
+            throw new NotFoundException('Order not found');
+        }
+
+        // Validate quantities
+        const totalItems = dto.approvedQuantity + dto.rejectedQuantity + (dto.secondQualityQuantity || 0);
+        if (totalItems !== dto.totalQuantity) {
+            throw new BadRequestException('Sum of approved, rejected and second quality must equal total quantity');
+        }
+
+        // Determine review result
+        let result: ReviewResult;
+        if (dto.rejectedQuantity === 0 && (dto.secondQualityQuantity || 0) === 0) {
+            result = ReviewResult.APPROVED;
+        } else if (dto.approvedQuantity === 0) {
+            result = ReviewResult.REJECTED;
+        } else {
+            result = ReviewResult.PARTIAL;
+        }
+
+        // Create the review
+        const review = await this.prisma.orderReview.create({
+            data: {
+                orderId,
+                type: dto.type,
+                result,
+                totalQuantity: dto.totalQuantity,
+                approvedQuantity: dto.approvedQuantity,
+                rejectedQuantity: dto.rejectedQuantity,
+                secondQualityQuantity: dto.secondQualityQuantity || 0,
+                notes: dto.notes,
+                reviewedById: userId,
+                rejectedItems: dto.rejectedItems?.length ? {
+                    createMany: {
+                        data: dto.rejectedItems.map(item => ({
+                            reason: item.reason,
+                            quantity: item.quantity,
+                            defectDescription: item.defectDescription,
+                            requiresRework: item.requiresRework ?? true,
+                        })),
+                    },
+                } : undefined,
+            },
+            include: {
+                rejectedItems: true,
+                reviewedBy: { select: { id: true, name: true } },
+            },
+        });
+
+        // Create second quality items if any
+        if (dto.secondQualityItems?.length) {
+            await this.prisma.secondQualityItem.createMany({
+                data: dto.secondQualityItems.map(item => ({
+                    orderId,
+                    reviewId: review.id,
+                    quantity: item.quantity,
+                    defectType: item.defectType,
+                    defectDescription: item.defectDescription,
+                    originalUnitValue: order.pricePerUnit,
+                    discountPercentage: item.discountPercentage || 0,
+                })),
+            });
+        }
+
+        // Update order status based on result
+        let newStatus: OrderStatus;
+        switch (result) {
+            case ReviewResult.APPROVED:
+                newStatus = OrderStatus.FINALIZADO;
+                break;
+            case ReviewResult.PARTIAL:
+                newStatus = OrderStatus.PARCIALMENTE_APROVADO;
+                break;
+            case ReviewResult.REJECTED:
+                newStatus = OrderStatus.REPROVADO;
+                break;
+        }
+
+        // Update order with new status and review metrics
+        await this.prisma.order.update({
+            where: { id: orderId },
+            data: {
+                status: newStatus,
+                totalReviewCount: { increment: 1 },
+                approvalCount: dto.approvedQuantity > 0 ? { increment: 1 } : undefined,
+                rejectionCount: dto.rejectedQuantity > 0 ? { increment: 1 } : undefined,
+                secondQualityCount: { increment: dto.secondQualityQuantity || 0 },
+                statusHistory: {
+                    create: {
+                        previousStatus: order.status,
+                        newStatus,
+                        changedById: userId,
+                        notes: `Review completed: ${result}`,
+                    },
+                },
+            },
+        });
+
+        return review;
+    }
+
+    // Get all reviews for an order
+    async getOrderReviews(orderId: string) {
+        const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+        if (!order) {
+            throw new NotFoundException('Order not found');
+        }
+
+        return this.prisma.orderReview.findMany({
+            where: { orderId },
+            include: {
+                rejectedItems: true,
+                reviewedBy: { select: { id: true, name: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    // Create child order for rework
+    async createChildOrder(parentOrderId: string, userId: string, dto: CreateChildOrderDto) {
+        const parentOrder = await this.prisma.order.findUnique({
+            where: { id: parentOrderId },
+            include: {
+                childOrders: { select: { revisionNumber: true } },
+            },
+        });
+
+        if (!parentOrder) {
+            throw new NotFoundException('Parent order not found');
+        }
+
+        // Calculate next revision number
+        const maxRevision = parentOrder.childOrders.reduce(
+            (max, child) => Math.max(max, child.revisionNumber),
+            parentOrder.revisionNumber
+        );
+        const nextRevision = maxRevision + 1;
+
+        // Generate child display ID
+        const baseDisplayId = parentOrder.displayId.split('-R')[0]; // Remove any existing -R suffix
+        const childDisplayId = this.generateChildDisplayId(baseDisplayId, nextRevision);
+
+        // Calculate values
+        const totalValue = dto.quantity * Number(parentOrder.pricePerUnit);
+        const deadline = dto.deliveryDeadline
+            ? new Date(dto.deliveryDeadline)
+            : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // Default: 14 days
+
+        // Create child order
+        const childOrder = await this.prisma.order.create({
+            data: {
+                displayId: childDisplayId,
+                brandId: parentOrder.brandId,
+                supplierId: parentOrder.supplierId,
+                status: OrderStatus.AGUARDANDO_RETRABALHO,
+                assignmentType: parentOrder.assignmentType,
+                parentOrderId: parentOrderId,
+                revisionNumber: nextRevision,
+                origin: OrderOrigin.REWORK,
+                productType: parentOrder.productType,
+                productCategory: parentOrder.productCategory,
+                productName: parentOrder.productName,
+                description: dto.description || `Retrabalho do pedido ${parentOrder.displayId}`,
+                quantity: dto.quantity,
+                pricePerUnit: 0, // Rework is at no additional cost to the brand
+                totalValue: 0,
+                deliveryDeadline: deadline,
+                paymentTerms: 'Sem custo adicional - Retrabalho',
+                materialsProvided: parentOrder.materialsProvided,
+                observations: dto.observations,
+                statusHistory: {
+                    create: {
+                        newStatus: OrderStatus.AGUARDANDO_RETRABALHO,
+                        changedById: userId,
+                        notes: `Child order created for rework of ${parentOrder.displayId}`,
+                    },
+                },
+            },
+            include: {
+                brand: { select: { id: true, tradeName: true } },
+                supplier: { select: { id: true, tradeName: true } },
+                parentOrder: { select: { id: true, displayId: true } },
+            },
+        });
+
+        // Update parent order status
+        await this.prisma.order.update({
+            where: { id: parentOrderId },
+            data: {
+                status: OrderStatus.AGUARDANDO_RETRABALHO,
+                statusHistory: {
+                    create: {
+                        previousStatus: parentOrder.status,
+                        newStatus: OrderStatus.AGUARDANDO_RETRABALHO,
+                        changedById: userId,
+                        notes: `Child order ${childDisplayId} created for rework`,
+                    },
+                },
+            },
+        });
+
+        return childOrder;
+    }
+
+    // Get order hierarchy (parent + all children)
+    async getOrderHierarchy(orderId: string, userId: string) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                brand: { select: { id: true, tradeName: true } },
+                supplier: { select: { id: true, tradeName: true } },
+                parentOrder: {
+                    select: {
+                        id: true,
+                        displayId: true,
+                        status: true,
+                        quantity: true,
+                        revisionNumber: true,
+                    },
+                },
+                childOrders: {
+                    select: {
+                        id: true,
+                        displayId: true,
+                        status: true,
+                        quantity: true,
+                        revisionNumber: true,
+                        origin: true,
+                        createdAt: true,
+                    },
+                    orderBy: { revisionNumber: 'asc' },
+                },
+                reviews: {
+                    include: {
+                        rejectedItems: true,
+                        reviewedBy: { select: { id: true, name: true } },
+                    },
+                    orderBy: { createdAt: 'desc' },
+                },
+                secondQualityItems: true,
+            },
+        });
+
+        if (!order) {
+            throw new NotFoundException('Order not found');
+        }
+
+        // If this is a child order, get the root parent
+        let rootOrder = order;
+        if (order.parentOrder) {
+            rootOrder = await this.prisma.order.findUnique({
+                where: { id: order.parentOrder.id },
+                include: {
+                    childOrders: {
+                        select: {
+                            id: true,
+                            displayId: true,
+                            status: true,
+                            quantity: true,
+                            revisionNumber: true,
+                            origin: true,
+                            createdAt: true,
+                        },
+                        orderBy: { revisionNumber: 'asc' },
+                    },
+                },
+            }) || order;
+        }
+
+        return {
+            currentOrder: order,
+            rootOrder: rootOrder.id !== order.id ? rootOrder : null,
+            hierarchy: {
+                parent: order.parentOrder,
+                children: order.childOrders,
+            },
+        };
+    }
+
+    // Add second quality items to an order
+    async addSecondQualityItems(orderId: string, userId: string, items: { quantity: number; defectType: string; defectDescription?: string; discountPercentage?: number }[]) {
+        const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+        if (!order) {
+            throw new NotFoundException('Order not found');
+        }
+
+        const createdItems = await this.prisma.secondQualityItem.createMany({
+            data: items.map(item => ({
+                orderId,
+                quantity: item.quantity,
+                defectType: item.defectType,
+                defectDescription: item.defectDescription,
+                originalUnitValue: order.pricePerUnit,
+                discountPercentage: item.discountPercentage || 0,
+            })),
+        });
+
+        // Update order second quality count
+        const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
+        await this.prisma.order.update({
+            where: { id: orderId },
+            data: { secondQualityCount: { increment: totalQty } },
+        });
+
+        return createdItems;
+    }
+
+    // Get second quality items for an order
+    async getSecondQualityItems(orderId: string) {
+        return this.prisma.secondQualityItem.findMany({
+            where: { orderId },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    // Get review statistics for reporting
+    async getReviewStats(companyId?: string) {
+        const whereClause = companyId ? { brandId: companyId } : {};
+
+        const orders = await this.prisma.order.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                status: true,
+                totalReviewCount: true,
+                approvalCount: true,
+                rejectionCount: true,
+                secondQualityCount: true,
+                quantity: true,
+                reviews: {
+                    select: {
+                        result: true,
+                        approvedQuantity: true,
+                        rejectedQuantity: true,
+                        secondQualityQuantity: true,
+                    },
+                },
+                childOrders: { select: { id: true } },
+            },
+        });
+
+        const totalOrders = orders.length;
+        const ordersWithReviews = orders.filter(o => o.totalReviewCount > 0).length;
+        const ordersWithRework = orders.filter(o => o.childOrders.length > 0).length;
+        const totalSecondQuality = orders.reduce((sum, o) => sum + o.secondQualityCount, 0);
+
+        // Calculate approval rate
+        const reviewedOrders = orders.filter(o => o.reviews.length > 0);
+        const approvedFirstTime = reviewedOrders.filter(o =>
+            o.reviews.length === 1 && o.reviews[0].result === 'APPROVED'
+        ).length;
+        const firstTimeApprovalRate = reviewedOrders.length > 0
+            ? (approvedFirstTime / reviewedOrders.length) * 100
+            : 0;
+
+        return {
+            totalOrders,
+            ordersWithReviews,
+            ordersWithRework,
+            totalSecondQuality,
+            firstTimeApprovalRate: Math.round(firstTimeApprovalRate * 10) / 10,
+            reworkRate: totalOrders > 0 ? Math.round((ordersWithRework / totalOrders) * 1000) / 10 : 0,
+        };
     }
 }

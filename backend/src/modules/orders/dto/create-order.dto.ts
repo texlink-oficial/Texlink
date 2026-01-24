@@ -37,7 +37,8 @@ export class CreateOrderDto {
     @IsOptional()
     observations?: string;
 
-    // Assignment type: DIRECT or BIDDING
+    // Assignment type: DIRECT, BIDDING or HYBRID
+
     @IsEnum(OrderAssignmentType)
     assignmentType: OrderAssignmentType;
 
@@ -46,7 +47,8 @@ export class CreateOrderDto {
     @IsOptional()
     supplierId?: string;
 
-    // For BIDDING: multiple supplier IDs
+    // For BIDDING/HYBRID: multiple supplier IDs (optional for HYBRID)
+
     @IsArray()
     @IsUUID('4', { each: true })
     @IsOptional()

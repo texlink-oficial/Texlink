@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { CreateOrderDto, UpdateOrderStatusDto } from './dto';
+import { CreateOrderDto, UpdateOrderStatusDto, CreateReviewDto, CreateChildOrderDto, SecondQualityItemDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -93,5 +93,66 @@ export class OrdersController {
     @Roles(UserRole.ADMIN)
     async getAllOrders(@Query('status') status?: OrderStatus) {
         return this.ordersService.getAllOrders(status);
+    }
+
+    // ========== ORDER REVIEW ENDPOINTS ==========
+
+    // Create a review for an order
+    @Post(':id/reviews')
+    async createReview(
+        @Param('id') orderId: string,
+        @CurrentUser('id') userId: string,
+        @Body() dto: CreateReviewDto,
+    ) {
+        return this.ordersService.createReview(orderId, userId, dto);
+    }
+
+    // Get all reviews for an order
+    @Get(':id/reviews')
+    async getOrderReviews(@Param('id') orderId: string) {
+        return this.ordersService.getOrderReviews(orderId);
+    }
+
+    // Create child order for rework
+    @Post(':id/child-orders')
+    async createChildOrder(
+        @Param('id') parentOrderId: string,
+        @CurrentUser('id') userId: string,
+        @Body() dto: CreateChildOrderDto,
+    ) {
+        return this.ordersService.createChildOrder(parentOrderId, userId, dto);
+    }
+
+    // Get order hierarchy (parent + children)
+    @Get(':id/hierarchy')
+    async getOrderHierarchy(
+        @Param('id') orderId: string,
+        @CurrentUser('id') userId: string,
+    ) {
+        return this.ordersService.getOrderHierarchy(orderId, userId);
+    }
+
+    // Add second quality items
+    @Post(':id/second-quality')
+    async addSecondQualityItems(
+        @Param('id') orderId: string,
+        @CurrentUser('id') userId: string,
+        @Body() items: SecondQualityItemDto[],
+    ) {
+        return this.ordersService.addSecondQualityItems(orderId, userId, items);
+    }
+
+    // Get second quality items
+    @Get(':id/second-quality')
+    async getSecondQualityItems(@Param('id') orderId: string) {
+        return this.ordersService.getSecondQualityItems(orderId);
+    }
+
+    // Get review statistics
+    @Get('stats/reviews')
+    @UseGuards(RolesGuard)
+    @Roles(UserRole.ADMIN, UserRole.BRAND)
+    async getReviewStats(@Query('companyId') companyId?: string) {
+        return this.ordersService.getReviewStats(companyId);
     }
 }
