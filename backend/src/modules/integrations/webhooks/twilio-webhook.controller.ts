@@ -6,9 +6,12 @@ import {
     Logger,
     HttpCode,
     HttpStatus,
+    Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { TwilioSignatureService } from './twilio-signature.service';
 
 interface TwilioWebhookEvent {
     MessageSid: string;
@@ -28,17 +31,28 @@ export class TwilioWebhookController {
     private readonly logger = new Logger(TwilioWebhookController.name);
     private readonly processedEvents = new Set<string>();
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly signatureService: TwilioSignatureService,
+    ) {}
 
     @Post()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Webhook do Twilio WhatsApp' })
     @ApiResponse({ status: 200, description: 'Evento processado' })
+    @ApiResponse({ status: 401, description: 'Assinatura inválida' })
     async handleWebhook(
+        @Req() req: Request,
         @Body() event: TwilioWebhookEvent,
         @Headers('x-twilio-signature') signature?: string,
     ) {
         try {
+            // Valida a assinatura do webhook
+            if (signature) {
+                const url = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+                this.signatureService.validateSignature(url, event, signature);
+            }
+
             await this.processEvent(event);
             return { success: true };
         } catch (error) {

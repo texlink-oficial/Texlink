@@ -6,10 +6,14 @@ import {
     Logger,
     HttpCode,
     HttpStatus,
+    Req,
 } from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common';
+import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { SupplierCredentialStatus } from '@prisma/client';
+import { SendGridSignatureService } from './sendgrid-signature.service';
 
 interface SendGridEvent {
     email: string;
@@ -28,17 +32,39 @@ export class SendGridWebhookController {
     private readonly logger = new Logger(SendGridWebhookController.name);
     private readonly processedEvents = new Set<string>();
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly signatureService: SendGridSignatureService,
+    ) {}
 
     @Post()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Webhook do SendGrid' })
     @ApiResponse({ status: 200, description: 'Eventos processados' })
+    @ApiResponse({ status: 401, description: 'Assinatura inválida' })
     async handleWebhook(
+        @Req() req: RawBodyRequest<Request>,
         @Body() events: SendGridEvent[],
-        @Headers('x-twilio-email-event-webhook-signature') signature?: string,
+        @Headers('x-twilio-email-event-webhook-signature')
+        signatureHeader?: string,
+        @Headers('x-twilio-email-event-webhook-timestamp')
+        timestamp?: string,
     ) {
         this.logger.log(`Recebidos ${events.length} eventos do SendGrid`);
+
+        // Valida a assinatura do webhook
+        if (signatureHeader && timestamp) {
+            const rawBody = req.rawBody?.toString() || JSON.stringify(events);
+            const signature =
+                this.signatureService.extractSignature(signatureHeader);
+            const ts =
+                this.signatureService.extractTimestamp(signatureHeader) ||
+                timestamp;
+
+            if (signature && ts) {
+                this.signatureService.validateSignature(rawBody, signature, ts);
+            }
+        }
 
         const results = await Promise.allSettled(
             events.map((event) => this.processEvent(event)),
