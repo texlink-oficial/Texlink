@@ -12,3 +12,4 @@ export * from './portal.service';
 export * from './deposits.service';
 export * from './favorites.service';
 export * from './credentials.service';
+export * from './credentialSettingsService';
