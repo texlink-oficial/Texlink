@@ -33,6 +33,8 @@ import {
     CredentialFiltersDto,
     SendInvitationDto,
     BulkSendInvitationDto,
+    ApproveComplianceDto,
+    RejectComplianceDto,
 } from './dto';
 import { SupplierCredentialStatus } from '@prisma/client';
 
@@ -169,6 +171,55 @@ export class CredentialsController {
         const credential = await this.credentialsService.findOne(id, companyId);
 
         return this.complianceService.analyzeCredit(credential.cnpj, id);
+    }
+
+    @Patch(':id/compliance/approve')
+    @ApiOperation({ summary: 'Aprovar compliance manualmente' })
+    @ApiParam({ name: 'id', description: 'ID do credenciamento' })
+    @ApiResponse({ status: 200, description: 'Compliance aprovado' })
+    @ApiResponse({ status: 400, description: 'Status não permite aprovação ou não requer revisão manual' })
+    @ApiResponse({ status: 404, description: 'Credenciamento ou análise não encontrado' })
+    async approveCompliance(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: ApproveComplianceDto,
+        @CurrentUser() user: AuthUser,
+    ) {
+        return this.complianceService.approveCompliance(id, dto.notes, user);
+    }
+
+    @Patch(':id/compliance/reject')
+    @ApiOperation({ summary: 'Rejeitar compliance manualmente' })
+    @ApiParam({ name: 'id', description: 'ID do credenciamento' })
+    @ApiResponse({ status: 200, description: 'Compliance rejeitado' })
+    @ApiResponse({ status: 400, description: 'Status não permite rejeição ou não requer revisão manual' })
+    @ApiResponse({ status: 404, description: 'Credenciamento ou análise não encontrado' })
+    async rejectCompliance(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: RejectComplianceDto,
+        @CurrentUser() user: AuthUser,
+    ) {
+        return this.complianceService.rejectCompliance(id, dto.reason, dto.notes, user);
+    }
+
+    @Get(':id/compliance')
+    @ApiOperation({ summary: 'Consultar análise de compliance' })
+    @ApiParam({ name: 'id', description: 'ID do credenciamento' })
+    @ApiResponse({ status: 200, description: 'Análise retornada' })
+    @ApiResponse({ status: 404, description: 'Análise não encontrada' })
+    async getCompliance(
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser() user: AuthUser,
+    ) {
+        const companyId = user.brandId || user.companyId;
+        return this.complianceService.getCompliance(id, companyId);
+    }
+
+    @Get('compliance/pending-reviews')
+    @ApiOperation({ summary: 'Listar credenciamentos pendentes de revisão manual' })
+    @ApiResponse({ status: 200, description: 'Lista de análises pendentes' })
+    async getPendingReviews(@CurrentUser() user: AuthUser) {
+        const companyId = user.brandId || user.companyId;
+        return this.complianceService.getPendingReviews(companyId);
     }
 
     // ==================== INVITATIONS ====================

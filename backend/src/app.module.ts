@@ -18,8 +18,10 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
 import { TeamModule } from './modules/team/team.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { CredentialsModule } from './modules/credentials/credentials.module';
+// import { CredentialSettingsModule } from './modules/credential-settings/credential-settings.module'; // TODO: Corrigir erros de schema
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { WebhooksModule } from './modules/integrations/webhooks/webhooks.module';
 import { CommonModule } from './common/common.module';
 import configuration from './config/configuration';
 
@@ -56,8 +58,10 @@ import configuration from './config/configuration';
     TeamModule,
     FavoritesModule,
     CredentialsModule,
+    // CredentialSettingsModule, // TODO: Corrigir erros de schema
     OnboardingModule,
     NotificationsModule,
+    WebhooksModule,
   ],
 })
 export class AppModule { }

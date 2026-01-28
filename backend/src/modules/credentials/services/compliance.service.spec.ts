@@ -170,6 +170,103 @@ describe('ComplianceService', () => {
             expect(result.scores.overallScore).toBeGreaterThan(0);
         });
 
+        it('should penalize credit score for high debt amount', async () => {
+            const creditResult = {
+                score: 800,
+                hasNegatives: true,
+                debtAmount: 150000, // High debt
+            };
+
+            mockIntegrationService.analyzeCredit.mockResolvedValue(creditResult);
+            mockPrismaService.complianceAnalysis.upsert.mockResolvedValue({});
+
+            const result = await service.analyzeCompliance('cred-123', 'user-123');
+
+            // Score 800/10 = 80, -20 for negatives, -15 for high debt = 45
+            expect(result.scores.creditScore).toBeLessThan(70);
+        });
+
+        it('should apply bonus for high capital stock', async () => {
+            mockPrismaService.supplierCredential.findUnique.mockResolvedValue({
+                ...mockCredential,
+                validations: [
+                    {
+                        id: 'val-123',
+                        isValid: true,
+                        companyStatus: 'ATIVA',
+                        capitalStock: 500000, // High capital
+                    },
+                ],
+            });
+
+            mockIntegrationService.analyzeCredit.mockResolvedValue({
+                score: 700,
+                hasNegatives: false,
+            });
+            mockPrismaService.complianceAnalysis.upsert.mockResolvedValue({});
+
+            const result = await service.analyzeCompliance('cred-123', 'user-123');
+
+            // Tax score should have bonus
+            expect(result.scores.taxScore).toBeGreaterThan(100);
+        });
+
+        it('should penalize for young company (< 1 year)', async () => {
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+            mockPrismaService.supplierCredential.findUnique.mockResolvedValue({
+                ...mockCredential,
+                validations: [
+                    {
+                        id: 'val-123',
+                        isValid: true,
+                        companyStatus: 'ATIVA',
+                        foundedAt: oneMonthAgo,
+                    },
+                ],
+            });
+
+            mockIntegrationService.analyzeCredit.mockResolvedValue({
+                score: 700,
+                hasNegatives: false,
+            });
+            mockPrismaService.complianceAnalysis.upsert.mockResolvedValue({});
+
+            const result = await service.analyzeCompliance('cred-123', 'user-123');
+
+            // Legal score should be penalized for young company
+            expect(result.scores.legalScore).toBeLessThan(100);
+        });
+
+        it('should give bonus for established company (>= 5 years)', async () => {
+            const sixYearsAgo = new Date();
+            sixYearsAgo.setFullYear(sixYearsAgo.getFullYear() - 6);
+
+            mockPrismaService.supplierCredential.findUnique.mockResolvedValue({
+                ...mockCredential,
+                validations: [
+                    {
+                        id: 'val-123',
+                        isValid: true,
+                        companyStatus: 'ATIVA',
+                        foundedAt: sixYearsAgo,
+                    },
+                ],
+            });
+
+            mockIntegrationService.analyzeCredit.mockResolvedValue({
+                score: 700,
+                hasNegatives: false,
+            });
+            mockPrismaService.complianceAnalysis.upsert.mockResolvedValue({});
+
+            const result = await service.analyzeCompliance('cred-123', 'user-123');
+
+            // Legal score should have bonus for established company
+            expect(result.scores.legalScore).toBeGreaterThanOrEqual(100);
+        });
+
         it('should throw BadRequestException if status not allowed', async () => {
             mockPrismaService.supplierCredential.findUnique.mockResolvedValue({
                 ...mockCredential,
@@ -193,6 +290,7 @@ describe('ComplianceService', () => {
             id: 'analysis-123',
             credentialId: 'cred-123',
             requiresManualReview: true,
+            manualReviewStatus: ManualReviewStatus.PENDING,
         };
 
         beforeEach(() => {
@@ -229,7 +327,7 @@ describe('ComplianceService', () => {
             expect(mockPrismaService.supplierCredential.update).toHaveBeenCalledWith(
                 expect.objectContaining({
                     data: expect.objectContaining({
-                        status: SupplierCredentialStatus.INVITATION_PENDING,
+                        status: SupplierCredentialStatus.COMPLIANCE_APPROVED,
                     }),
                 }),
             );
@@ -241,6 +339,54 @@ describe('ComplianceService', () => {
             await expect(
                 service.approveCompliance('cred-123', 'notes', mockUser),
             ).rejects.toThrow(BadRequestException);
+        });
+
+        it('should throw BadRequestException if not pending manual review', async () => {
+            mockPrismaService.complianceAnalysis.findUnique.mockResolvedValue({
+                ...mockAnalysis,
+                requiresManualReview: false,
+            });
+
+            await expect(
+                service.approveCompliance('cred-123', 'notes', mockUser),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        it('should throw BadRequestException if manual review status is not PENDING', async () => {
+            mockPrismaService.complianceAnalysis.findUnique.mockResolvedValue({
+                ...mockAnalysis,
+                manualReviewStatus: ManualReviewStatus.APPROVED,
+            });
+
+            await expect(
+                service.approveCompliance('cred-123', 'notes', mockUser),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        it('should throw BadRequestException if credential status not approvable', async () => {
+            mockPrismaService.supplierCredential.findUnique.mockResolvedValue({
+                ...mockCredential,
+                status: SupplierCredentialStatus.ACTIVE,
+            });
+
+            await expect(
+                service.approveCompliance('cred-123', 'notes', mockUser),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        it('should allow approval from COMPLIANCE_REJECTED status', async () => {
+            mockPrismaService.supplierCredential.findUnique.mockResolvedValue({
+                ...mockCredential,
+                status: SupplierCredentialStatus.COMPLIANCE_REJECTED,
+            });
+
+            const result = await service.approveCompliance(
+                'cred-123',
+                'Reconsiderado',
+                mockUser,
+            );
+
+            expect(result.success).toBe(true);
         });
     });
 
@@ -255,6 +401,7 @@ describe('ComplianceService', () => {
             id: 'analysis-123',
             credentialId: 'cred-123',
             requiresManualReview: true,
+            manualReviewStatus: ManualReviewStatus.PENDING,
         };
 
         beforeEach(() => {
@@ -269,12 +416,14 @@ describe('ComplianceService', () => {
             mockPrismaService.supplierCredential.update.mockResolvedValue({});
         });
 
-        it('should reject compliance with reason', async () => {
-            const reason = 'Múltiplas restrições financeiras';
+        it('should reject compliance with reason and notes', async () => {
+            const reason = 'Histórico de inadimplência';
+            const notes = 'Múltiplas restrições financeiras detectadas';
 
             const result = await service.rejectCompliance(
                 'cred-123',
                 reason,
+                notes,
                 mockUser,
             );
 
@@ -283,7 +432,8 @@ describe('ComplianceService', () => {
                 where: { credentialId: 'cred-123' },
                 data: expect.objectContaining({
                     manualReviewStatus: ManualReviewStatus.REJECTED,
-                    manualReviewNotes: reason,
+                    manualReviewNotes: expect.stringContaining(reason),
+                    manualReviewNotes: expect.stringContaining(notes),
                 }),
             });
 
@@ -294,6 +444,52 @@ describe('ComplianceService', () => {
                     }),
                 }),
             );
+        });
+
+        it('should throw BadRequestException if no analysis exists', async () => {
+            mockPrismaService.complianceAnalysis.findUnique.mockResolvedValue(null);
+
+            await expect(
+                service.rejectCompliance('cred-123', 'reason', 'notes', mockUser),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        it('should throw BadRequestException if not pending manual review', async () => {
+            mockPrismaService.complianceAnalysis.findUnique.mockResolvedValue({
+                ...mockAnalysis,
+                requiresManualReview: false,
+            });
+
+            await expect(
+                service.rejectCompliance('cred-123', 'reason', 'notes', mockUser),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        it('should throw BadRequestException if credential status not rejectable', async () => {
+            mockPrismaService.supplierCredential.findUnique.mockResolvedValue({
+                ...mockCredential,
+                status: SupplierCredentialStatus.ACTIVE,
+            });
+
+            await expect(
+                service.rejectCompliance('cred-123', 'reason', 'notes', mockUser),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        it('should allow rejection from COMPLIANCE_APPROVED status', async () => {
+            mockPrismaService.supplierCredential.findUnique.mockResolvedValue({
+                ...mockCredential,
+                status: SupplierCredentialStatus.COMPLIANCE_APPROVED,
+            });
+
+            const result = await service.rejectCompliance(
+                'cred-123',
+                'reason',
+                'notes',
+                mockUser,
+            );
+
+            expect(result.success).toBe(true);
         });
     });
 

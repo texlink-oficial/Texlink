@@ -79,6 +79,22 @@ export interface CredentialValidation {
     rawResponse?: any;
 }
 
+export type RecommendationType = 'APPROVE' | 'REJECT' | 'MANUAL_REVIEW';
+
+export interface ManualReview {
+    reviewedById: string;
+    reviewedBy?: {
+        id: string;
+        name: string;
+        email: string;
+    };
+    reviewedAt: string;
+    decision: 'APPROVED' | 'REJECTED';
+    approvalNotes?: string;
+    rejectionReason?: string;
+    rejectionDetails?: string;
+}
+
 export interface ComplianceAnalysis {
     id: string;
     credentialId: string;
@@ -86,8 +102,11 @@ export interface ComplianceAnalysis {
     source: string;
     overallScore: number;
     creditScore?: number;
+    fiscalScore?: number;
     riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     approved: boolean;
+    recommendation: RecommendationType;
+    riskFactors?: string[];
     reasons?: string[];
     details?: any;
     pendingIssues?: string[];
@@ -95,6 +114,8 @@ export interface ComplianceAnalysis {
     creditAnalysis?: any;
     legalAnalysis?: any;
     financialAnalysis?: any;
+    manualReview?: ManualReview;
+    // Legacy fields for backward compatibility
     rejectionReason?: string;
     notes?: string;
     reviewedById?: string;
@@ -223,4 +244,26 @@ export interface SendInvitationDto {
 export interface ResendInvitationDto {
     channel?: InvitationChannel;
     customMessage?: string;
+}
+
+export interface ApproveCredentialDto {
+    approvalNotes: string;
+}
+
+export interface RejectCredentialDto {
+    rejectionReason: string;
+    rejectionDetails: string;
+}
+
+export interface InvitationTemplate {
+    id: string;
+    name: string;
+    description?: string;
+    subject: string;
+    body: string;
+    channel: InvitationChannel | 'ALL';
+    isDefault: boolean;
+    variables?: string[];
+    createdAt: string;
+    updatedAt: string;
 }

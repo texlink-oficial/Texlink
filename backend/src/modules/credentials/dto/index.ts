@@ -17,3 +17,7 @@ export {
     CredentialSortBy,
     SortOrder,
 } from './credential-filters.dto';
+
+// Compliance
+export { ApproveComplianceDto } from './approve-compliance.dto';
+export { RejectComplianceDto } from './reject-compliance.dto';

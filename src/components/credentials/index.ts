@@ -9,3 +9,6 @@ export {
   RiskLevelGrid,
   type RiskLevel,
 } from './RiskLevelIndicator';
+export { ComplianceAnalysisCard } from './ComplianceAnalysisCard';
+export { ApproveRejectModal } from './ApproveRejectModal';
+export { SendInviteModal } from './SendInviteModal';

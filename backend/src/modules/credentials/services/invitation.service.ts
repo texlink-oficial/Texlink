@@ -49,11 +49,9 @@ export class InvitationService {
         SupplierCredentialStatus.INVITATION_PENDING,
     ];
 
-    // Limite máximo de tentativas de envio
-    private readonly MAX_ATTEMPTS = 5;
-
-    // Dias de validade do convite
-    private readonly INVITATION_EXPIRY_DAYS = 7;
+    // Valores padrão (podem ser sobrescritos por CredentialSettings)
+    private readonly DEFAULT_MAX_ATTEMPTS = 5;
+    private readonly DEFAULT_INVITATION_EXPIRY_DAYS = 7;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -96,9 +94,13 @@ export class InvitationService {
         // Gera token único
         const token = this.generateToken();
 
+        // Busca configurações da marca
+        const settings = await this.getCredentialSettings(companyId);
+        const expiryDays = settings?.invitationExpiryDays || this.DEFAULT_INVITATION_EXPIRY_DAYS;
+
         // Calcula data de expiração
         const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + this.INVITATION_EXPIRY_DAYS);
+        expiresAt.setDate(expiresAt.getDate() + expiryDays);
 
         // Gera link de onboarding
         const onboardingLink = this.generateOnboardingLink(token);
@@ -218,9 +220,11 @@ export class InvitationService {
 
     /**
      * Reenvia convite para credenciamento
-     * 
+     *
      * - Busca último convite
-     * - Verifica limite de tentativas
+     * - Verifica limite de tentativas (configurável por marca)
+     * - Verifica se convite não expirou
+     * - Gera novo token se expirado
      * - Reenvia com mesmo canal
      * - Incrementa attemptCount
      */
@@ -229,6 +233,11 @@ export class InvitationService {
 
         // Busca credential
         const credential = await this.findAndValidateCredential(credentialId, companyId);
+
+        // Busca configurações da marca
+        const settings = await this.getCredentialSettings(companyId);
+        const maxAttempts = settings?.maxInvitationAttempts || this.DEFAULT_MAX_ATTEMPTS;
+        const expiryDays = settings?.invitationExpiryDays || this.DEFAULT_INVITATION_EXPIRY_DAYS;
 
         // Busca último convite
         const lastInvitation = await this.prisma.credentialInvitation.findFirst({
@@ -242,11 +251,21 @@ export class InvitationService {
             );
         }
 
-        // Verifica limite de tentativas
-        if (lastInvitation.attemptCount >= this.MAX_ATTEMPTS) {
+        // Verifica limite de tentativas (configurável)
+        if (lastInvitation.attemptCount >= maxAttempts) {
             throw new BadRequestException(
-                `Limite máximo de ${this.MAX_ATTEMPTS} tentativas atingido. ` +
+                `Limite máximo de ${maxAttempts} tentativas atingido. ` +
                 `Contate o suporte ou aguarde o contato da facção.`,
+            );
+        }
+
+        // Verifica se convite está expirado
+        const now = new Date();
+        const isExpired = now > lastInvitation.expiresAt;
+
+        if (isExpired) {
+            this.logger.log(
+                `Convite ${lastInvitation.id} expirado, gerando novo token`,
             );
         }
 
@@ -255,10 +274,10 @@ export class InvitationService {
             ? InvitationChannel.EMAIL
             : InvitationChannel.WHATSAPP;
 
-        // Gera novo token
+        // Gera novo token (sempre para segurança)
         const token = this.generateToken();
         const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + this.INVITATION_EXPIRY_DAYS);
+        expiresAt.setDate(expiresAt.getDate() + expiryDays);
 
         const onboardingLink = this.generateOnboardingLink(token);
         const templateVariables = this.prepareTemplateVariables(
@@ -569,10 +588,20 @@ export class InvitationService {
             brand_name: credential.brand?.tradeName || 'Texlink',
             contact_name: credential.contactName || 'Parceiro',
             supplier_name: credential.tradeName || credential.legalName || 'Empresa',
+            company_name: credential.legalName || credential.tradeName || 'Empresa',
             link: onboardingLink,
             expiry_date: expiresAt.toLocaleDateString('pt-BR'),
-            expiry_days: String(this.INVITATION_EXPIRY_DAYS),
+            expiry_days: String(Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))),
         };
+    }
+
+    /**
+     * Busca configurações de credenciamento da marca
+     */
+    private async getCredentialSettings(companyId: string) {
+        return this.prisma.credentialSettings.findUnique({
+            where: { companyId },
+        });
     }
 
     /**

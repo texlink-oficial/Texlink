@@ -21,6 +21,9 @@ import type { SupplierCredential, SupplierCredentialStatus } from '../../../type
 import { TimelineStatus } from '../../../components/credentials/TimelineStatus';
 import { ValidationResultCard } from '../../../components/credentials/ValidationResultCard';
 import { ComplianceScore } from '../../../components/credentials/ComplianceScore';
+import { ComplianceAnalysisCard } from '../../../components/credentials/ComplianceAnalysisCard';
+import { ApproveRejectModal } from '../../../components/credentials/ApproveRejectModal';
+import { SendInviteModal } from '../../../components/credentials/SendInviteModal';
 import { StatusBadge } from '../../../components/shared/StatusBadge';
 
 const CredentialDetailsPage: React.FC = () => {
@@ -32,6 +35,8 @@ const CredentialDetailsPage: React.FC = () => {
     const [isSendingInvite, setIsSendingInvite] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
+    const [showApproveModal, setShowApproveModal] = useState(false);
+    const [showRejectModal, setShowRejectModal] = useState(false);
     const [statusHistory, setStatusHistory] = useState<any[]>([]);
     const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
@@ -107,21 +112,46 @@ const CredentialDetailsPage: React.FC = () => {
         }
     };
 
-    const handleSendInvite = async (channel: 'EMAIL' | 'WHATSAPP') => {
+    const handleSendInvite = async (data: any) => {
         try {
-            setIsSendingInvite(true);
             await credentialsService.sendInvitation(id!, {
-                channel,
+                channel: data.channel,
+                templateId: data.templateId,
+                customMessage: data.customMessage,
                 recipientEmail: credential?.contactEmail,
                 recipientPhone: credential?.contactPhone,
             });
-            setShowInviteModal(false);
             await loadCredential();
             await loadHistory();
         } catch (error) {
             console.error('Error sending invite:', error);
-        } finally {
-            setIsSendingInvite(false);
+            throw error;
+        }
+    };
+
+    const handleApproveCredential = async (data: any) => {
+        try {
+            // In a real app, call API endpoint
+            // await credentialsService.approveManually(id!, data);
+            console.log('Approving credential with data:', data);
+            await loadCredential();
+            await loadHistory();
+        } catch (error) {
+            console.error('Error approving credential:', error);
+            throw error;
+        }
+    };
+
+    const handleRejectCredential = async (data: any) => {
+        try {
+            // In a real app, call API endpoint
+            // await credentialsService.rejectManually(id!, data);
+            console.log('Rejecting credential with data:', data);
+            await loadCredential();
+            await loadHistory();
+        } catch (error) {
+            console.error('Error rejecting credential:', error);
+            throw error;
         }
     };
 
@@ -318,6 +348,25 @@ const CredentialDetailsPage: React.FC = () => {
                     </div>
                 )}
 
+                {credential.status === 'PENDING_COMPLIANCE' && credential.compliance?.recommendation === 'MANUAL_REVIEW' && (
+                    <>
+                        <button
+                            onClick={() => setShowApproveModal(true)}
+                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                        >
+                            <CheckCircle className="w-5 h-5" />
+                            Aprovar
+                        </button>
+                        <button
+                            onClick={() => setShowRejectModal(true)}
+                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                        >
+                            <AlertCircle className="w-5 h-5" />
+                            Rejeitar
+                        </button>
+                    </>
+                )}
+
                 {credential.status === 'COMPLIANCE_APPROVED' && (
                     <button
                         onClick={() => setShowInviteModal(true)}
@@ -475,15 +524,33 @@ const CredentialDetailsPage: React.FC = () => {
                     />
                 )}
 
-                {/* Compliance Score */}
-                {credential.compliance && (
-                    <ComplianceScore
-                        creditScore={credential.compliance.creditScore || undefined}
-                        overallScore={credential.compliance.overallScore}
-                        showDetails={true}
-                    />
-                )}
             </div>
+
+            {/* Compliance Analysis Section */}
+            {credential.compliance && (
+                <>
+                    {/* Manual Review Alert Banner */}
+                    {credential.status === 'PENDING_COMPLIANCE' && credential.compliance.recommendation === 'MANUAL_REVIEW' && (
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-4">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-yellow-900 dark:text-yellow-300 mb-1">
+                                        Revisão Manual Necessária
+                                    </h3>
+                                    <p className="text-sm text-yellow-800 dark:text-yellow-400">
+                                        Este credenciamento requer análise manual devido aos fatores de risco identificados.
+                                        Por favor, revise os dados de compliance e tome uma decisão.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Compliance Analysis Card */}
+                    <ComplianceAnalysisCard compliance={credential.compliance} />
+                </>
+            )}
 
             {/* Status History */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
@@ -551,60 +618,29 @@ const CredentialDetailsPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Invite Modal */}
-            {showInviteModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Enviar Convite
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-400 mb-6">
-                            Escolha o canal para enviar o convite de cadastro:
-                        </p>
-                        <div className="space-y-3 mb-6">
-                            <button
-                                onClick={() => handleSendInvite('EMAIL')}
-                                disabled={isSendingInvite}
-                                className="w-full flex items-center gap-3 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-brand-500 dark:hover:border-brand-500 transition-colors disabled:opacity-50"
-                            >
-                                <Mail className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                                <div className="text-left flex-1">
-                                    <p className="font-medium text-gray-900 dark:text-white">
-                                        Email
-                                    </p>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        {credential.contactEmail}
-                                    </p>
-                                </div>
-                            </button>
-                            {credential.contactWhatsapp && (
-                                <button
-                                    onClick={() => handleSendInvite('WHATSAPP')}
-                                    disabled={isSendingInvite}
-                                    className="w-full flex items-center gap-3 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-brand-500 dark:hover:border-brand-500 transition-colors disabled:opacity-50"
-                                >
-                                    <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                                    <div className="text-left flex-1">
-                                        <p className="font-medium text-gray-900 dark:text-white">
-                                            WhatsApp
-                                        </p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            {formatPhone(credential.contactWhatsapp)}
-                                        </p>
-                                    </div>
-                                </button>
-                            )}
-                        </div>
-                        <button
-                            onClick={() => setShowInviteModal(false)}
-                            disabled={isSendingInvite}
-                            className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
-                        >
-                            Cancelar
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Modals */}
+            <SendInviteModal
+                isOpen={showInviteModal}
+                onClose={() => setShowInviteModal(false)}
+                credential={credential}
+                onConfirm={handleSendInvite}
+            />
+
+            <ApproveRejectModal
+                isOpen={showApproveModal}
+                onClose={() => setShowApproveModal(false)}
+                credential={credential}
+                type="approve"
+                onConfirm={handleApproveCredential}
+            />
+
+            <ApproveRejectModal
+                isOpen={showRejectModal}
+                onClose={() => setShowRejectModal(false)}
+                credential={credential}
+                type="reject"
+                onConfirm={handleRejectCredential}
+            />
         </div>
     );
 };

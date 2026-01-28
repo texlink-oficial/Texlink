@@ -206,10 +206,11 @@ export class ComplianceService {
 
     /**
      * Aprova compliance manualmente
-     * 
-     * - Valida que está em PENDING_COMPLIANCE ou requer revisão manual
-     * - Atualiza ComplianceAnalysis com aprovação
-     * - Atualiza status para INVITATION_PENDING
+     *
+     * - Valida que análise existe e requer revisão manual
+     * - Valida transição de status permitida
+     * - Atualiza ComplianceAnalysis com dados da aprovação
+     * - Atualiza status para COMPLIANCE_APPROVED
      */
     async approveCompliance(credentialId: string, notes: string, user: AuthUser) {
         const companyId = user.brandId || user.companyId;
@@ -228,19 +229,32 @@ export class ComplianceService {
             );
         }
 
-        // Valida que pode ser aprovado manualmente
-        const approvableStatuses: SupplierCredentialStatus[] = [
-            SupplierCredentialStatus.PENDING_COMPLIANCE,
-            SupplierCredentialStatus.COMPLIANCE_REJECTED,
-        ];
-
-        if (!approvableStatuses.includes(credential.status as SupplierCredentialStatus) && !analysis.requiresManualReview) {
+        // Valida que está pendente de revisão manual
+        if (!analysis.requiresManualReview || analysis.manualReviewStatus !== ManualReviewStatus.PENDING) {
             throw new BadRequestException(
-                `Credenciamento com status "${credential.status}" não pode ser aprovado manualmente.`,
+                'Credenciamento não está pendente de revisão manual. ' +
+                `Status atual da revisão: ${analysis.manualReviewStatus || 'Nenhum'}`,
             );
         }
 
-        // Atualiza análise de compliance
+        // Valida status do credential
+        const approvableStatuses: SupplierCredentialStatus[] = [
+            SupplierCredentialStatus.PENDING_COMPLIANCE,
+            SupplierCredentialStatus.COMPLIANCE_REJECTED, // Permite reaprovar após rejeição
+        ];
+
+        if (!approvableStatuses.includes(credential.status as SupplierCredentialStatus)) {
+            throw new BadRequestException(
+                `Credenciamento com status "${credential.status}" não pode ser aprovado. ` +
+                `Status permitidos: ${approvableStatuses.join(', ')}`,
+            );
+        }
+
+        this.logger.log(
+            `Aprovando compliance manualmente para ${credentialId} por usuário ${user.id}`,
+        );
+
+        // Atualiza análise de compliance com dados da aprovação manual
         const updatedAnalysis = await this.prisma.complianceAnalysis.update({
             where: { credentialId },
             data: {
@@ -249,25 +263,25 @@ export class ComplianceService {
                 reviewedById: user.id,
                 reviewedAt: new Date(),
                 recommendation: 'APPROVE',
-                recommendationReason: `Aprovado manualmente: ${notes}`,
+                recommendationReason: `Aprovado manualmente por ${user.id}: ${notes}`,
             },
         });
 
-        // Atualiza status para INVITATION_PENDING
+        // Atualiza status para COMPLIANCE_APPROVED
         await this.updateCredentialStatus(
             credentialId,
             credential.status,
-            SupplierCredentialStatus.INVITATION_PENDING,
+            SupplierCredentialStatus.COMPLIANCE_APPROVED,
             user.id,
             `Compliance aprovado manualmente: ${notes}`,
         );
 
-        this.logger.log(`Compliance aprovado manualmente para ${credentialId} por ${user.id}`);
+        this.logger.log(`Compliance aprovado com sucesso para ${credentialId}`);
 
         return {
             success: true,
             analysis: updatedAnalysis,
-            message: 'Compliance aprovado. Credenciamento pronto para envio de convite.',
+            message: 'Compliance aprovado com sucesso. Credenciamento pode prosseguir para envio de convite.',
             nextStep: 'SEND_INVITATION',
         };
     }
@@ -276,12 +290,13 @@ export class ComplianceService {
 
     /**
      * Rejeita compliance manualmente
-     * 
-     * - Valida que está em status que permite rejeição
-     * - Atualiza ComplianceAnalysis com rejeição
+     *
+     * - Valida que análise existe e está pendente de revisão
+     * - Valida transição de status permitida
+     * - Atualiza ComplianceAnalysis com dados da rejeição (reason + notes)
      * - Atualiza status para COMPLIANCE_REJECTED
      */
-    async rejectCompliance(credentialId: string, reason: string, user: AuthUser) {
+    async rejectCompliance(credentialId: string, reason: string, notes: string, user: AuthUser) {
         const companyId = user.brandId || user.companyId;
 
         // Busca credential e valida propriedade
@@ -298,29 +313,41 @@ export class ComplianceService {
             );
         }
 
-        // Valida que pode ser rejeitado
-        const rejectableStatuses: SupplierCredentialStatus[] = [
-            SupplierCredentialStatus.PENDING_COMPLIANCE,
-            SupplierCredentialStatus.COMPLIANCE_APPROVED,
-            SupplierCredentialStatus.INVITATION_PENDING,
-        ];
-
-        if (!rejectableStatuses.includes(credential.status as SupplierCredentialStatus) && !analysis.requiresManualReview) {
+        // Valida que está pendente de revisão manual
+        if (!analysis.requiresManualReview || analysis.manualReviewStatus !== ManualReviewStatus.PENDING) {
             throw new BadRequestException(
-                `Credenciamento com status "${credential.status}" não pode ser rejeitado.`,
+                'Credenciamento não está pendente de revisão manual. ' +
+                `Status atual da revisão: ${analysis.manualReviewStatus || 'Nenhum'}`,
             );
         }
 
-        // Atualiza análise de compliance
+        // Valida status do credential
+        const rejectableStatuses: SupplierCredentialStatus[] = [
+            SupplierCredentialStatus.PENDING_COMPLIANCE,
+            SupplierCredentialStatus.COMPLIANCE_APPROVED, // Permite rejeitar após aprovação automática
+        ];
+
+        if (!rejectableStatuses.includes(credential.status as SupplierCredentialStatus)) {
+            throw new BadRequestException(
+                `Credenciamento com status "${credential.status}" não pode ser rejeitado. ` +
+                `Status permitidos: ${rejectableStatuses.join(', ')}`,
+            );
+        }
+
+        this.logger.log(
+            `Rejeitando compliance manualmente para ${credentialId} por usuário ${user.id}. Motivo: ${reason}`,
+        );
+
+        // Atualiza análise de compliance com dados da rejeição
         const updatedAnalysis = await this.prisma.complianceAnalysis.update({
             where: { credentialId },
             data: {
                 manualReviewStatus: ManualReviewStatus.REJECTED,
-                manualReviewNotes: reason,
+                manualReviewNotes: `${reason}\n\n${notes}`,
                 reviewedById: user.id,
                 reviewedAt: new Date(),
                 recommendation: 'REJECT',
-                recommendationReason: `Rejeitado manualmente: ${reason}`,
+                recommendationReason: `Rejeitado manualmente por ${user.id}: ${reason}`,
             },
         });
 
@@ -333,7 +360,7 @@ export class ComplianceService {
             `Compliance rejeitado: ${reason}`,
         );
 
-        this.logger.log(`Compliance rejeitado para ${credentialId} por ${user.id}: ${reason}`);
+        this.logger.log(`Compliance rejeitado com sucesso para ${credentialId}`);
 
         return {
             success: true,
@@ -463,38 +490,118 @@ export class ComplianceService {
     }
 
     /**
-     * Calcula scores de compliance
+     * Calcula scores de compliance refinado
+     *
+     * - Credit Score: Analisa score, dívidas e negativações
+     * - Tax Score: Considera status CNPJ e regularidade fiscal
+     * - Legal Score: Analisa questões legais e tempo de existência
+     * - Overall Score: Média ponderada com ajustes por fatores críticos
      */
     private calculateScores(validation: any, creditResult: any): ComplianceScores {
-        // Credit Score (0-100)
-        const creditScore = creditResult?.score
-            ? Math.round(creditResult.score / 10) // Normaliza de 0-1000 para 0-100
-            : 50;
+        // ===== CREDIT SCORE (0-100) =====
+        let creditScore = 50; // Base neutro
 
-        // Tax Score baseado no status do CNPJ
-        let taxScore = 50; // Default
+        if (creditResult?.score) {
+            // Normaliza score de 0-1000 para 0-100
+            creditScore = Math.round(creditResult.score / 10);
+
+            // Penaliza por negativações ativas
+            if (creditResult.hasNegatives) {
+                creditScore = Math.max(0, creditScore - 20);
+            }
+
+            // Penaliza por dívidas altas (se disponível)
+            if (creditResult.debtAmount && creditResult.debtAmount > 50000) {
+                const debtPenalty = Math.min(15, Math.floor(creditResult.debtAmount / 10000));
+                creditScore = Math.max(0, creditScore - debtPenalty);
+            }
+        } else if (creditResult?.hasNegatives) {
+            // Se não temos score mas sabemos que tem negativações
+            creditScore = 30;
+        }
+
+        // ===== TAX SCORE (0-100) =====
+        let taxScore = 50; // Default neutro
+
         if (validation?.companyStatus) {
             const status = validation.companyStatus.toUpperCase();
+
             if (status === 'ATIVA' || status === 'REGULAR') {
                 taxScore = 100;
             } else if (status === 'SUSPENSA') {
                 taxScore = 30;
-            } else if (status === 'INAPTA' || status === 'BAIXADA') {
+            } else if (status === 'INAPTA') {
+                taxScore = 10;
+            } else if (status === 'BAIXADA' || status === 'CANCELADA') {
                 taxScore = 0;
             }
         }
 
-        // Legal Score (100 se não houver issues conhecidos)
-        const legalScore = creditResult?.hasNegatives ? 40 : 100;
+        // Bonus por capital social alto (indica solidez)
+        if (validation?.capitalStock && validation.capitalStock > 100000) {
+            taxScore = Math.min(100, taxScore + 5);
+        }
 
-        // Overall Score (média ponderada)
-        const overallScore = Math.round(
+        // ===== LEGAL SCORE (0-100) =====
+        let legalScore = 100; // Assume sem problemas por padrão
+
+        // Penaliza por negativações (issues legais/financeiros)
+        if (creditResult?.hasNegatives) {
+            legalScore -= 30;
+        }
+
+        // Penaliza por processos judiciais (se disponível)
+        if (creditResult?.legalIssues) {
+            legalScore -= 25;
+        }
+
+        // Considera tempo de existência da empresa
+        if (validation?.foundedAt) {
+            const foundedDate = new Date(validation.foundedAt);
+            const yearsActive = (Date.now() - foundedDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+
+            if (yearsActive < 1) {
+                // Empresa muito nova - risco maior
+                legalScore = Math.max(0, legalScore - 20);
+            } else if (yearsActive < 2) {
+                legalScore = Math.max(0, legalScore - 10);
+            } else if (yearsActive >= 5) {
+                // Empresa estabelecida - bonus
+                legalScore = Math.min(100, legalScore + 10);
+            }
+        }
+
+        legalScore = Math.max(0, legalScore);
+
+        // ===== OVERALL SCORE (média ponderada) =====
+        let overallScore = Math.round(
             creditScore * this.SCORE_WEIGHTS.credit +
             taxScore * this.SCORE_WEIGHTS.tax +
             legalScore * this.SCORE_WEIGHTS.legal,
         );
 
-        return { creditScore, taxScore, legalScore, overallScore };
+        // Ajustes críticos no overall score
+        // CNPJ inativo é sempre score muito baixo
+        if (validation?.companyStatus) {
+            const status = validation.companyStatus.toUpperCase();
+            if (status === 'BAIXADA' || status === 'CANCELADA') {
+                overallScore = Math.min(overallScore, 20);
+            } else if (status === 'INAPTA') {
+                overallScore = Math.min(overallScore, 40);
+            }
+        }
+
+        // Negativações múltiplas reduzem score drasticamente
+        if (creditResult?.hasNegatives && creditResult?.debtAmount > 100000) {
+            overallScore = Math.min(overallScore, 45);
+        }
+
+        return {
+            creditScore: Math.round(creditScore),
+            taxScore: Math.round(taxScore),
+            legalScore: Math.round(legalScore),
+            overallScore: Math.round(overallScore)
+        };
     }
 
     /**
@@ -578,7 +685,7 @@ export class ComplianceService {
     }
 
     /**
-     * Identifica fatores de risco
+     * Identifica fatores de risco de forma abrangente
      */
     private identifyRiskFactors(
         validation: any,
@@ -587,35 +694,92 @@ export class ComplianceService {
     ): string[] {
         const factors: string[] = [];
 
+        // === FATORES CRÍTICOS (risco alto) ===
         if (!flags.hasActiveCNPJ) {
-            factors.push('CNPJ não está ativo');
+            factors.push('CNPJ não está ativo - Status: ' + (validation?.companyStatus || 'Desconhecido'));
         }
 
+        if (validation?.companyStatus?.toUpperCase() === 'BAIXADA') {
+            factors.push('Empresa com CNPJ baixado na Receita Federal');
+        }
+
+        if (validation?.companyStatus?.toUpperCase() === 'CANCELADA') {
+            factors.push('Empresa com CNPJ cancelado');
+        }
+
+        // === FATORES FISCAIS ===
         if (!flags.hasRegularTaxStatus) {
             factors.push('Situação fiscal irregular');
         }
 
+        if (validation?.companyStatus?.toUpperCase() === 'INAPTA') {
+            factors.push('Empresa inapta perante a Receita Federal');
+        }
+
+        if (validation?.companyStatus?.toUpperCase() === 'SUSPENSA') {
+            factors.push('Empresa com atividades suspensas');
+        }
+
+        // === FATORES DE CRÉDITO ===
         if (flags.hasNegativeCredit) {
-            factors.push('Possui negativações no mercado');
+            if (creditResult?.debtAmount) {
+                factors.push(`Possui negativações no mercado (Total: R$ ${creditResult.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`);
+            } else {
+                factors.push('Possui negativações ativas no mercado');
+            }
         }
 
-        if (creditResult?.score && creditResult.score < 500) {
-            factors.push('Score de crédito baixo');
+        if (creditResult?.score && creditResult.score < 300) {
+            factors.push('Score de crédito crítico (abaixo de 300)');
+        } else if (creditResult?.score && creditResult.score < 500) {
+            factors.push('Score de crédito baixo (abaixo de 500)');
         }
 
-        if (creditResult?.recommendations) {
-            factors.push(...creditResult.recommendations);
+        // Dívidas altas sem necessariamente ter negativações
+        if (creditResult?.debtAmount && creditResult.debtAmount > 100000 && !flags.hasNegativeCredit) {
+            factors.push('Valor elevado de dívidas registradas');
         }
 
+        // === FATORES LEGAIS ===
+        if (flags.hasLegalIssues) {
+            factors.push('Possui processos judiciais ativos');
+        }
+
+        if (flags.hasRelatedRestrictions) {
+            factors.push('Possui restrições relacionadas a sócios ou empresas vinculadas');
+        }
+
+        if (creditResult?.legalIssues) {
+            factors.push('Identificados problemas legais na análise');
+        }
+
+        // === FATORES DE EXPERIÊNCIA ===
         // Empresa muito nova (menos de 1 ano)
         if (validation?.foundedAt) {
             const foundedDate = new Date(validation.foundedAt);
-            const oneYearAgo = new Date();
-            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            const now = new Date();
+            const yearsActive = (now.getTime() - foundedDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
 
-            if (foundedDate > oneYearAgo) {
-                factors.push('Empresa com menos de 1 ano de atividade');
+            if (yearsActive < 1) {
+                factors.push('Empresa com menos de 1 ano de atividade (risco de inexperiência)');
+            } else if (yearsActive < 2) {
+                factors.push('Empresa com menos de 2 anos de atividade');
             }
+        }
+
+        // Capital social muito baixo
+        if (validation?.capitalStock && validation.capitalStock < 10000) {
+            factors.push('Capital social muito baixo (menor que R$ 10.000)');
+        }
+
+        // === RECOMENDAÇÕES EXTERNAS ===
+        if (creditResult?.recommendations && Array.isArray(creditResult.recommendations)) {
+            factors.push(...creditResult.recommendations);
+        }
+
+        // === SEM FATORES DE RISCO ===
+        if (factors.length === 0) {
+            factors.push('Nenhum fator de risco identificado - Perfil adequado');
         }
 
         return factors;
