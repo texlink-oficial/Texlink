@@ -12,3 +12,4 @@ export {
 export { ComplianceAnalysisCard } from './ComplianceAnalysisCard';
 export { ApproveRejectModal } from './ApproveRejectModal';
 export { SendInviteModal } from './SendInviteModal';
+export { InvitationStatusCard } from './InvitationStatusCard';

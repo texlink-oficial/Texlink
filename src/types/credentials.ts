@@ -141,6 +141,9 @@ export interface CredentialInvitation {
     status: 'PENDING' | 'SENT' | 'OPENED' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
     customMessage?: string;
     metadata?: any;
+    // Campos de rastreamento de webhooks
+    deliveredAt?: string;
+    clickedAt?: string;
     // Campos opcionais para compatibilidade
     recipientEmail?: string;
     recipientPhone?: string;
