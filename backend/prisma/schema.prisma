@@ -282,6 +282,11 @@ model User {
   relationshipStatusChanges  RelationshipStatusHistory[] @relation("RelationshipStatusChanged")
   brandSpecificDocsValidated BrandSpecificDocument[]     @relation("BrandDocsValidated")
 
+  // Performance indexes
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@index([createdAt])
   @@map("users")
 }
 
