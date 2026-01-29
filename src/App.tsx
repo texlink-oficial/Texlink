@@ -4,6 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PermissionProvider } from './contexts/PermissionContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/error/ErrorBoundary';
+
+// Error pages
+const NotFoundPage = React.lazy(() => import('./pages/errors/NotFoundPage'));
+const ServerErrorPage = React.lazy(() => import('./pages/errors/ServerErrorPage'));
 
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
@@ -78,11 +83,12 @@ const queryClient = new QueryClient({
 
 const App: React.FC = () => {
     return (
-        <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-                <PermissionProvider>
-                <BrowserRouter>
-                    <React.Suspense
+        <ErrorBoundary>
+            <QueryClientProvider client={queryClient}>
+                <AuthProvider>
+                    <PermissionProvider>
+                        <BrowserRouter>
+                            <React.Suspense
                         fallback={
                             <div className="min-h-screen bg-brand-950 flex items-center justify-center">
                                 <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
@@ -181,15 +187,21 @@ const App: React.FC = () => {
                             <Route path="/admin/suppliers" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliers /></ProtectedRoute>} />
                             <Route path="/admin/suppliers-pool" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliersPool /></ProtectedRoute>} />
 
+                            {/* Error pages */}
+                            <Route path="/500" element={<ServerErrorPage />} />
+
                             {/* Default redirect */}
                             <Route path="/" element={<Navigate to="/login" replace />} />
-                            <Route path="*" element={<Navigate to="/login" replace />} />
+
+                            {/* 404 - must be last */}
+                            <Route path="*" element={<NotFoundPage />} />
                         </Routes>
-                    </React.Suspense>
-                </BrowserRouter>
-                </PermissionProvider>
-            </AuthProvider>
-        </QueryClientProvider>
+                            </React.Suspense>
+                        </BrowserRouter>
+                    </PermissionProvider>
+                </AuthProvider>
+            </QueryClientProvider>
+        </ErrorBoundary>
     );
 };
 
