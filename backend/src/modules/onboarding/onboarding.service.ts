@@ -7,6 +7,8 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SupplierCredentialStatus } from '@prisma/client';
+import { UploadedFile } from '../upload/storage.provider';
+import { LocalStorageProvider } from '../upload/storage.provider';
 
 /**
  * Serviço de Onboarding - Lida com fluxo público de onboarding de facções
@@ -19,6 +21,7 @@ import { SupplierCredentialStatus } from '@prisma/client';
 @Injectable()
 export class OnboardingService {
     private readonly logger = new Logger(OnboardingService.name);
+    private readonly storage = new LocalStorageProvider();
 
     constructor(
         private readonly prisma: PrismaService,
@@ -202,10 +205,25 @@ export class OnboardingService {
             throw new NotFoundException('Convite não encontrado');
         }
 
-        // Verifica se já existe onboarding
+        // Buscar credential para pegar supplierId
+        const credential = await this.prisma.supplierCredential.findUnique({
+            where: { id: invitation.credentialId },
+        });
+
+        if (!credential) {
+            throw new NotFoundException('Credencial não encontrada');
+        }
+
+        if (!credential.supplierId) {
+            throw new BadRequestException(
+                'Credencial não possui supplier associado. Entre em contato com o suporte.',
+            );
+        }
+
+        // Verifica se já existe onboarding para este supplier
         const existingOnboarding = await this.prisma.supplierOnboarding.findUnique(
             {
-                where: { credentialId: invitation.credentialId },
+                where: { supplierId: credential.supplierId },
             },
         );
 
@@ -219,6 +237,14 @@ export class OnboardingService {
                 },
             });
 
+            // Vincular credential ao onboarding se ainda não estiver
+            if (credential.supplierOnboardingId !== existingOnboarding.id) {
+                await this.prisma.supplierCredential.update({
+                    where: { id: credential.id },
+                    data: { supplierOnboardingId: existingOnboarding.id },
+                });
+            }
+
             this.logger.log(
                 `Onboarding retomado: ${existingOnboarding.id}`,
             );
@@ -230,15 +256,21 @@ export class OnboardingService {
             };
         }
 
-        // Cria novo onboarding
+        // Cria novo onboarding vinculado ao supplier
         const onboarding = await this.prisma.supplierOnboarding.create({
             data: {
-                credentialId: invitation.credentialId,
+                supplierId: credential.supplierId,
                 currentStep: 1,
                 totalSteps: 6,
                 completedSteps: [],
                 deviceInfo: deviceInfo as object | undefined,
             },
+        });
+
+        // Vincular credential ao onboarding
+        await this.prisma.supplierCredential.update({
+            where: { id: credential.id },
+            data: { supplierOnboardingId: onboarding.id },
         });
 
         // Atualiza status do credential
@@ -293,7 +325,11 @@ export class OnboardingService {
             include: {
                 credential: {
                     include: {
-                        onboarding: true,
+                        onboarding: {
+                            include: {
+                                documents: true,
+                            },
+                        },
                     },
                 },
             },
@@ -304,6 +340,195 @@ export class OnboardingService {
         }
 
         return invitation.credential.onboarding;
+    }
+
+    /**
+     * Upload de documento do onboarding
+     */
+    async uploadDocument(
+        token: string,
+        file: UploadedFile,
+        type: string,
+        name?: string,
+    ) {
+        // Validar arquivo
+        const allowedMimeTypes = [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'application/pdf',
+        ];
+
+        if (!allowedMimeTypes.includes(file.mimetype)) {
+            throw new BadRequestException(
+                `Tipo de arquivo não permitido. Permitidos: ${allowedMimeTypes.join(', ')}`,
+            );
+        }
+
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+            throw new BadRequestException(
+                `Arquivo muito grande. Máximo: 10MB`,
+            );
+        }
+
+        // Validar token e buscar onboarding
+        const invitation = await this.prisma.credentialInvitation.findUnique({
+            where: { token },
+            include: {
+                credential: {
+                    include: {
+                        onboarding: true,
+                    },
+                },
+            },
+        });
+
+        if (!invitation || !invitation.credential.onboarding) {
+            throw new NotFoundException(
+                'Onboarding não encontrado. Inicie o processo primeiro.',
+            );
+        }
+
+        const onboarding = invitation.credential.onboarding;
+
+        // Verificar se já existe documento desse tipo
+        const existing = await this.prisma.onboardingDocument.findFirst({
+            where: {
+                onboardingId: onboarding.id,
+                type,
+            },
+        });
+
+        if (existing) {
+            // Deletar arquivo antigo do storage
+            const oldKey = existing.fileUrl.split('/uploads/')[1];
+            if (oldKey) {
+                await this.storage.delete(oldKey).catch(() => {
+                    this.logger.warn(`Falha ao deletar arquivo antigo: ${oldKey}`);
+                });
+            }
+
+            // Deletar registro antigo
+            await this.prisma.onboardingDocument.delete({
+                where: { id: existing.id },
+            });
+        }
+
+        // Upload para storage
+        const { url, key } = await this.storage.upload(
+            file,
+            `onboarding/${invitation.credentialId}`,
+        );
+
+        // Criar registro do documento
+        const document = await this.prisma.onboardingDocument.create({
+            data: {
+                onboardingId: onboarding.id,
+                type,
+                name: name || type,
+                fileName: file.originalname,
+                fileUrl: url,
+                fileSize: file.size,
+                mimeType: file.mimetype,
+            },
+        });
+
+        this.logger.log(
+            `Documento ${type} enviado para onboarding ${onboarding.id}`,
+        );
+
+        // Atualizar última atividade
+        await this.prisma.supplierOnboarding.update({
+            where: { id: onboarding.id },
+            data: { lastActivityAt: new Date() },
+        });
+
+        return document;
+    }
+
+    /**
+     * Listar documentos do onboarding
+     */
+    async getDocuments(token: string) {
+        const invitation = await this.prisma.credentialInvitation.findUnique({
+            where: { token },
+            include: {
+                credential: {
+                    include: {
+                        onboarding: {
+                            include: {
+                                documents: {
+                                    orderBy: { createdAt: 'asc' },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!invitation || !invitation.credential.onboarding) {
+            throw new NotFoundException('Onboarding não encontrado');
+        }
+
+        return invitation.credential.onboarding.documents;
+    }
+
+    /**
+     * Remover documento do onboarding
+     */
+    async deleteDocument(token: string, documentId: string) {
+        // Validar token
+        const invitation = await this.prisma.credentialInvitation.findUnique({
+            where: { token },
+            include: {
+                credential: {
+                    include: {
+                        onboarding: true,
+                    },
+                },
+            },
+        });
+
+        if (!invitation || !invitation.credential.onboarding) {
+            throw new NotFoundException('Onboarding não encontrado');
+        }
+
+        // Buscar documento
+        const document = await this.prisma.onboardingDocument.findUnique({
+            where: { id: documentId },
+        });
+
+        if (!document) {
+            throw new NotFoundException('Documento não encontrado');
+        }
+
+        // Verificar se pertence ao onboarding correto
+        if (document.onboardingId !== invitation.credential.onboarding.id) {
+            throw new BadRequestException(
+                'Documento não pertence a este onboarding',
+            );
+        }
+
+        // Deletar arquivo do storage
+        const key = document.fileUrl.split('/uploads/')[1];
+        if (key) {
+            await this.storage.delete(key).catch(() => {
+                this.logger.warn(`Falha ao deletar arquivo: ${key}`);
+            });
+        }
+
+        // Deletar registro
+        await this.prisma.onboardingDocument.delete({
+            where: { id: documentId },
+        });
+
+        this.logger.log(
+            `Documento ${documentId} removido do onboarding ${invitation.credential.onboarding.id}`,
+        );
+
+        return { success: true };
     }
 
     // ==================== PRIVATE HELPERS ====================

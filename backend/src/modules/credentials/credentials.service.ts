@@ -547,6 +547,263 @@ export class CredentialsService {
         });
     }
 
+    // ==================== DOCUMENT VALIDATION ====================
+
+    /**
+     * Lista documentos pendentes de validação
+     */
+    async getCredentialsWithPendingDocuments(user: AuthUser) {
+        // Verifica permissão
+        if (!user.brandId) {
+            throw new ForbiddenException(
+                'Apenas marcas podem validar documentos',
+            );
+        }
+
+        const credentials = await this.prisma.supplierCredential.findMany({
+            where: {
+                brandId: user.brandId,
+                status: {
+                    in: [
+                        SupplierCredentialStatus.ONBOARDING_STARTED,
+                        SupplierCredentialStatus.ONBOARDING_IN_PROGRESS,
+                    ],
+                },
+            },
+            include: {
+                onboarding: {
+                    include: {
+                        documents: {
+                            where: {
+                                isValid: null, // Apenas documentos não validados
+                            },
+                            orderBy: { createdAt: 'asc' },
+                        },
+                    },
+                },
+            },
+        });
+
+        // Filtrar apenas credentials que têm documentos pendentes
+        return credentials.filter(
+            (c) => c.onboarding?.documents && c.onboarding.documents.length > 0,
+        );
+    }
+
+    /**
+     * Buscar documentos de um credenciamento específico
+     */
+    async getDocuments(credentialId: string, user: AuthUser) {
+        // Verificar acesso
+        const credential = await this.prisma.supplierCredential.findUnique({
+            where: { id: credentialId },
+        });
+
+        if (!credential) {
+            throw new NotFoundException('Credenciamento não encontrado');
+        }
+
+        // Verificar se pertence à marca do usuário
+        if (user.brandId && credential.brandId !== user.brandId) {
+            throw new ForbiddenException(
+                'Você não tem permissão para acessar documentos deste credenciamento',
+            );
+        }
+
+        if (!credential.supplierId) {
+            return [];
+        }
+
+        const documents = await this.prisma.onboardingDocument.findMany({
+            where: {
+                onboarding: {
+                    supplierId: credential.supplierId,
+                },
+            },
+            orderBy: { createdAt: 'asc' },
+        });
+
+        return documents;
+    }
+
+    /**
+     * Validar ou rejeitar documento
+     */
+    async validateDocument(
+        credentialId: string,
+        documentId: string,
+        isValid: boolean,
+        validationNotes: string | undefined,
+        user: AuthUser,
+    ) {
+        // Verificar acesso
+        const credential = await this.prisma.supplierCredential.findUnique({
+            where: { id: credentialId },
+        });
+
+        if (!credential) {
+            throw new NotFoundException('Credenciamento não encontrado');
+        }
+
+        // Verificar se pertence à marca do usuário
+        if (user.brandId && credential.brandId !== user.brandId) {
+            throw new ForbiddenException(
+                'Você não tem permissão para validar documentos deste credenciamento',
+            );
+        }
+
+        if (!user.brandId) {
+            throw new ForbiddenException('Apenas marcas podem validar documentos');
+        }
+
+        // Buscar documento
+        const document = await this.prisma.onboardingDocument.findUnique({
+            where: { id: documentId },
+            include: {
+                onboarding: true,
+            },
+        });
+
+        if (!document) {
+            throw new NotFoundException('Documento não encontrado');
+        }
+
+        // Verificar se pertence ao credenciamento correto
+        // Comparar supplierId do onboarding com supplierId da credential
+        if (document.onboarding.supplierId !== credential.supplierId) {
+            throw new BadRequestException(
+                'Documento não pertence a este credenciamento',
+            );
+        }
+
+        // Atualizar documento
+        const updated = await this.prisma.onboardingDocument.update({
+            where: { id: documentId },
+            data: {
+                isValid,
+                validationNotes,
+                validatedById: user.id,
+                validatedAt: new Date(),
+            },
+        });
+
+        this.logger.log(
+            `Documento ${documentId} ${isValid ? 'aprovado' : 'rejeitado'} por ${user.id}`,
+        );
+
+        // Verificar se todos os documentos foram validados
+        const allDocuments = await this.prisma.onboardingDocument.findMany({
+            where: {
+                onboardingId: document.onboardingId,
+            },
+        });
+
+        const allValidated = allDocuments.every((doc) => doc.isValid !== null);
+        const allApproved = allDocuments.every((doc) => doc.isValid === true);
+
+        if (allValidated) {
+            if (allApproved) {
+                // Todos aprovados - atualizar última atividade
+                await this.prisma.supplierOnboarding.update({
+                    where: { id: document.onboardingId },
+                    data: {
+                        lastActivityAt: new Date(),
+                    },
+                });
+
+                this.logger.log(
+                    `Todos os documentos aprovados para credential ${credentialId}`,
+                );
+            } else {
+                // Algum rejeitado - notificar fornecedor para reenviar
+                this.logger.log(
+                    `Documentos rejeitados para credential ${credentialId}`,
+                );
+            }
+        }
+
+        return updated;
+    }
+
+    /**
+     * Ativar fornecedor manualmente (após todos os checks)
+     */
+    async activateSupplier(credentialId: string, user: AuthUser) {
+        // Verificar acesso
+        const credential = await this.prisma.supplierCredential.findUnique({
+            where: { id: credentialId },
+        });
+
+        if (!credential) {
+            throw new NotFoundException('Credenciamento não encontrado');
+        }
+
+        // Verificar se pertence à marca do usuário
+        if (user.brandId && credential.brandId !== user.brandId) {
+            throw new ForbiddenException(
+                'Você não tem permissão para ativar este credenciamento',
+            );
+        }
+
+        if (!user.brandId) {
+            throw new ForbiddenException('Apenas marcas podem ativar fornecedores');
+        }
+
+        // Verificar se o contrato foi assinado
+        const contract = await this.prisma.supplierContract.findUnique({
+            where: { credentialId },
+        });
+
+        if (!contract || !contract.supplierSignedAt) {
+            throw new BadRequestException(
+                'Fornecedor deve assinar o contrato antes de ser ativado',
+            );
+        }
+
+        // Verificar se todos os documentos foram aprovados
+        if (credential.supplierId) {
+            const onboarding = await this.prisma.supplierOnboarding.findUnique({
+                where: { supplierId: credential.supplierId },
+                include: { documents: true },
+            });
+
+            if (onboarding) {
+                const allApproved = onboarding.documents.every(
+                    (doc) => doc.isValid === true,
+                );
+
+                if (!allApproved) {
+                    throw new BadRequestException(
+                        'Todos os documentos devem ser aprovados antes de ativar',
+                    );
+                }
+            }
+        }
+
+        // Atualizar status para ACTIVE
+        const updated = await this.prisma.supplierCredential.update({
+            where: { id: credentialId },
+            data: {
+                status: SupplierCredentialStatus.ACTIVE,
+            },
+        });
+
+        // Criar histórico
+        await this.createStatusHistory(
+            credentialId,
+            credential.status,
+            SupplierCredentialStatus.ACTIVE,
+            user.id,
+            'Fornecedor ativado manualmente pela marca',
+        );
+
+        this.logger.log(
+            `Fornecedor ${credentialId} ativado por ${user.id}`,
+        );
+
+        return updated;
+    }
+
     // ==================== PRIVATE HELPERS ====================
 
     /**

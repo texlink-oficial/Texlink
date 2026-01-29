@@ -2,18 +2,25 @@ import {
     Controller,
     Get,
     Post,
+    Delete,
     Param,
     Body,
     HttpCode,
     HttpStatus,
+    UseInterceptors,
+    UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
     ApiTags,
     ApiOperation,
     ApiResponse,
     ApiParam,
+    ApiConsumes,
+    ApiBody,
 } from '@nestjs/swagger';
 import { OnboardingService } from './onboarding.service';
+import { UploadDocumentDto } from './dto/upload-document.dto';
 
 /**
  * Controller público de Onboarding
@@ -128,5 +135,118 @@ export class OnboardingController {
     })
     async getProgress(@Param('token') token: string) {
         return this.onboardingService.getOnboardingProgress(token);
+    }
+
+    /**
+     * Upload de documento do onboarding (público)
+     */
+    @Post(':token/documents')
+    @HttpCode(HttpStatus.CREATED)
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiConsumes('multipart/form-data')
+    @ApiOperation({
+        summary: 'Upload de documento do onboarding (público)',
+        description:
+            'Envia um documento para o onboarding. ' +
+            'Tipos aceitos: PDF, JPEG, PNG, WEBP. Tamanho máximo: 10MB.',
+    })
+    @ApiParam({
+        name: 'token',
+        description: 'Token único do convite',
+    })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                    description: 'Arquivo do documento',
+                },
+                type: {
+                    type: 'string',
+                    description: 'Tipo do documento',
+                    example: 'alvara_funcionamento',
+                },
+                name: {
+                    type: 'string',
+                    description: 'Nome exibido (opcional)',
+                    example: 'Alvará de Funcionamento',
+                },
+            },
+            required: ['file', 'type'],
+        },
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Documento enviado com sucesso',
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Arquivo inválido ou muito grande',
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Onboarding não encontrado',
+    })
+    async uploadDocument(
+        @Param('token') token: string,
+        @UploadedFile() file: Express.Multer.File,
+        @Body() dto: UploadDocumentDto,
+    ) {
+        return this.onboardingService.uploadDocument(
+            token,
+            file as any,
+            dto.type,
+            dto.name,
+        );
+    }
+
+    /**
+     * Listar documentos do onboarding (público)
+     */
+    @Get(':token/documents')
+    @ApiOperation({
+        summary: 'Listar documentos do onboarding (público)',
+        description: 'Retorna todos os documentos enviados no onboarding',
+    })
+    @ApiParam({
+        name: 'token',
+        description: 'Token único do convite',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lista de documentos',
+    })
+    async getDocuments(@Param('token') token: string) {
+        return this.onboardingService.getDocuments(token);
+    }
+
+    /**
+     * Remover documento do onboarding (público)
+     */
+    @Delete(':token/documents/:documentId')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: 'Remover documento do onboarding (público)',
+        description: 'Remove um documento enviado',
+    })
+    @ApiParam({
+        name: 'token',
+        description: 'Token único do convite',
+    })
+    @ApiParam({
+        name: 'documentId',
+        description: 'ID do documento',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Documento removido com sucesso',
+    })
+    async deleteDocument(
+        @Param('token') token: string,
+        @Param('documentId') documentId: string,
+    ) {
+        return this.onboardingService.deleteDocument(token, documentId);
     }
 }

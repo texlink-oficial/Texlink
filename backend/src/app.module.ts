@@ -20,6 +20,8 @@ import { FavoritesModule } from './modules/favorites/favorites.module';
 import { CredentialsModule } from './modules/credentials/credentials.module';
 import { CredentialSettingsModule } from './modules/credential-settings/credential-settings.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { ContractsModule } from './modules/contracts/contracts.module';
+import { RelationshipsModule } from './modules/relationships/relationships.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { WebhooksModule } from './modules/integrations/webhooks/webhooks.module';
 import { CommonModule } from './common/common.module';
@@ -60,6 +62,8 @@ import configuration from './config/configuration';
     CredentialsModule,
     CredentialSettingsModule,
     OnboardingModule,
+    ContractsModule,
+    RelationshipsModule,
     NotificationsModule,
     WebhooksModule,
   ],

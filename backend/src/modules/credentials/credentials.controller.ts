@@ -36,6 +36,7 @@ import {
     ApproveComplianceDto,
     RejectComplianceDto,
 } from './dto';
+import { ValidateDocumentDto } from '../onboarding/dto/validate-document.dto';
 import { SupplierCredentialStatus } from '@prisma/client';
 
 interface AuthUser {
@@ -283,5 +284,98 @@ export class CredentialsController {
         await this.credentialsService.findOne(id, companyId);
 
         return this.validationService.getValidationHistory(id);
+    }
+
+    // ==================== DOCUMENT VALIDATION ====================
+
+    @Get('pending-documents')
+    @ApiOperation({
+        summary: 'Listar credenciamentos com documentos pendentes',
+        description:
+            'Retorna credenciamentos com documentos aguardando validação pela marca',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lista de credenciamentos com docs pendentes',
+    })
+    async getPendingDocuments(@CurrentUser() user: AuthUser) {
+        return this.credentialsService.getCredentialsWithPendingDocuments(user);
+    }
+
+    @Get(':id/documents')
+    @ApiOperation({
+        summary: 'Listar documentos de um credenciamento',
+        description: 'Retorna todos os documentos enviados no onboarding',
+    })
+    @ApiParam({ name: 'id', description: 'ID do credenciamento' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lista de documentos',
+    })
+    async getDocuments(
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser() user: AuthUser,
+    ) {
+        return this.credentialsService.getDocuments(id, user);
+    }
+
+    @Patch(':id/documents/:documentId')
+    @ApiOperation({
+        summary: 'Validar ou rejeitar documento',
+        description:
+            'Aprova ou rejeita um documento do onboarding. ' +
+            'Quando todos os documentos forem aprovados, o fornecedor pode prosseguir para assinatura do contrato.',
+    })
+    @ApiParam({ name: 'id', description: 'ID do credenciamento' })
+    @ApiParam({ name: 'documentId', description: 'ID do documento' })
+    @ApiResponse({
+        status: 200,
+        description: 'Documento validado/rejeitado',
+    })
+    @ApiResponse({
+        status: 403,
+        description: 'Apenas marcas podem validar documentos',
+    })
+    async validateDocument(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Param('documentId', ParseUUIDPipe) documentId: string,
+        @Body() dto: ValidateDocumentDto,
+        @CurrentUser() user: AuthUser,
+    ) {
+        return this.credentialsService.validateDocument(
+            id,
+            documentId,
+            dto.isValid,
+            dto.validationNotes,
+            user,
+        );
+    }
+
+    @Post(':id/activate')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: 'Ativar fornecedor',
+        description:
+            'Ativa o fornecedor manualmente após validação de documentos e assinatura de contrato. ' +
+            'Status final: ACTIVE',
+    })
+    @ApiParam({ name: 'id', description: 'ID do credenciamento' })
+    @ApiResponse({
+        status: 200,
+        description: 'Fornecedor ativado com sucesso',
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Contrato não assinado ou documentos não aprovados',
+    })
+    @ApiResponse({
+        status: 403,
+        description: 'Apenas marcas podem ativar fornecedores',
+    })
+    async activateSupplier(
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser() user: AuthUser,
+    ) {
+        return this.credentialsService.activateSupplier(id, user);
     }
 }
