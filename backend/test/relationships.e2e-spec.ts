@@ -32,6 +32,9 @@ describe('Relationships V3 N:M (e2e)', () => {
   let brandBId: string;
   let relationshipAId: string;
   let relationshipBId: string;
+  let brandAUserId: string;
+  let brandBUserId: string;
+  let supplierUserId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -57,103 +60,144 @@ describe('Relationships V3 N:M (e2e)', () => {
   afterAll(async () => {
     // Cleanup test data
     await cleanupTestData();
+    // Disconnect Prisma to avoid Jest exit warning
+    await prisma.$disconnect();
     await app.close();
   });
 
-  async function setupTestData() {
-    // Create test companies and users
-    // This would typically be done via seed data or test utilities
+  // Store test email pattern for cleanup
+  let testEmailPattern: string;
 
-    // Create Admin user and get token
-    const adminUser = await prisma.user.create({
+  async function setupTestData() {
+    // Generate unique suffix for this test run to avoid conflicts
+    const testSuffix = Date.now().toString();
+    testEmailPattern = `test-${testSuffix}`;
+
+    // Create Admin user
+    await prisma.user.create({
       data: {
-        email: 'admin-test@texlink.com',
-        password: '$2b$10$testhashedpassword',
+        email: `admin-${testEmailPattern}@texlink.com`,
+        passwordHash: '$2b$10$testhashedpassword',
         name: 'Admin Test',
         role: 'ADMIN',
       },
     });
 
-    // Create Brand A
+    // Create Brand A user
+    const brandAUser = await prisma.user.create({
+      data: {
+        email: `marca-a-${testEmailPattern}@test.com`,
+        passwordHash: '$2b$10$testhashedpassword',
+        name: 'User Marca A',
+        role: 'BRAND',
+      },
+    });
+    brandAUserId = brandAUser.id;
+
+    // Create Brand A company
     const brandA = await prisma.company.create({
       data: {
         type: 'BRAND',
         legalName: 'Marca A Ltda',
         tradeName: 'Marca A',
-        document: '12345678000101',
-        email: 'marca.a@test.com',
-        users: {
+        document: `1${testSuffix.slice(-13)}`,
+        email: `marca-a-${testEmailPattern}@company.com`,
+        city: 'São Paulo',
+        state: 'SP',
+        companyUsers: {
           create: {
-            email: 'user-marca-a@test.com',
-            password: '$2b$10$testhashedpassword',
-            name: 'User Marca A',
-            role: 'BRAND',
+            userId: brandAUser.id,
+            isCompanyAdmin: true,
           },
         },
       },
     });
     brandAId = brandA.id;
 
-    // Create Brand B
+    // Create Brand B user
+    const brandBUser = await prisma.user.create({
+      data: {
+        email: `marca-b-${testEmailPattern}@test.com`,
+        passwordHash: '$2b$10$testhashedpassword',
+        name: 'User Marca B',
+        role: 'BRAND',
+      },
+    });
+    brandBUserId = brandBUser.id;
+
+    // Create Brand B company
     const brandB = await prisma.company.create({
       data: {
         type: 'BRAND',
         legalName: 'Marca B Ltda',
         tradeName: 'Marca B',
-        document: '98765432000199',
-        email: 'marca.b@test.com',
-        users: {
+        document: `2${testSuffix.slice(-13)}`,
+        email: `marca-b-${testEmailPattern}@company.com`,
+        city: 'Rio de Janeiro',
+        state: 'RJ',
+        companyUsers: {
           create: {
-            email: 'user-marca-b@test.com',
-            password: '$2b$10$testhashedpassword',
-            name: 'User Marca B',
-            role: 'BRAND',
+            userId: brandBUser.id,
+            isCompanyAdmin: true,
           },
         },
       },
     });
     brandBId = brandB.id;
 
-    // Create Supplier with completed onboarding
+    // Create Supplier user
+    const supplierUser = await prisma.user.create({
+      data: {
+        email: `faccao-${testEmailPattern}@test.com`,
+        passwordHash: '$2b$10$testhashedpassword',
+        name: 'User Facção',
+        role: 'SUPPLIER',
+      },
+    });
+    supplierUserId = supplierUser.id;
+
+    // Create Supplier company first
     const supplier = await prisma.company.create({
       data: {
         type: 'SUPPLIER',
         legalName: 'Facção Teste Ltda',
         tradeName: 'Facção Teste',
-        document: '11223344000155',
-        email: 'faccao@test.com',
-        supplierProfile: {
-          create: {
-            productTypes: ['CAMISETA', 'CALCA'],
-            specialties: ['Jeans', 'Malha'],
-            monthlyCapacity: 10000,
-            currentOccupancy: 0,
-          },
-        },
-        onboarding: {
-          create: {
-            isCompleted: true,
-            completedAt: new Date(),
-            completedSteps: [1, 2, 3, 4, 5, 6],
-            currentStep: 6,
-            passwordSet: true,
-            emailVerified: true,
-            dataCompleted: true,
-            documentsUploaded: true,
-            capabilitiesSet: true,
-          },
-        },
-        users: {
-          create: {
-            email: 'user-faccao@test.com',
-            password: '$2b$10$testhashedpassword',
-            name: 'User Facção',
-            role: 'SUPPLIER',
-          },
-        },
+        document: `3${testSuffix.slice(-13)}`,
+        email: `faccao-${testEmailPattern}@company.com`,
+        city: 'Blumenau',
+        state: 'SC',
       },
     });
     supplierId = supplier.id;
+
+    // Create supplier profile
+    await prisma.supplierProfile.create({
+      data: {
+        companyId: supplierId,
+        productTypes: ['CAMISETA', 'CALCA'],
+        specialties: ['Jeans', 'Malha'],
+        monthlyCapacity: 10000,
+        currentOccupancy: 0,
+      },
+    });
+
+    // Create supplier onboarding - use minimal required fields
+    await prisma.supplierOnboarding.create({
+      data: {
+        supplierId: supplierId,
+        isCompleted: true,
+        currentStep: 6,
+      },
+    });
+
+    // Link supplier user to company
+    await prisma.companyUser.create({
+      data: {
+        userId: supplierUser.id,
+        companyId: supplierId,
+        isCompanyAdmin: true,
+      },
+    });
 
     // Generate test tokens (simplified for testing)
     // In real scenarios, you'd call the auth endpoint
@@ -165,52 +209,80 @@ describe('Relationships V3 N:M (e2e)', () => {
 
   async function cleanupTestData() {
     // Delete in reverse order of dependencies
-    await prisma.relationshipStatusHistory.deleteMany({
-      where: {
-        relationship: {
-          supplierId: supplierId,
+    const companyIds = [supplierId, brandAId, brandBId].filter(Boolean);
+
+    // Delete relationship history
+    if (relationshipAId || relationshipBId) {
+      await prisma.relationshipStatusHistory.deleteMany({
+        where: {
+          relationshipId: {
+            in: [relationshipAId, relationshipBId].filter(Boolean),
+          },
         },
-      },
-    });
-    await prisma.supplierContract.deleteMany({
-      where: {
-        supplierId: supplierId,
-      },
-    });
-    await prisma.supplierBrandRelationship.deleteMany({
-      where: {
-        supplierId: supplierId,
-      },
-    });
-    await prisma.supplierOnboarding.deleteMany({
-      where: {
-        supplierId: supplierId,
-      },
-    });
-    await prisma.supplierProfile.deleteMany({
-      where: {
-        companyId: supplierId,
-      },
-    });
-    await prisma.user.deleteMany({
-      where: {
-        email: {
-          in: [
-            'admin-test@texlink.com',
-            'user-marca-a@test.com',
-            'user-marca-b@test.com',
-            'user-faccao@test.com',
-          ],
+      });
+    }
+
+    // Delete contracts
+    if (supplierId) {
+      await prisma.supplierContract.deleteMany({
+        where: { supplierId },
+      });
+    }
+
+    // Delete relationships
+    if (supplierId) {
+      await prisma.supplierBrandRelationship.deleteMany({
+        where: { supplierId },
+      });
+    }
+
+    // Delete orders
+    if (supplierId) {
+      await prisma.order.deleteMany({
+        where: { supplierId },
+      });
+    }
+
+    // Delete onboarding
+    if (supplierId) {
+      await prisma.supplierOnboarding.deleteMany({
+        where: { supplierId },
+      });
+    }
+
+    // Delete supplier profile
+    if (supplierId) {
+      await prisma.supplierProfile.deleteMany({
+        where: { companyId: supplierId },
+      });
+    }
+
+    // Delete company users
+    if (companyIds.length > 0) {
+      await prisma.companyUser.deleteMany({
+        where: {
+          companyId: { in: companyIds },
         },
-      },
-    });
-    await prisma.company.deleteMany({
-      where: {
-        id: {
-          in: [supplierId, brandAId, brandBId].filter(Boolean),
+      });
+    }
+
+    // Delete companies
+    if (companyIds.length > 0) {
+      await prisma.company.deleteMany({
+        where: {
+          id: { in: companyIds },
         },
-      },
-    });
+      });
+    }
+
+    // Delete users by pattern if set
+    if (testEmailPattern) {
+      await prisma.user.deleteMany({
+        where: {
+          email: { contains: testEmailPattern },
+        },
+      });
+    }
   }
 
   describe('Scenario 1: Supplier is in the pool with completed onboarding', () => {
@@ -256,7 +328,7 @@ describe('Relationships V3 N:M (e2e)', () => {
           supplierId: supplierId,
           brandId: brandAId,
           status: 'CONTRACT_PENDING',
-          initiatedBy: 'test-user-id',
+          initiatedBy: brandAUserId,
           initiatedByRole: 'BRAND',
         },
       });
@@ -277,7 +349,7 @@ describe('Relationships V3 N:M (e2e)', () => {
           brandId: brandAId,
           documentUrl: 'https://storage.test.com/contract-a.pdf',
           documentHash: 'hash123',
-          status: 'PENDING',
+          status: 'PENDING_SUPPLIER_SIGNATURE',
         },
       });
 
@@ -311,7 +383,7 @@ describe('Relationships V3 N:M (e2e)', () => {
           supplierId: supplierId,
           brandId: brandBId,
           status: 'CONTRACT_PENDING',
-          initiatedBy: 'test-user-id',
+          initiatedBy: brandBUserId,
           initiatedByRole: 'BRAND',
         },
       });
@@ -332,7 +404,7 @@ describe('Relationships V3 N:M (e2e)', () => {
           brandId: brandBId,
           documentUrl: 'https://storage.test.com/contract-b.pdf',
           documentHash: 'hash456',
-          status: 'PENDING',
+          status: 'PENDING_SUPPLIER_SIGNATURE',
         },
       });
 
@@ -362,7 +434,7 @@ describe('Relationships V3 N:M (e2e)', () => {
         },
         data: {
           supplierSignedAt: new Date(),
-          supplierSignedBy: supplierId,
+          supplierSignedBy: { connect: { id: supplierUserId } },
           supplierSignatureIp: '127.0.0.1',
           status: 'SIGNED',
         },
@@ -388,7 +460,7 @@ describe('Relationships V3 N:M (e2e)', () => {
         },
         data: {
           supplierSignedAt: new Date(),
-          supplierSignedBy: supplierId,
+          supplierSignedBy: { connect: { id: supplierUserId } },
           supplierSignatureIp: '127.0.0.1',
           status: 'SIGNED',
         },
@@ -432,6 +504,7 @@ describe('Relationships V3 N:M (e2e)', () => {
           relationshipId: relationshipAId,
           status: 'LANCADO_PELA_MARCA',
           productType: 'CAMISETA',
+          productName: 'Camiseta Básica Teste',
           quantity: 100,
           pricePerUnit: 25.0,
           totalValue: 2500.0,
@@ -455,6 +528,7 @@ describe('Relationships V3 N:M (e2e)', () => {
           relationshipId: relationshipBId,
           status: 'LANCADO_PELA_MARCA',
           productType: 'CALCA',
+          productName: 'Calça Jeans Teste',
           quantity: 50,
           pricePerUnit: 45.0,
           totalValue: 2250.0,
@@ -509,7 +583,7 @@ describe('Relationships V3 N:M (e2e)', () => {
         data: {
           relationshipId: relationshipAId,
           status: 'SUSPENDED',
-          changedById: 'test-user-id',
+          changedById: brandAUserId,
           notes: 'Teste: Suspensão temporária',
         },
       });
@@ -578,7 +652,7 @@ describe('Relationships V3 N:M (e2e)', () => {
         data: {
           relationshipId: relationshipAId,
           status: 'ACTIVE',
-          changedById: 'test-user-id',
+          changedById: brandAUserId,
           notes: 'Teste: Reativação após suspensão',
         },
       });
@@ -605,7 +679,7 @@ describe('Relationships V3 N:M (e2e)', () => {
           data: {
             supplierId: supplierId,
             brandId: brandAId,
-            status: 'PENDING',
+            status: 'PENDING_SUPPLIER_SIGNATURE',
             initiatedBy: 'test-user-id',
             initiatedByRole: 'BRAND',
           },
