@@ -24,6 +24,7 @@ import { ContractsModule } from './modules/contracts/contracts.module';
 import { RelationshipsModule } from './modules/relationships/relationships.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { WebhooksModule } from './modules/integrations/webhooks/webhooks.module';
+import { HealthModule } from './modules/health/health.module';
 import { CommonModule } from './common/common.module';
 import configuration from './config/configuration';
 
@@ -45,6 +46,7 @@ import configuration from './config/configuration';
       },
     ]),
     PrismaModule,
+    HealthModule,
     CommonModule,
     PermissionsModule,
     AuthModule,
