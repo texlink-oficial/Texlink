@@ -55,6 +55,8 @@ const navItems: NavItem[] = [
         label: 'Facções',
         icon: <Factory className="h-5 w-5" />,
         children: [
+            { label: 'Meus Fornecedores', path: '/brand/fornecedores' },
+            { label: 'Credenciar Novo', path: '/brand/fornecedores/adicionar' },
             { label: 'Buscar Facções', path: '/brand/faccoes' },
             { label: 'Meus Parceiros', path: '/brand/faccoes/parceiros' },
         ],
