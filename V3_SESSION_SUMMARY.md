@@ -149,19 +149,23 @@ Dashboard admin do pool global.
 - Adicionar ao pool
 - Estatísticas
 
-### Task #25: Testes E2E ⏭️
+### Task #25: Testes E2E ✅
 **Prioridade:** Alta
-**Estimativa:** 4-5 horas
+**Status:** Completo
 
 Testes end-to-end completos.
 
-**Cenários:**
-1. Admin cria facção no pool
-2. Marca A credencia
-3. Marca B credencia mesma facção
-4. Facção assina 2 contratos
-5. Pedidos de ambas as marcas
-6. Marca A suspende, B continua
+**Cenários implementados:**
+1. ✅ Admin cria facção no pool
+2. ✅ Marca A credencia
+3. ✅ Marca B credencia mesma facção
+4. ✅ Facção assina 2 contratos
+5. ✅ Pedidos de ambas as marcas
+6. ✅ Marca A suspende, B continua
+
+**Arquivos:**
+- `backend/src/modules/relationships/relationships.service.spec.ts` (20 unit tests)
+- `backend/test/relationships.e2e-spec.ts` (7 E2E tests)
 
 ---
 
@@ -268,8 +272,8 @@ Supplier X:
 
 **Backend Status:** ✅ 100% Completo (5/5 tasks)
 **Frontend Status:** ✅ 100% Completo (4/4 tasks)
-**Testes Status:** ⏳ 0% Completo (0/1 task)
-**Total V3:** 90% Completo (9/10 tasks)
+**Testes Status:** ✅ 100% Completo (1/1 task)
+**Total V3:** 100% Completo (10/10 tasks)
 
 **Tempo Total:** ~10 horas
 **Produtividade:** ~400 linhas/hora
@@ -338,19 +342,67 @@ Supplier X:
 
 ---
 
-## 🎯 Próximo Passo
+## ✅ Task #25: Testes E2E ✅
 
-### Task #25: Testes E2E ⏭️
-**Prioridade:** Alta
+**Status:** Completo
 
-Testes end-to-end completos para validar fluxos:
-1. Admin cria facção no pool
-2. Marca A credencia facção
-3. Marca B credencia mesma facção
-4. Facção assina 2 contratos
-5. Pedidos de ambas as marcas
-6. Marca A suspende, B continua
+### Unit Tests (RelationshipsService)
+- **Arquivo:** `backend/src/modules/relationships/relationships.service.spec.ts`
+- **Total:** 20 testes
+- **Resultado:** ✅ Todos passando
+
+**Testes incluídos:**
+- `create`: 5 cenários (sucesso, forbidden, not found, bad request, admin)
+- `findByBrand`: 3 cenários (sucesso, forbidden, admin)
+- `findBySupplier`: 2 cenários (sucesso, forbidden)
+- `findAvailableForBrand`: 1 cenário (sucesso)
+- `suspend`: 3 cenários (sucesso, not found, forbidden)
+- `reactivate`: 1 cenário (sucesso)
+- `terminate`: 1 cenário (sucesso)
+- `activate`: 2 cenários (sucesso, contract not signed)
+
+### E2E Tests (Workflow Completo)
+- **Arquivo:** `backend/test/relationships.e2e-spec.ts`
+- **Total:** 7 cenários de integração
+
+**Cenários testados:**
+1. ✅ Facção deve existir no pool após onboarding
+2. ✅ Marca A credencia facção
+3. ✅ Marca B credencia mesma facção
+4. ✅ Facção assina contratos com ambas as marcas
+5. ✅ Pedidos podem ser criados por ambas as marcas
+6. ✅ Marca A suspende sem afetar Marca B
+7. ✅ Suspensão reverte corretamente
 
 ---
 
-**Última Atualização:** 2026-01-29 (após conclusão de tasks #22, #23, #24)
+## 🎉 V3 N:M COMPLETO!
+
+**Última Atualização:** 2026-01-29 (após conclusão de task #25 - Testes)
+
+### Resumo Final
+
+| Componente | Status | Tasks |
+|------------|--------|-------|
+| Backend | ✅ Completo | 5/5 |
+| Frontend | ✅ Completo | 4/4 |
+| Testes | ✅ Completo | 1/1 |
+| **Total** | **✅ 100%** | **10/10** |
+
+### Arquivos de Teste Criados
+```
+backend/
+├── src/modules/relationships/
+│   └── relationships.service.spec.ts (20 unit tests)
+└── test/
+    └── relationships.e2e-spec.ts (7 E2E tests)
+```
+
+### Comandos para Executar Testes
+```bash
+# Unit tests
+cd backend && npm test -- --testPathPatterns=relationships.service.spec
+
+# E2E tests (requer banco de dados)
+cd backend && npm run test:e2e -- --testPathPatterns=relationships
+```
