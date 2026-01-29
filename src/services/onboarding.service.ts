@@ -55,7 +55,136 @@ let mockProfile: SupplierProfile = {
     }
 };
 
+// Interfaces para wizard de onboarding (Fase 3)
+export interface OnboardingInvitation {
+    valid: boolean;
+    token: string;
+    brand: {
+        name: string;
+        logo?: string;
+        location: string;
+    };
+    supplier: {
+        cnpj: string;
+        tradeName: string;
+        legalName?: string;
+        contactName?: string;
+        contactEmail?: string;
+        contactPhone?: string;
+    };
+    invitation: {
+        type: string;
+        sentAt: string;
+        expiresAt: string;
+        daysRemaining: number;
+    };
+    status: string;
+    hasOnboarding: boolean;
+    onboardingProgress?: {
+        currentStep: number;
+        totalSteps: number;
+        completedSteps: number[];
+    };
+}
+
+export interface OnboardingProgress {
+    id: string;
+    credentialId: string;
+    currentStep: number;
+    totalSteps: number;
+    completedSteps: number[];
+    documentsUploadedAt?: string;
+    contractSignedAt?: string;
+    lastActivityAt: string;
+    createdAt: string;
+    documents?: OnboardingDocument[];
+}
+
+export interface OnboardingDocument {
+    id: string;
+    onboardingId: string;
+    type: string;
+    name: string;
+    fileName: string;
+    fileUrl: string;
+    fileSize: number;
+    mimeType: string;
+    isValid?: boolean | null;
+    validationNotes?: string | null;
+    validatedById?: string | null;
+    validatedAt?: string | null;
+    createdAt: string;
+}
+
 export const onboardingService = {
+    /**
+     * Valida token de convite (público)
+     */
+    async validateToken(token: string): Promise<OnboardingInvitation> {
+        if (MOCK_MODE) {
+            await simulateDelay(300);
+            return {
+                valid: true,
+                token,
+                brand: {
+                    name: 'Marca Exemplo',
+                    logo: 'https://via.placeholder.com/150',
+                    location: 'São Paulo, SP',
+                },
+                supplier: {
+                    cnpj: '12.345.678/0001-90',
+                    tradeName: 'Facção Teste',
+                    legalName: 'Facção Teste Ltda',
+                    contactName: 'João Silva',
+                    contactEmail: 'joao@teste.com',
+                    contactPhone: '(11) 98765-4321',
+                },
+                invitation: {
+                    type: 'EMAIL',
+                    sentAt: new Date().toISOString(),
+                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                    daysRemaining: 7,
+                },
+                status: 'INVITATION_SENT',
+                hasOnboarding: false,
+            };
+        }
+        const response = await api.get<OnboardingInvitation>(`/onboarding/validate-token/${token}`);
+        return response.data;
+    },
+
+    /**
+     * Inicia processo de onboarding (público)
+     */
+    async startOnboarding(token: string, deviceInfo?: any): Promise<{ onboardingId: string; resumed: boolean; currentStep: number }> {
+        if (MOCK_MODE) {
+            await simulateDelay(300);
+            return { onboardingId: 'onb-001', resumed: false, currentStep: 1 };
+        }
+        const response = await api.post(`/onboarding/start/${token}`, { deviceInfo });
+        return response.data;
+    },
+
+    /**
+     * Busca progresso do onboarding (público)
+     */
+    async getProgress(token: string): Promise<OnboardingProgress | null> {
+        if (MOCK_MODE) {
+            await simulateDelay(300);
+            return {
+                id: 'onb-001',
+                credentialId: 'cred-001',
+                currentStep: 1,
+                totalSteps: 6,
+                completedSteps: [],
+                lastActivityAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+            };
+        }
+        const response = await api.get<OnboardingProgress>(`/onboarding/progress/${token}`);
+        return response.data;
+    },
+
     async getProfile(): Promise<SupplierProfile | null> {
         if (MOCK_MODE) {
             await simulateDelay(300);
@@ -104,5 +233,72 @@ export const onboardingService = {
         }
         const response = await api.patch<SupplierProfile>('/suppliers/onboarding/complete');
         return response.data;
+    },
+
+    /**
+     * Upload documento do onboarding (público)
+     */
+    async uploadDocument(
+        token: string,
+        file: File,
+        type: string,
+        name?: string
+    ): Promise<OnboardingDocument> {
+        if (MOCK_MODE) {
+            await simulateDelay(1000);
+            return {
+                id: `doc-${Date.now()}`,
+                onboardingId: 'onb-001',
+                type,
+                name: name || type,
+                fileName: file.name,
+                fileUrl: `/uploads/onboarding/mock/${file.name}`,
+                fileSize: file.size,
+                mimeType: file.type,
+                isValid: null,
+                createdAt: new Date().toISOString(),
+            };
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', type);
+        if (name) {
+            formData.append('name', name);
+        }
+
+        const response = await api.post<OnboardingDocument>(
+            `/onboarding/${token}/documents`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+        return response.data;
+    },
+
+    /**
+     * Listar documentos do onboarding (público)
+     */
+    async getDocuments(token: string): Promise<OnboardingDocument[]> {
+        if (MOCK_MODE) {
+            await simulateDelay(300);
+            return [];
+        }
+        const response = await api.get<OnboardingDocument[]>(`/onboarding/${token}/documents`);
+        return response.data;
+    },
+
+    /**
+     * Remover documento do onboarding (público)
+     */
+    async deleteDocument(token: string, documentId: string): Promise<void> {
+        if (MOCK_MODE) {
+            await simulateDelay(300);
+            return;
+        }
+        await api.delete(`/onboarding/${token}/documents/${documentId}`);
     },
 };
