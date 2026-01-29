@@ -267,49 +267,90 @@ Supplier X:
 ---
 
 **Backend Status:** ✅ 100% Completo (5/5 tasks)
-**Frontend Status:** 🔄 25% Completo (1/4 tasks)
+**Frontend Status:** ✅ 100% Completo (4/4 tasks)
 **Testes Status:** ⏳ 0% Completo (0/1 task)
-**Total V3:** 60% Completo (6/10 tasks)
+**Total V3:** 90% Completo (9/10 tasks)
 
-**Tempo Total:** ~6 horas
-**Produtividade:** ~475 linhas/hora
-**Qualidade:** TypeScript type-safe, responsive UI
+**Tempo Total:** ~10 horas
+**Produtividade:** ~400 linhas/hora
+**Qualidade:** TypeScript type-safe, responsive UI, dark mode
 
 ---
 
-## 📋 Task #21 Completada! (Nova Sessão)
+## 📋 Tasks Completadas (Sessão 2026-01-29)
 
-### 6. Frontend - BrandSuppliersPage (Task #21) ✅
-- ✅ 3 novos arquivos criados (types, service, page)
-- ✅ ~933 linhas de código
-- ✅ 13 métodos no relationshipsService
-- ✅ Dashboard completo com filtros e ações
-- ✅ Estatísticas em tempo real
-- ✅ Ações: suspender, reativar, encerrar
-- ✅ Integração com backend V3 N:M
-- ✅ UI/UX responsiva e dark mode
-- ✅ 3 rotas adicionadas no App.tsx
+### Task #21: BrandSuppliersPage ✅
+- Dashboard de fornecedores credenciados da marca
+- Filtros, busca, estatísticas em tempo real
+- Ações: suspender, reativar, encerrar
+
+### Task #22: AddSupplierPage ✅ (NOVA)
+- Página para credenciar fornecedor
+- 2 tabs: "Do Pool" e "Criar Novo"
+- Modal de credenciamento com código interno e prioridade
+- ~700 linhas de código
 
 **Arquivos:**
-- `src/types/relationships.ts` (150 linhas)
-- `src/services/relationships.service.ts` (224 linhas)
-- `src/pages/brand/BrandSuppliersPage.tsx` (559 linhas)
-- `src/services/index.ts` (modificado)
-- `src/App.tsx` (modificado)
+- `src/pages/brand/suppliers/AddSupplierPage.tsx`
 
-**Features Implementadas:**
-```typescript
-✅ Listagem de fornecedores credenciados
-✅ Filtros por status (ACTIVE, SUSPENDED, etc.)
-✅ Busca por nome/CNPJ/código
-✅ Cards de estatísticas (6 métricas)
-✅ Menu de ações (ver, suspender, reativar, encerrar)
-✅ Status badges coloridos com ícones
-✅ Loading e empty states
-✅ Dark mode completo
-✅ Grid responsivo (1-2-3 colunas)
-```
+### Task #23: SupplierBrandsPage ✅ (NOVA)
+- Dashboard do fornecedor para ver suas marcas
+- Lista de relacionamentos com status
+- Cards com informações de contrato
+- Link na sidebar do portal
+- ~400 linhas de código
+
+**Arquivos:**
+- `src/pages/portal/BrandsPage.tsx`
+- `src/components/portal/PortalSidebar.tsx` (modificado)
+
+### Task #24: AdminSuppliersPoolPage ✅ (NOVA)
+- Dashboard admin do pool global de facções
+- Estatísticas do pool (total, onboarded, com marcas, disponíveis)
+- Modal de detalhes com relacionamentos
+- Filtros e busca
+- ~600 linhas de código
+
+**Arquivos:**
+- `src/pages/admin/SuppliersPoolPage.tsx`
+
+### BONUS: RelationshipDetailsPage ✅ (NOVA)
+- Página de detalhes do relacionamento
+- Informações do fornecedor e contrato
+- Histórico de status
+- Ações de suspender/reativar/encerrar
+- ~500 linhas de código
+
+**Arquivos:**
+- `src/pages/brand/suppliers/RelationshipDetailsPage.tsx`
 
 ---
 
-**Última Atualização:** 2026-01-28 23:00 (após conclusão de task #21)
+## 📊 Estatísticas da Sessão (2026-01-29)
+
+| Métrica | Valor |
+|---------|-------|
+| **Arquivos Criados** | 5 |
+| **Arquivos Modificados** | 3 |
+| **Linhas de Código** | ~2200 |
+| **Novas Rotas** | 5 |
+| **Páginas Completas** | 5 |
+
+---
+
+## 🎯 Próximo Passo
+
+### Task #25: Testes E2E ⏭️
+**Prioridade:** Alta
+
+Testes end-to-end completos para validar fluxos:
+1. Admin cria facção no pool
+2. Marca A credencia facção
+3. Marca B credencia mesma facção
+4. Facção assina 2 contratos
+5. Pedidos de ambas as marcas
+6. Marca A suspende, B continua
+
+---
+
+**Última Atualização:** 2026-01-29 (após conclusão de tasks #22, #23, #24)

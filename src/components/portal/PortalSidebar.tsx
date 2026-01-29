@@ -21,7 +21,8 @@ import {
     PanelLeft,
     Moon,
     Sun,
-    Settings
+    Settings,
+    Building2
 } from 'lucide-react';
 
 interface NavItem {
@@ -76,6 +77,12 @@ const navItems: NavItem[] = [
             { label: 'Frequência de Repasse', path: '/portal/financeiro/frequencia' },
             { label: 'Antecipação', path: '/portal/financeiro/antecipacao' },
         ],
+    },
+    {
+        id: 'marcas',
+        label: 'Minhas Marcas',
+        icon: <Building2 className="h-5 w-5" />,
+        path: '/portal/marcas',
     },
     {
         id: 'equipe',

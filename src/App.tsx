@@ -40,11 +40,14 @@ const BrandFavorites = React.lazy(() => import('./pages/brand/FavoritesPage'));
 const CredentialsListPage = React.lazy(() => import('./pages/brand/credentials/CredentialsListPage'));
 const NewCredentialPage = React.lazy(() => import('./pages/brand/credentials/NewCredentialPage'));
 const CredentialDetailsPage = React.lazy(() => import('./pages/brand/credentials/CredentialDetailsPage'));
+const AddSupplierPage = React.lazy(() => import('./pages/brand/suppliers/AddSupplierPage'));
+const RelationshipDetailsPage = React.lazy(() => import('./pages/brand/suppliers/RelationshipDetailsPage'));
 
 // Admin pages
 const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
 const AdminApprovals = React.lazy(() => import('./pages/admin/ApprovalsPage'));
 const AdminSuppliers = React.lazy(() => import('./pages/admin/SuppliersPage'));
+const AdminSuppliersPool = React.lazy(() => import('./pages/admin/SuppliersPoolPage'));
 
 // Portal do Parceiro pages
 const PortalLayout = React.lazy(() => import('./components/portal/PortalLayout'));
@@ -56,6 +59,7 @@ const DepositDetailPage = React.lazy(() => import('./pages/portal/financial/Depo
 const BankDetailsPage = React.lazy(() => import('./pages/portal/financial/BankDetailsPage'));
 const PayoutFrequencyPage = React.lazy(() => import('./pages/portal/financial/PayoutFrequencyPage'));
 const AdvancePage = React.lazy(() => import('./pages/portal/financial/AdvancePage'));
+const SupplierBrandsPage = React.lazy(() => import('./pages/portal/BrandsPage'));
 
 // Onboarding pages
 const OnboardingLayout = React.lazy(() => import('./components/onboarding/OnboardingLayout'));
@@ -112,6 +116,8 @@ const App: React.FC = () => {
                                 <Route path="pedidos/:id" element={<SupplierOrderDetails />} />
                                 <Route path="oportunidades" element={<SupplierOpportunities />} />
                                 <Route path="capacidade" element={<SupplierCapacity />} />
+                                {/* Marcas (V3 N:M Relationships) */}
+                                <Route path="marcas" element={<SupplierBrandsPage />} />
                                 {/* Financeiro */}
                                 <Route path="financeiro/depositos" element={<DepositsPage />} />
                                 <Route path="financeiro/depositos/:id" element={<DepositDetailPage />} />
@@ -145,8 +151,8 @@ const App: React.FC = () => {
                                 <Route path="faccoes/:id" element={<BrandSupplierProfile />} />
                                 {/* Fornecedores (V3 N:M Relationships) */}
                                 <Route path="fornecedores" element={<BrandSuppliersPage />} />
-                                <Route path="fornecedores/adicionar" element={<div>Add Supplier - Coming Soon</div>} />
-                                <Route path="fornecedores/:id" element={<div>Relationship Details - Coming Soon</div>} />
+                                <Route path="fornecedores/adicionar" element={<AddSupplierPage />} />
+                                <Route path="fornecedores/:id" element={<RelationshipDetailsPage />} />
                                 {/* Mensagens */}
                                 <Route path="mensagens" element={<BrandMessages />} />
                                 {/* Financeiro */}
@@ -173,6 +179,7 @@ const App: React.FC = () => {
                             <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
                             <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminApprovals /></ProtectedRoute>} />
                             <Route path="/admin/suppliers" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliers /></ProtectedRoute>} />
+                            <Route path="/admin/suppliers-pool" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliersPool /></ProtectedRoute>} />
 
                             {/* Default redirect */}
                             <Route path="/" element={<Navigate to="/login" replace />} />
