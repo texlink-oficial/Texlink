@@ -240,6 +240,14 @@ enum ContractStatus {
   CANCELLED
 }
 
+enum RelationshipStatus {
+  PENDING // Aguardando ativação
+  CONTRACT_PENDING // Aguardando assinatura de contrato
+  ACTIVE // Ativo
+  SUSPENDED // Suspenso temporariamente
+  TERMINATED // Encerrado permanentemente
+}
+
 // ==================== MODELS ====================
 
 model User {
@@ -268,6 +276,11 @@ model User {
   documentsValidated      OnboardingDocument[]      @relation("DocumentValidatedBy")
   contractsBrandSigned    SupplierContract[]        @relation("ContractBrandSignedBy")
   contractsSupplierSigned SupplierContract[]        @relation("ContractSupplierSignedBy")
+
+  // Relationship system relations (N:M)
+  relationshipsInitiated     SupplierBrandRelationship[] @relation("RelationshipsInitiated")
+  relationshipStatusChanges  RelationshipStatusHistory[] @relation("RelationshipStatusChanged")
+  brandSpecificDocsValidated BrandSpecificDocument[]     @relation("BrandDocsValidated")
 
   @@map("users")
 }
@@ -311,6 +324,13 @@ model Company {
   credentialSettings   CredentialSettings?
   invitationTemplates  InvitationTemplate[]
   contractTemplates    ContractTemplate[]
+
+  // Relationship system (N:M)
+  supplierRelationships SupplierBrandRelationship[] @relation("SupplierRelationships") // Como fornecedor
+  brandSuppliers        SupplierBrandRelationship[] @relation("BrandSuppliers") // Como marca
+  onboarding            SupplierOnboarding?         @relation("SupplierOnboarding") // Como fornecedor
+  contractsAsSupplier   SupplierContract[]          @relation("SupplierContracts")
+  contractsAsBrand      SupplierContract[]          @relation("BrandContracts")
 
   @@map("companies")
 }
@@ -408,10 +428,11 @@ model Document {
 }
 
 model Order {
-  id         String  @id @default(uuid())
-  displayId  String  @unique // TX-YYYYMMDD-XXXX ou TX-YYYYMMDD-XXXX-R1
-  brandId    String
-  supplierId String? // null until accepted in BIDDING mode
+  id             String  @id @default(uuid())
+  displayId      String  @unique // TX-YYYYMMDD-XXXX ou TX-YYYYMMDD-XXXX-R1
+  brandId        String
+  supplierId     String? // null until accepted in BIDDING mode
+  relationshipId String? // Vinculado ao relacionamento marca-facção (N:M)
 
   status         OrderStatus         @default(LANCADO_PELA_MARCA)
   assignmentType OrderAssignmentType @default(DIRECT)
@@ -456,9 +477,10 @@ model Order {
   updatedAt DateTime @updatedAt
 
   // Relations
-  brand      Company  @relation("BrandOrders", fields: [brandId], references: [id])
-  supplier   Company? @relation("SupplierOrders", fields: [supplierId], references: [id])
-  acceptedBy User?    @relation("AcceptedBy", fields: [acceptedById], references: [id])
+  brand        Company                    @relation("BrandOrders", fields: [brandId], references: [id])
+  supplier     Company?                   @relation("SupplierOrders", fields: [supplierId], references: [id])
+  relationship SupplierBrandRelationship? @relation("RelationshipOrders", fields: [relationshipId], references: [id])
+  acceptedBy   User?                      @relation("AcceptedBy", fields: [acceptedById], references: [id])
 
   statusHistory      OrderStatusHistory[]
   attachments        OrderAttachment[]
@@ -469,6 +491,7 @@ model Order {
   reviews            OrderReview[]
   secondQualityItems SecondQualityItem[]
 
+  @@index([relationshipId])
   @@map("orders")
 }
 
@@ -573,7 +596,6 @@ model Message {
   @@index([orderId, createdAt(sort: Desc)], name: "idx_messages_order_date")
   @@index([orderId, read, senderId], name: "idx_messages_unread")
   @@index([senderId, createdAt(sort: Desc)], name: "idx_messages_sender")
-
   @@map("messages")
 }
 
@@ -735,12 +757,13 @@ model SupplierCredential {
   supplier  Company? @relation("CredentialSupplier", fields: [supplierId], references: [id])
   createdBy User     @relation("CredentialCreatedBy", fields: [createdById], references: [id])
 
-  statusHistory CredentialStatusHistory[]
-  validations   CredentialValidation[]
-  compliance    ComplianceAnalysis?
-  invitations   CredentialInvitation[]
-  onboarding    SupplierOnboarding?
-  contract      SupplierContract?
+  statusHistory        CredentialStatusHistory[]
+  validations          CredentialValidation[]
+  compliance           ComplianceAnalysis?
+  invitations          CredentialInvitation[]
+  onboarding           SupplierOnboarding?       @relation(fields: [supplierOnboardingId], references: [id])
+  contract             SupplierContract?
+  supplierOnboardingId String?
 
   @@unique([brandId, cnpj])
   @@index([brandId])
@@ -890,14 +913,15 @@ model CredentialInvitation {
 
 // Onboarding da facção (após aceitar convite)
 model SupplierOnboarding {
-  id           String  @id @default(uuid())
-  credentialId String  @unique
-  userId       String? // Usuário criado para a facção
+  id         String  @id @default(uuid())
+  supplierId String  @unique // Vinculado diretamente ao supplier (Company)
+  userId     String? // Usuário criado para a facção
 
   // Progresso geral
-  currentStep    Int   @default(1)
-  totalSteps     Int   @default(6)
+  currentStep    Int     @default(1)
+  totalSteps     Int     @default(6)
   completedSteps Json? // Array de steps completados
+  isCompleted    Boolean @default(false)
 
   // Steps individuais com timestamps
   emailVerifiedAt         DateTime?
@@ -905,7 +929,6 @@ model SupplierOnboarding {
   companyDataCompletedAt  DateTime?
   documentsUploadedAt     DateTime?
   capabilitiesCompletedAt DateTime?
-  contractCompletedAt     DateTime?
 
   // Controle
   startedAt      DateTime  @default(now())
@@ -917,9 +940,10 @@ model SupplierOnboarding {
   timeSpentSeconds Int   @default(0)
   deviceInfo       Json? // { browser, os, device, ip }
 
-  credential SupplierCredential   @relation(fields: [credentialId], references: [id], onDelete: Cascade)
-  user       User?                @relation(fields: [userId], references: [id])
-  documents  OnboardingDocument[]
+  supplier            Company              @relation("SupplierOnboarding", fields: [supplierId], references: [id], onDelete: Cascade)
+  user                User?                @relation(fields: [userId], references: [id])
+  documents           OnboardingDocument[]
+  supplierCredentials SupplierCredential[]
 
   @@map("supplier_onboardings")
 }
@@ -951,8 +975,14 @@ model OnboardingDocument {
 
 // Contrato entre marca e facção
 model SupplierContract {
-  id              String  @id @default(uuid())
-  credentialId    String  @unique
+  id             String  @id @default(uuid())
+  relationshipId String? @unique // Vinculado ao relacionamento marca-facção
+  credentialId   String? @unique // Mantido para compatibilidade/migração
+
+  // Desnormalizado para facilitar queries
+  supplierId String?
+  brandId    String?
+
   templateId      String?
   templateVersion String?
   documentUrl     String? // URL do documento gerado
@@ -982,11 +1012,106 @@ model SupplierContract {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  credential       SupplierCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
-  brandSignedBy    User?              @relation("ContractBrandSignedBy", fields: [brandSignedById], references: [id])
-  supplierSignedBy User?              @relation("ContractSupplierSignedBy", fields: [supplierSignedById], references: [id])
+  relationship     SupplierBrandRelationship? @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  credential       SupplierCredential?        @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  supplier         Company?                   @relation("SupplierContracts", fields: [supplierId], references: [id])
+  brand            Company?                   @relation("BrandContracts", fields: [brandId], references: [id])
+  brandSignedBy    User?                      @relation("ContractBrandSignedBy", fields: [brandSignedById], references: [id])
+  supplierSignedBy User?                      @relation("ContractSupplierSignedBy", fields: [supplierSignedById], references: [id])
 
   @@map("supplier_contracts")
+}
+
+// Relacionamento N:M entre Fornecedor e Marca
+// Uma facção pode trabalhar para múltiplas marcas simultaneamente
+model SupplierBrandRelationship {
+  id         String @id @default(uuid())
+  supplierId String
+  brandId    String
+
+  // Status do relacionamento com ESTA marca
+  status RelationshipStatus @default(PENDING)
+
+  // Quem iniciou/gerencia
+  initiatedBy     String // User ID (admin ou marca)
+  initiatedByRole UserRole
+
+  // Controle interno da marca para ESTE fornecedor
+  internalCode String? // Código interno da marca
+  notes        String? @db.Text // Observações internas
+  priority     Int     @default(0) // Ordem de prioridade
+
+  // Datas
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  activatedAt  DateTime?
+  suspendedAt  DateTime?
+  terminatedAt DateTime?
+
+  // Relations
+  supplier Company @relation("SupplierRelationships", fields: [supplierId], references: [id], onDelete: Cascade)
+  brand    Company @relation("BrandSuppliers", fields: [brandId], references: [id], onDelete: Cascade)
+
+  initiatedByUser User @relation("RelationshipsInitiated", fields: [initiatedBy], references: [id])
+
+  contract          SupplierContract?
+  specificDocuments BrandSpecificDocument[]
+  statusHistory     RelationshipStatusHistory[]
+  orders            Order[]                     @relation("RelationshipOrders")
+
+  @@unique([supplierId, brandId])
+  @@index([supplierId])
+  @@index([brandId])
+  @@index([status])
+  @@map("supplier_brand_relationships")
+}
+
+// Histórico de mudanças de status do relacionamento
+model RelationshipStatusHistory {
+  id             String             @id @default(uuid())
+  relationshipId String
+  status         RelationshipStatus
+  notes          String?            @db.Text
+  changedById    String
+  createdAt      DateTime           @default(now())
+
+  relationship SupplierBrandRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  changedBy    User                      @relation("RelationshipStatusChanged", fields: [changedById], references: [id])
+
+  @@index([relationshipId])
+  @@map("relationship_status_history")
+}
+
+// Documentos específicos exigidos por uma marca para um fornecedor
+model BrandSpecificDocument {
+  id             String  @id @default(uuid())
+  relationshipId String
+  type           String // Tipo de documento específico
+  name           String
+  description    String? @db.Text
+  isRequired     Boolean @default(false)
+
+  // Arquivo
+  fileName String
+  fileUrl  String
+  fileSize Int
+  mimeType String
+
+  // Validação pela marca
+  isValid         Boolean?
+  validationNotes String?   @db.Text
+  validatedAt     DateTime?
+  validatedById   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  relationship SupplierBrandRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  validatedBy  User?                     @relation("BrandDocsValidated", fields: [validatedById], references: [id])
+
+  @@index([relationshipId])
+  @@map("brand_specific_documents")
 }
 
 // Templates de convite por empresa
