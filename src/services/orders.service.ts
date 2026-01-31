@@ -39,6 +39,8 @@ export interface Order {
     productType: string;
     productCategory?: string;
     productName: string;
+    op?: string;
+    artigo?: string;
     description?: string;
     quantity: number;
     pricePerUnit: number;
@@ -140,6 +142,8 @@ export interface CreateOrderDto {
     productType: string;
     productCategory?: string;
     productName: string;
+    op?: string;
+    artigo?: string;
     description?: string;
     quantity: number;
     pricePerUnit: number;
@@ -169,6 +173,8 @@ export const ordersService = {
                 productType: data.productType,
                 productCategory: data.productCategory,
                 productName: data.productName,
+                op: data.op,
+                artigo: data.artigo,
                 description: data.description,
                 quantity: data.quantity,
                 pricePerUnit: data.pricePerUnit,

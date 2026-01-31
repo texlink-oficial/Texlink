@@ -10,7 +10,7 @@ interface OrderListViewProps {
   onBulkAction?: (action: string, orderIds: string[]) => void;
 }
 
-type SortKey = 'id' | 'brand' | 'product' | 'value' | 'status' | 'deadline' | 'payment';
+type SortKey = 'id' | 'brand' | 'product' | 'op' | 'artigo' | 'value' | 'status' | 'deadline' | 'payment';
 
 interface SortConfig {
   key: SortKey;
@@ -94,6 +94,14 @@ export const OrderListView: React.FC<OrderListViewProps> = ({ orders, onOrderCli
         case 'product':
           aValue = a.productName.toLowerCase();
           bValue = b.productName.toLowerCase();
+          break;
+        case 'op':
+          aValue = (a.op || '').toLowerCase();
+          bValue = (b.op || '').toLowerCase();
+          break;
+        case 'artigo':
+          aValue = (a.artigo || '').toLowerCase();
+          bValue = (b.artigo || '').toLowerCase();
           break;
         case 'value':
           aValue = a.totalValue;
@@ -212,6 +220,8 @@ export const OrderListView: React.FC<OrderListViewProps> = ({ orders, onOrderCli
                 {renderHeader('ID', 'id', 'w-24')}
                 {renderHeader('Marca', 'brand')}
                 {renderHeader('Produto', 'product')}
+                {renderHeader('OP', 'op')}
+                {renderHeader('Artigo', 'artigo')}
                 {renderHeader('Qtd / Valor', 'value')}
                 {renderHeader('Status', 'status')}
                 {renderHeader('$', 'payment')}
@@ -259,6 +269,24 @@ export const OrderListView: React.FC<OrderListViewProps> = ({ orders, onOrderCli
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-800 dark:text-gray-200 text-sm">{order.productName}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{order.type}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {order.op ? (
+                        <span className="inline-flex items-center text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 px-2 py-0.5 rounded">
+                          {order.op}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-600">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {order.artigo ? (
+                        <span className="inline-flex items-center text-xs font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 px-2 py-0.5 rounded">
+                          {order.artigo}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-600">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm font-semibold text-gray-900 dark:text-white">{order.quantity} <span className="text-gray-400 dark:text-gray-500 font-normal">pçs</span></div>

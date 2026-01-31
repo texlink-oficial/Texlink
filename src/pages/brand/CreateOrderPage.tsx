@@ -53,6 +53,8 @@ const CreateOrderPage: React.FC = () => {
         productType: '',
         productCategory: '',
         productName: '',
+        op: '',
+        artigo: '',
         description: '',
         quantity: '',
         pricePerUnit: '',
@@ -138,6 +140,8 @@ const CreateOrderPage: React.FC = () => {
                 ...formData,
                 quantity: Number(formData.quantity),
                 pricePerUnit: Number(formData.pricePerUnit),
+                op: formData.op || undefined,
+                artigo: formData.artigo || undefined,
                 supplierId: formData.assignmentType === 'DIRECT' ? formData.supplierId : undefined,
                 targetSupplierIds: (formData.assignmentType === 'BIDDING' || formData.assignmentType === 'HYBRID') ? formData.targetSupplierIds : undefined,
             });
@@ -301,6 +305,22 @@ const CreateOrderPage: React.FC = () => {
                         placeholder="Ex: Camiseta Básica Premium Algodão"
                         required
                     />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Input
+                            label="OP (Ordem de Produção)"
+                            name="op"
+                            value={formData.op}
+                            onChange={handleChange}
+                            placeholder="Ex: 12345"
+                        />
+                        <Input
+                            label="Artigo"
+                            name="artigo"
+                            value={formData.artigo}
+                            onChange={handleChange}
+                            placeholder="Ex: ART-001-A"
+                        />
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descrição Detalhada</label>
                         <textarea

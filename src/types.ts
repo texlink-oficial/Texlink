@@ -40,6 +40,8 @@ export interface Order {
   brand: Brand;
   type: 'Infantil' | 'Adulto';
   productName: string;
+  op?: string; // Ordem de Produção
+  artigo?: string; // Código do Artigo
   quantity: number; // 300 to 2500
   pricePerUnit: number; // 39.90 or 50.00 approx
   totalValue: number;
@@ -87,3 +89,199 @@ export interface Message {
   timestamp: string;
   read: boolean;
 }
+
+// ==================== SUPPLIER DOCUMENTS ====================
+
+export type SupplierDocumentType =
+  | 'ABVTEX_TERMO'
+  | 'CNPJ_ATIVO'
+  | 'CND_FEDERAL'
+  | 'CRF_FGTS'
+  | 'GUIA_INSS'
+  | 'GUIA_FGTS'
+  | 'GUIA_SIMPLES_DAS'
+  | 'LICENCA_FUNCIONAMENTO'
+  | 'AVCB'
+  | 'CONTRATO_SOCIAL'
+  | 'INSCRICAO_MUNICIPAL'
+  | 'RELATORIO_EMPREGADOS'
+  | 'RELACAO_SUBCONTRATADOS'
+  | 'LICENCA_AMBIENTAL'
+  | 'LAUDO_NR1_GRO_PGR'
+  | 'LAUDO_NR7_PCMSO'
+  | 'LAUDO_NR10_SEGURANCA_ELETRICA'
+  | 'LAUDO_NR15_INSALUBRIDADE'
+  | 'LAUDO_NR17_AET'
+  | 'OUTRO';
+
+export type SupplierDocumentStatus = 'PENDING' | 'VALID' | 'EXPIRING_SOON' | 'EXPIRED';
+
+export interface SupplierDocument {
+  id: string;
+  companyId: string;
+  type: SupplierDocumentType;
+  status: SupplierDocumentStatus;
+  fileName?: string;
+  fileUrl?: string;
+  fileSize?: number;
+  mimeType?: string;
+  uploadedAt?: string;
+  competenceMonth?: number;
+  competenceYear?: number;
+  expiresAt?: string;
+  notes?: string;
+  uploadedBy?: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupplierDocumentSummary {
+  total: number;
+  valid: number;
+  expiringSoon: number;
+  expired: number;
+  pending: number;
+}
+
+export interface SupplierDocumentChecklistItem {
+  type: SupplierDocumentType;
+  documentId: string | null;
+  status: SupplierDocumentStatus;
+  hasFile: boolean;
+  expiresAt: string | null;
+  isMonthly: boolean;
+  requiresExpiry: boolean;
+}
+
+// ==================== PARTNERS ====================
+
+export type PartnerCategory =
+  | 'HEALTH_WELLNESS'
+  | 'COMPLIANCE'
+  | 'ACCOUNTING'
+  | 'FINANCE'
+  | 'TECHNOLOGY'
+  | 'TRAINING'
+  | 'INSURANCE'
+  | 'OTHER';
+
+export interface Partner {
+  id: string;
+  name: string;
+  description: string;
+  logoUrl?: string;
+  website: string;
+  category: PartnerCategory;
+  benefits: string[];
+  contactEmail?: string;
+  contactPhone?: string;
+  discountCode?: string;
+  discountInfo?: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PartnerCategoryCount {
+  category: PartnerCategory;
+  count: number;
+}
+
+export const PARTNER_CATEGORY_LABELS: Record<PartnerCategory, string> = {
+  HEALTH_WELLNESS: 'Saúde e Bem-estar',
+  COMPLIANCE: 'Compliance e NR',
+  ACCOUNTING: 'Contabilidade',
+  FINANCE: 'Financeiro',
+  TECHNOLOGY: 'Tecnologia',
+  TRAINING: 'Treinamentos',
+  INSURANCE: 'Seguros',
+  OTHER: 'Outros',
+};
+
+export const PARTNER_CATEGORY_ICONS: Record<PartnerCategory, string> = {
+  HEALTH_WELLNESS: 'Heart',
+  COMPLIANCE: 'Shield',
+  ACCOUNTING: 'Calculator',
+  FINANCE: 'DollarSign',
+  TECHNOLOGY: 'Cpu',
+  TRAINING: 'GraduationCap',
+  INSURANCE: 'Umbrella',
+  OTHER: 'MoreHorizontal',
+};
+
+// ==================== EDUCATIONAL CONTENT ====================
+
+export type EducationalContentType = 'VIDEO' | 'IMAGE' | 'DOCUMENT' | 'ARTICLE';
+export type EducationalContentCategory =
+  | 'TUTORIAL_SISTEMA'
+  | 'BOAS_PRATICAS'
+  | 'COMPLIANCE'
+  | 'PRODUCAO'
+  | 'FINANCEIRO'
+  | 'QUALIDADE'
+  | 'NOVIDADES';
+
+export interface EducationalContent {
+  id: string;
+  title: string;
+  description: string;
+  contentType: EducationalContentType;
+  contentUrl: string;
+  thumbnailUrl?: string;
+  category: EducationalContentCategory;
+  duration?: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EducationalContentCategoryCount {
+  category: EducationalContentCategory;
+  count: number;
+}
+
+export const EDUCATIONAL_CONTENT_TYPE_LABELS: Record<EducationalContentType, string> = {
+  VIDEO: 'Vídeo',
+  IMAGE: 'Imagem',
+  DOCUMENT: 'Documento',
+  ARTICLE: 'Artigo',
+};
+
+export const EDUCATIONAL_CATEGORY_LABELS: Record<EducationalContentCategory, string> = {
+  TUTORIAL_SISTEMA: 'Tutorial do Sistema',
+  BOAS_PRATICAS: 'Boas Práticas',
+  COMPLIANCE: 'Compliance',
+  PRODUCAO: 'Produção',
+  FINANCEIRO: 'Financeiro',
+  QUALIDADE: 'Qualidade',
+  NOVIDADES: 'Novidades',
+};
+
+// Document type labels in Portuguese
+export const SUPPLIER_DOCUMENT_TYPE_LABELS: Record<SupplierDocumentType, string> = {
+  ABVTEX_TERMO: 'Termo de Participação ABVTEX',
+  CNPJ_ATIVO: 'Cartão CNPJ (situação ativa)',
+  CND_FEDERAL: 'Certidão Negativa de Débitos Federais',
+  CRF_FGTS: 'Certificado de Regularidade do FGTS',
+  GUIA_INSS: 'Guia e comprovante de pagamento do INSS',
+  GUIA_FGTS: 'Guia e comprovante de pagamento de FGTS',
+  GUIA_SIMPLES_DAS: 'Guia e comprovante do Simples Nacional (DAS)',
+  LICENCA_FUNCIONAMENTO: 'Licença de Funcionamento',
+  AVCB: 'Auto de Vistoria do Corpo de Bombeiros',
+  CONTRATO_SOCIAL: 'Contrato Social / Requerimento do Empresário',
+  INSCRICAO_MUNICIPAL: 'Inscrição Municipal',
+  RELATORIO_EMPREGADOS: 'Relatório de empregados (CAGED/eSocial/RAIS)',
+  RELACAO_SUBCONTRATADOS: 'Relação de subcontratados',
+  LICENCA_AMBIENTAL: 'Licença Ambiental',
+  LAUDO_NR1_GRO_PGR: 'Laudo NR-1 – GRO / PGR',
+  LAUDO_NR7_PCMSO: 'Laudo NR-7 – PCMSO',
+  LAUDO_NR10_SEGURANCA_ELETRICA: 'Laudo NR-10 – Segurança Elétrica',
+  LAUDO_NR15_INSALUBRIDADE: 'Laudo NR-15 – Insalubridade',
+  LAUDO_NR17_AET: 'Laudo NR-17 – AET (Análise Ergonômica)',
+  OUTRO: 'Outro documento',
+};

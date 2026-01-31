@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ordersService, Order, OrderStatus } from '../../services';
 import {
     Package, Clock, CheckCircle, XCircle, AlertCircle,
-    ChevronRight, Filter, Search, ArrowLeft
+    ChevronRight, Filter, Search, ArrowLeft, FileText, Tag
 } from 'lucide-react';
 
 const OrdersListPage: React.FC = () => {
@@ -11,6 +11,8 @@ const OrdersListPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<OrderStatus | ''>('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [opFilter, setOpFilter] = useState('');
+    const [artigoFilter, setArtigoFilter] = useState('');
     const [activeTab, setActiveTab] = useState<'my_orders' | 'marketplace'>('my_orders');
 
     useEffect(() => {
@@ -29,11 +31,17 @@ const OrdersListPage: React.FC = () => {
         }
     };
 
-    const filteredOrders = orders.filter(order =>
-        order.displayId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.brand?.tradeName?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredOrders = orders.filter(order => {
+        const matchesSearch =
+            order.displayId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            order.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            order.brand?.tradeName?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesOp = !opFilter || (order.op?.toLowerCase().includes(opFilter.toLowerCase()));
+        const matchesArtigo = !artigoFilter || (order.artigo?.toLowerCase().includes(artigoFilter.toLowerCase()));
+
+        return matchesSearch && matchesOp && matchesArtigo;
+    });
 
     // Segregate orders based on Tab
     const tabOrders = filteredOrders.filter(order => {
@@ -122,6 +130,28 @@ const OrdersListPage: React.FC = () => {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-11 pr-4 py-3 bg-brand-900/50 border border-brand-800 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        />
+                    </div>
+
+                    {/* OP Filter */}
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Filtrar por OP..."
+                            value={opFilter}
+                            onChange={(e) => setOpFilter(e.target.value)}
+                            className="w-full sm:w-32 px-4 py-3 bg-brand-900/50 border border-brand-800 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        />
+                    </div>
+
+                    {/* Artigo Filter */}
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Filtrar por Artigo..."
+                            value={artigoFilter}
+                            onChange={(e) => setArtigoFilter(e.target.value)}
+                            className="w-full sm:w-36 px-4 py-3 bg-brand-900/50 border border-brand-800 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
                         />
                     </div>
 
@@ -231,6 +261,20 @@ const OrderSection: React.FC<OrderSectionProps> = ({ title, icon, orders, accent
                                     <StatusBadge status={order.status} />
                                 </div>
                                 <h3 className="text-white font-medium mb-1">{order.productName}</h3>
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                    {order.op && (
+                                        <span className="inline-flex items-center gap-1 text-xs bg-brand-800/50 text-brand-300 px-2 py-0.5 rounded">
+                                            <FileText className="w-3 h-3" />
+                                            OP: {order.op}
+                                        </span>
+                                    )}
+                                    {order.artigo && (
+                                        <span className="inline-flex items-center gap-1 text-xs bg-purple-800/50 text-purple-300 px-2 py-0.5 rounded">
+                                            <Tag className="w-3 h-3" />
+                                            {order.artigo}
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-sm text-brand-400">
                                     {order.brand?.tradeName} • {order.quantity} peças
                                 </p>

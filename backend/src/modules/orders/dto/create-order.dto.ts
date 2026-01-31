@@ -12,6 +12,14 @@ export class CreateOrderDto {
     @IsString()
     productName: string;
 
+    @IsOptional()
+    @IsString()
+    op?: string;
+
+    @IsOptional()
+    @IsString()
+    artigo?: string;
+
     @IsString()
     @IsOptional()
     description?: string;

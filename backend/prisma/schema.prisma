@@ -248,6 +248,31 @@ enum RelationshipStatus {
   TERMINATED // Encerrado permanentemente
 }
 
+// ==================== SUPPORT TICKETS ENUMS ====================
+
+enum SupportTicketStatus {
+  ABERTO
+  EM_ANDAMENTO
+  AGUARDANDO_RESPOSTA
+  RESOLVIDO
+  FECHADO
+}
+
+enum SupportTicketPriority {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum SupportTicketCategory {
+  PEDIDOS
+  PAGAMENTOS
+  ACESSO
+  TECNICO
+  OUTROS
+}
+
 // ==================== MODELS ====================
 
 model User {
@@ -281,6 +306,15 @@ model User {
   relationshipsInitiated     SupplierBrandRelationship[] @relation("RelationshipsInitiated")
   relationshipStatusChanges  RelationshipStatusHistory[] @relation("RelationshipStatusChanged")
   brandSpecificDocsValidated BrandSpecificDocument[]     @relation("BrandDocsValidated")
+
+  // Supplier documents uploaded
+  documentsUploaded          SupplierDocument[]          @relation("DocumentsUploaded")
+
+  // Support tickets relations
+  ticketsCreated             SupportTicket[]             @relation("TicketsCreated")
+  ticketsAssigned            SupportTicket[]             @relation("TicketsAssigned")
+  ticketMessagesSent         SupportTicketMessage[]      @relation("TicketMessagesSent")
+  ticketStatusChanges        SupportTicketStatusHistory[] @relation("TicketStatusChanges")
 
   // Performance indexes
   @@index([email])
@@ -336,6 +370,12 @@ model Company {
   onboarding            SupplierOnboarding?         @relation("SupplierOnboarding") // Como fornecedor
   contractsAsSupplier   SupplierContract[]          @relation("SupplierContracts")
   contractsAsBrand      SupplierContract[]          @relation("BrandContracts")
+
+  // Supplier documents (compliance/fiscal)
+  supplierDocuments     SupplierDocument[]          @relation("SupplierDocuments")
+
+  // Support tickets
+  supportTickets        SupportTicket[]             @relation("CompanyTickets")
 
   @@map("companies")
 }
@@ -453,6 +493,8 @@ model Order {
   productType     String // e.g., "Infantil"
   productCategory String? // e.g., "Camiseta"
   productName     String
+  op              String?   // Ordem de Produção
+  artigo          String?   // Código do Artigo
   description     String?
 
   quantity     Int
@@ -1189,4 +1231,219 @@ model CredentialSettings {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("credential_settings")
+}
+
+// ==================== SUPPLIER DOCUMENTS ====================
+
+// Tipos de documentos de fornecedor (compliance/fiscal)
+enum SupplierDocumentType {
+  ABVTEX_TERMO                    // Termo de Participação do Programa ABVTEX
+  CNPJ_ATIVO                      // Cartão CNPJ válido (situação ativa)
+  CND_FEDERAL                     // Certidão Negativa de Débitos Federais
+  CRF_FGTS                        // Certificado de Regularidade do FGTS
+  GUIA_INSS                       // Guia e comprovante de pagamento do INSS
+  GUIA_FGTS                       // Guia e comprovante de pagamento de FGTS
+  GUIA_SIMPLES_DAS                // Guia e comprovante de pagamento do Simples Nacional (DAS)
+  LICENCA_FUNCIONAMENTO           // Licença de Funcionamento
+  AVCB                            // Auto de Vistoria do Corpo de Bombeiros
+  CONTRATO_SOCIAL                 // Contrato Social / Requerimento do Empresário
+  INSCRICAO_MUNICIPAL             // Inscrição Municipal
+  RELATORIO_EMPREGADOS            // Relatório de empregados (CAGED / eSocial / RAIS)
+  RELACAO_SUBCONTRATADOS          // Relação de subcontratados
+  LICENCA_AMBIENTAL               // Licença ambiental
+  LAUDO_NR1_GRO_PGR               // Laudo NR-1 – GRO / PGR
+  LAUDO_NR7_PCMSO                 // Laudo NR-7 – PCMSO
+  LAUDO_NR10_SEGURANCA_ELETRICA   // Laudo NR-10 – Laudo e treinamentos de segurança elétrica
+  LAUDO_NR15_INSALUBRIDADE        // Laudo NR-15 – Laudo de Insalubridade
+  LAUDO_NR17_AET                  // Laudo NR-17 – AET – Análise Ergonômica do Trabalho
+  OUTRO                           // Outro documento
+}
+
+// Status de documento de fornecedor
+enum SupplierDocumentStatus {
+  PENDING        // Documento pendente de upload
+  VALID          // Documento válido (dentro da validade)
+  EXPIRING_SOON  // Documento próximo do vencimento (30 dias)
+  EXPIRED        // Documento vencido
+}
+
+// Documento de fornecedor (compliance/fiscal)
+model SupplierDocument {
+  id          String                 @id @default(uuid())
+  companyId   String
+  type        SupplierDocumentType
+  status      SupplierDocumentStatus @default(PENDING)
+
+  // Arquivo
+  fileName    String?
+  fileUrl     String?
+  fileSize    Int?     // bytes
+  mimeType    String?
+
+  // Datas
+  uploadedAt      DateTime?  // Data de upload/lançamento
+  competenceMonth Int?       // Mês de competência (1-12)
+  competenceYear  Int?       // Ano de competência
+  expiresAt       DateTime?  // Data de validade
+
+  // Observações
+  notes       String?   @db.Text
+
+  // Controle
+  uploadedById String?  // Usuário que fez upload
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  company    Company @relation("SupplierDocuments", fields: [companyId], references: [id], onDelete: Cascade)
+  uploadedBy User?   @relation("DocumentsUploaded", fields: [uploadedById], references: [id])
+
+  @@index([companyId])
+  @@index([type])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("supplier_documents")
+}
+
+// ==================== EDUCATIONAL CONTENT (Texlink Educa) ====================
+
+enum EducationalContentType {
+  VIDEO
+  IMAGE
+  DOCUMENT
+  ARTICLE
+}
+
+enum EducationalContentCategory {
+  TUTORIAL_SISTEMA     // Tutorial do Sistema
+  BOAS_PRATICAS        // Boas Práticas
+  COMPLIANCE           // Compliance
+  PRODUCAO             // Produção
+  FINANCEIRO           // Financeiro
+  QUALIDADE            // Qualidade
+  NOVIDADES            // Novidades
+}
+
+model EducationalContent {
+  id            String                      @id @default(uuid())
+  title         String
+  description   String                      @db.Text
+  contentType   EducationalContentType
+  contentUrl    String                      // URL do vídeo/documento/imagem
+  thumbnailUrl  String?                     // Thumbnail para cards
+  category      EducationalContentCategory
+  duration      String?                     // Para vídeos: "5:30"
+  isActive      Boolean                     @default(true)
+  displayOrder  Int                         @default(0)
+  createdAt     DateTime                    @default(now())
+  updatedAt     DateTime                    @updatedAt
+
+  @@index([isActive])
+  @@index([category])
+  @@index([contentType])
+  @@map("educational_contents")
+}
+
+// ==================== PARTNERS (Benefícios/Parcerias) ====================
+
+enum PartnerCategory {
+  HEALTH_WELLNESS    // Saúde e Bem-estar
+  COMPLIANCE         // Compliance e NR
+  ACCOUNTING         // Contabilidade
+  FINANCE            // Financeiro/Crédito
+  TECHNOLOGY         // Tecnologia
+  TRAINING           // Treinamentos
+  INSURANCE          // Seguros
+  OTHER              // Outros
+}
+
+model Partner {
+  id            String          @id @default(uuid())
+  name          String
+  description   String          @db.Text
+  logoUrl       String?
+  website       String
+  category      PartnerCategory
+  benefits      String[]        // Lista de benefícios oferecidos
+  contactEmail  String?
+  contactPhone  String?
+  discountCode  String?         // Código de desconto exclusivo
+  discountInfo  String?         // Descrição do desconto/benefício
+  isActive      Boolean         @default(true)
+  displayOrder  Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([isActive])
+  @@index([category])
+  @@index([displayOrder])
+  @@map("partners")
+}
+
+// ==================== SUPPORT TICKETS ====================
+
+model SupportTicket {
+  id            String                  @id @default(uuid())
+  displayId     String                  @unique // SUP-YYYYMMDD-XXXX
+  companyId     String
+  createdById   String
+  assignedToId  String?                 // Admin responsável
+
+  title         String
+  description   String                  @db.Text
+  category      SupportTicketCategory
+  status        SupportTicketStatus     @default(ABERTO)
+  priority      SupportTicketPriority   @default(MEDIA)
+
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+
+  // Relations
+  company       Company                 @relation("CompanyTickets", fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy     User                    @relation("TicketsCreated", fields: [createdById], references: [id])
+  assignedTo    User?                   @relation("TicketsAssigned", fields: [assignedToId], references: [id])
+  messages      SupportTicketMessage[]
+  statusHistory SupportTicketStatusHistory[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedToId])
+  @@index([createdAt])
+  @@map("support_tickets")
+}
+
+model SupportTicketMessage {
+  id            String          @id @default(uuid())
+  ticketId      String
+  senderId      String
+  content       String          @db.Text
+  attachments   String[]        // URLs dos anexos
+  isFromSupport Boolean         @default(false)
+  isInternal    Boolean         @default(false) // Nota interna (só admin vê)
+  createdAt     DateTime        @default(now())
+
+  ticket        SupportTicket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender        User            @relation("TicketMessagesSent", fields: [senderId], references: [id])
+
+  @@index([ticketId, createdAt])
+  @@map("support_ticket_messages")
+}
+
+model SupportTicketStatusHistory {
+  id            String                @id @default(uuid())
+  ticketId      String
+  fromStatus    SupportTicketStatus?
+  toStatus      SupportTicketStatus
+  changedById   String
+  notes         String?
+  createdAt     DateTime              @default(now())
+
+  ticket        SupportTicket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  changedBy     User                  @relation("TicketStatusChanges", fields: [changedById], references: [id])
+
+  @@index([ticketId])
+  @@map("support_ticket_status_history")
 }

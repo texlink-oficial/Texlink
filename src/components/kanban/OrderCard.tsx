@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Order, OrderStatus } from '../../types';
-import { Clock, AlertCircle, CheckCircle2, ChevronRight, Package, MapPin, Calendar, DollarSign, GripVertical, Scissors, Circle, Layers, Check, X, Paperclip } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, ChevronRight, Package, MapPin, Calendar, DollarSign, GripVertical, Scissors, Circle, Layers, Check, X, Paperclip, FileText, Tag } from 'lucide-react';
 
 interface OrderCardProps {
     order: Order;
@@ -220,9 +220,27 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
                 {/* Main Content */}
                 <div className="mb-4">
-                    <h4 className="text-lg font-bold text-gray-900 dark:text-white leading-tight line-clamp-2 mb-3">
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white leading-tight line-clamp-2 mb-2">
                         {order.productName}
                     </h4>
+
+                    {/* OP and Artigo badges */}
+                    {(order.op || order.artigo) && (
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                            {order.op && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 px-2 py-0.5 rounded">
+                                    <FileText className="h-3 w-3" />
+                                    OP: {order.op}
+                                </span>
+                            )}
+                            {order.artigo && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 px-2 py-0.5 rounded">
+                                    <Tag className="h-3 w-3" />
+                                    {order.artigo}
+                                </span>
+                            )}
+                        </div>
+                    )}
 
                     <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-gray-600 dark:text-gray-400">
                         <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/30 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700/50">

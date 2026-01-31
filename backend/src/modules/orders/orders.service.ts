@@ -49,6 +49,8 @@ export class OrdersService {
             productType: dto.productType,
             productCategory: dto.productCategory,
             productName: dto.productName,
+            op: dto.op,
+            artigo: dto.artigo,
             description: dto.description,
             quantity: dto.quantity,
             pricePerUnit: dto.pricePerUnit,
