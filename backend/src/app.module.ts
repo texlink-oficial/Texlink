@@ -26,6 +26,9 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { WebhooksModule } from './modules/integrations/webhooks/webhooks.module';
 import { HealthModule } from './modules/health/health.module';
 import { CommonModule } from './common/common.module';
+import { SupplierDocumentsModule } from './modules/supplier-documents/supplier-documents.module';
+import { PartnersModule } from './modules/partners/partners.module';
+import { EducationalContentModule } from './modules/educational-content/educational-content.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -68,6 +71,9 @@ import configuration from './config/configuration';
     RelationshipsModule,
     NotificationsModule,
     WebhooksModule,
+    SupplierDocumentsModule,
+    PartnersModule,
+    EducationalContentModule,
   ],
 })
 export class AppModule { }

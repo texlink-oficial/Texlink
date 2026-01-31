@@ -25,6 +25,9 @@ const SupplierOrderDetails = React.lazy(() => import('./pages/supplier/OrderDeta
 const SupplierOpportunities = React.lazy(() => import('./pages/supplier/OpportunitiesPage'));
 const SupplierFinancial = React.lazy(() => import('./pages/supplier/FinancialDashboardPage'));
 const SupplierCapacity = React.lazy(() => import('./pages/supplier/CapacityDashboardPage'));
+const SupplierDocuments = React.lazy(() => import('./pages/supplier/DocumentsPage'));
+const SupplierPartners = React.lazy(() => import('./pages/supplier/PartnersPage'));
+const SupplierEduca = React.lazy(() => import('./pages/supplier/EducaPage'));
 
 // Brand pages
 const BrandPortalLayout = React.lazy(() => import('./components/brand/BrandPortalLayout'));
@@ -53,6 +56,8 @@ const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
 const AdminApprovals = React.lazy(() => import('./pages/admin/ApprovalsPage'));
 const AdminSuppliers = React.lazy(() => import('./pages/admin/SuppliersPage'));
 const AdminSuppliersPool = React.lazy(() => import('./pages/admin/SuppliersPoolPage'));
+const AdminPartners = React.lazy(() => import('./pages/admin/PartnersPage'));
+const AdminEducationalContent = React.lazy(() => import('./pages/admin/EducationalContentPage'));
 
 // Portal do Parceiro pages
 const PortalLayout = React.lazy(() => import('./components/portal/PortalLayout'));
@@ -124,6 +129,12 @@ const App: React.FC = () => {
                                 <Route path="capacidade" element={<SupplierCapacity />} />
                                 {/* Marcas (V3 N:M Relationships) */}
                                 <Route path="marcas" element={<SupplierBrandsPage />} />
+                                {/* Documentos */}
+                                <Route path="documentos" element={<SupplierDocuments />} />
+                                {/* Parceiros */}
+                                <Route path="parceiros" element={<SupplierPartners />} />
+                                {/* Texlink Educa */}
+                                <Route path="educa" element={<SupplierEduca />} />
                                 {/* Financeiro */}
                                 <Route path="financeiro/depositos" element={<DepositsPage />} />
                                 <Route path="financeiro/depositos/:id" element={<DepositDetailPage />} />
@@ -186,6 +197,8 @@ const App: React.FC = () => {
                             <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminApprovals /></ProtectedRoute>} />
                             <Route path="/admin/suppliers" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliers /></ProtectedRoute>} />
                             <Route path="/admin/suppliers-pool" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliersPool /></ProtectedRoute>} />
+                            <Route path="/admin/partners" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminPartners /></ProtectedRoute>} />
+                            <Route path="/admin/educational-content" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminEducationalContent /></ProtectedRoute>} />
 
                             {/* Error pages */}
                             <Route path="/500" element={<ServerErrorPage />} />

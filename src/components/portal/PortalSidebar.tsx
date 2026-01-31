@@ -22,7 +22,10 @@ import {
     Moon,
     Sun,
     Settings,
-    Building2
+    Building2,
+    FolderOpen,
+    Gift,
+    GraduationCap
 } from 'lucide-react';
 
 interface NavItem {
@@ -66,6 +69,24 @@ const navItems: NavItem[] = [
         label: 'Capacidade',
         icon: <Gauge className="h-5 w-5" />,
         path: '/portal/capacidade',
+    },
+    {
+        id: 'documentos',
+        label: 'Documentos',
+        icon: <FolderOpen className="h-5 w-5" />,
+        path: '/portal/documentos',
+    },
+    {
+        id: 'parceiros',
+        label: 'Parceiros',
+        icon: <Gift className="h-5 w-5" />,
+        path: '/portal/parceiros',
+    },
+    {
+        id: 'educa',
+        label: 'Texlink Educa',
+        icon: <GraduationCap className="h-5 w-5" />,
+        path: '/portal/educa',
     },
     {
         id: 'financeiro',
