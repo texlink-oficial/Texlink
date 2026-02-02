@@ -5,7 +5,7 @@ import { adminService, AdminDashboard as DashboardData } from '../../services';
 import {
     Package, DollarSign, Factory, Building2, Users,
     TrendingUp, Clock, CheckCircle, AlertCircle,
-    ChevronRight, Settings, Bell, LogOut, Shield, Gift, GraduationCap
+    ChevronRight, Settings, Bell, LogOut, Shield, Gift, GraduationCap, HelpCircle
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -192,6 +192,12 @@ const AdminDashboard: React.FC = () => {
                         description="Gerenciar Texlink Educa"
                         href="/admin/educational-content"
                         icon={GraduationCap}
+                    />
+                    <QuickAction
+                        title="Chamados de Suporte"
+                        description="Gerenciar Central de Ajuda"
+                        href="/admin/support"
+                        icon={HelpCircle}
                     />
                 </div>
 

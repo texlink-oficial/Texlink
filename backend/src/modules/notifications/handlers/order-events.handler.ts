@@ -32,7 +32,7 @@ export class OrderEventsHandler {
      */
     @OnEvent(ORDER_CREATED)
     async handleOrderCreated(payload: Record<string, unknown>) {
-        const event = payload as OrderCreatedEvent;
+        const event = payload as unknown as OrderCreatedEvent;
         this.logger.log(`Handling order.created event for order ${event.displayId}`);
 
         try {
@@ -79,7 +79,7 @@ export class OrderEventsHandler {
      */
     @OnEvent(ORDER_ACCEPTED)
     async handleOrderAccepted(payload: Record<string, unknown>) {
-        const event = payload as OrderAcceptedEvent;
+        const event = payload as unknown as OrderAcceptedEvent;
         this.logger.log(`Handling order.accepted event for order ${event.displayId}`);
 
         try {
@@ -117,7 +117,7 @@ export class OrderEventsHandler {
      */
     @OnEvent(ORDER_REJECTED)
     async handleOrderRejected(payload: Record<string, unknown>) {
-        const event = payload as OrderRejectedEvent;
+        const event = payload as unknown as OrderRejectedEvent;
         this.logger.log(`Handling order.rejected event for order ${event.displayId}`);
 
         try {
@@ -156,7 +156,7 @@ export class OrderEventsHandler {
      */
     @OnEvent(ORDER_STATUS_CHANGED)
     async handleOrderStatusChanged(payload: Record<string, unknown>) {
-        const event = payload as OrderStatusChangedEvent;
+        const event = payload as unknown as OrderStatusChangedEvent;
         this.logger.log(`Handling order.status.changed for order ${event.displayId}: ${event.previousStatus} -> ${event.newStatus}`);
 
         try {
@@ -219,7 +219,7 @@ export class OrderEventsHandler {
      */
     @OnEvent(ORDER_FINALIZED)
     async handleOrderFinalized(payload: Record<string, unknown>) {
-        const event = payload as OrderStatusChangedEvent;
+        const event = payload as unknown as OrderStatusChangedEvent;
         this.logger.log(`Handling order.finalized for order ${event.displayId}`);
 
         try {

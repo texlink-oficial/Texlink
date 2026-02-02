@@ -27,7 +27,7 @@ export class DocumentEventsHandler {
      */
     @OnEvent(DOCUMENT_EXPIRING)
     async handleDocumentExpiring(payload: Record<string, unknown>) {
-        const event = payload as DocumentExpiringEvent;
+        const event = payload as unknown as DocumentExpiringEvent;
         this.logger.log(`Handling document.expiring for document ${event.documentId}`);
 
         try {
@@ -56,7 +56,7 @@ export class DocumentEventsHandler {
      */
     @OnEvent(DOCUMENT_EXPIRED)
     async handleDocumentExpired(payload: Record<string, unknown>) {
-        const event = payload as DocumentExpiredEvent;
+        const event = payload as unknown as DocumentExpiredEvent;
         this.logger.log(`Handling document.expired for document ${event.documentId}`);
 
         try {

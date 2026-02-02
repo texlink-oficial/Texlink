@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PermissionProvider } from './contexts/PermissionContext';
+import { ToastProvider } from './contexts/ToastContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { ToastContainer } from './components/ui/ToastContainer';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/error/ErrorBoundary';
 
@@ -28,6 +31,9 @@ const SupplierCapacity = React.lazy(() => import('./pages/supplier/CapacityDashb
 const SupplierDocuments = React.lazy(() => import('./pages/supplier/DocumentsPage'));
 const SupplierPartners = React.lazy(() => import('./pages/supplier/PartnersPage'));
 const SupplierEduca = React.lazy(() => import('./pages/supplier/EducaPage'));
+const SupplierHelpCenter = React.lazy(() => import('./pages/supplier/HelpCenterPage'));
+const SupplierTicketDetail = React.lazy(() => import('./pages/supplier/TicketDetailPage'));
+const SupplierSettings = React.lazy(() => import('./pages/supplier/SettingsPage'));
 
 // Brand pages
 const BrandPortalLayout = React.lazy(() => import('./components/brand/BrandPortalLayout'));
@@ -58,6 +64,9 @@ const AdminSuppliers = React.lazy(() => import('./pages/admin/SuppliersPage'));
 const AdminSuppliersPool = React.lazy(() => import('./pages/admin/SuppliersPoolPage'));
 const AdminPartners = React.lazy(() => import('./pages/admin/PartnersPage'));
 const AdminEducationalContent = React.lazy(() => import('./pages/admin/EducationalContentPage'));
+const AdminSupportTickets = React.lazy(() => import('./pages/admin/SupportTicketsPage'));
+const AdminBrands = React.lazy(() => import('./pages/admin/BrandsPage'));
+const AdminOrders = React.lazy(() => import('./pages/admin/OrdersPage'));
 
 // Portal do Parceiro pages
 const PortalLayout = React.lazy(() => import('./components/portal/PortalLayout'));
@@ -91,8 +100,10 @@ const App: React.FC = () => {
         <ErrorBoundary>
             <QueryClientProvider client={queryClient}>
                 <AuthProvider>
-                    <PermissionProvider>
-                        <BrowserRouter>
+                    <ToastProvider>
+                        <NotificationProvider>
+                            <PermissionProvider>
+                                <BrowserRouter>
                             <React.Suspense
                         fallback={
                             <div className="min-h-screen bg-brand-950 flex items-center justify-center">
@@ -135,6 +146,9 @@ const App: React.FC = () => {
                                 <Route path="parceiros" element={<SupplierPartners />} />
                                 {/* Texlink Educa */}
                                 <Route path="educa" element={<SupplierEduca />} />
+                                {/* Central de Ajuda */}
+                                <Route path="suporte" element={<SupplierHelpCenter />} />
+                                <Route path="suporte/:id" element={<SupplierTicketDetail />} />
                                 {/* Financeiro */}
                                 <Route path="financeiro/depositos" element={<DepositsPage />} />
                                 <Route path="financeiro/depositos/:id" element={<DepositDetailPage />} />
@@ -143,6 +157,7 @@ const App: React.FC = () => {
                                 <Route path="financeiro/antecipacao" element={<AdvancePage />} />
                                 {/* Configurações */}
                                 <Route path="equipe" element={<TeamPage />} />
+                                <Route path="configuracoes" element={<SupplierSettings />} />
                             </Route>
 
                             {/* Legacy supplier routes - redirect to portal */}
@@ -197,8 +212,11 @@ const App: React.FC = () => {
                             <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminApprovals /></ProtectedRoute>} />
                             <Route path="/admin/suppliers" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliers /></ProtectedRoute>} />
                             <Route path="/admin/suppliers-pool" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliersPool /></ProtectedRoute>} />
+                            <Route path="/admin/brands" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminBrands /></ProtectedRoute>} />
+                            <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminOrders /></ProtectedRoute>} />
                             <Route path="/admin/partners" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminPartners /></ProtectedRoute>} />
                             <Route path="/admin/educational-content" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminEducationalContent /></ProtectedRoute>} />
+                            <Route path="/admin/support" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSupportTickets /></ProtectedRoute>} />
 
                             {/* Error pages */}
                             <Route path="/500" element={<ServerErrorPage />} />
@@ -210,8 +228,11 @@ const App: React.FC = () => {
                             <Route path="*" element={<NotFoundPage />} />
                         </Routes>
                             </React.Suspense>
-                        </BrowserRouter>
-                    </PermissionProvider>
+                                    <ToastContainer />
+                                </BrowserRouter>
+                            </PermissionProvider>
+                        </NotificationProvider>
+                    </ToastProvider>
                 </AuthProvider>
             </QueryClientProvider>
         </ErrorBoundary>

@@ -29,7 +29,7 @@ export class MessageEventsHandler {
      */
     @OnEvent(MESSAGE_SENT)
     async handleMessageSent(payload: Record<string, unknown>) {
-        const event = payload as MessageSentEvent;
+        const event = payload as unknown as MessageSentEvent;
         this.logger.log(`Handling message.sent event for order ${event.orderId}`);
 
         try {
@@ -52,7 +52,7 @@ export class MessageEventsHandler {
      */
     @OnEvent(PROPOSAL_SENT)
     async handleProposalSent(payload: Record<string, unknown>) {
-        const event = payload as ProposalSentEvent;
+        const event = payload as unknown as ProposalSentEvent;
         this.logger.log(`Handling proposal.sent event for order ${event.orderId}`);
 
         try {
@@ -82,7 +82,7 @@ export class MessageEventsHandler {
      */
     @OnEvent(PROPOSAL_RESPONDED)
     async handleProposalResponded(payload: Record<string, unknown>) {
-        const event = payload as ProposalRespondedEvent;
+        const event = payload as unknown as ProposalRespondedEvent;
         this.logger.log(`Handling proposal.responded event for order ${event.orderId}`);
 
         try {
