@@ -28,7 +28,7 @@ export class TicketEventsHandler {
      */
     @OnEvent(TICKET_CREATED)
     async handleTicketCreated(payload: Record<string, unknown>) {
-        const event = payload as TicketCreatedEvent;
+        const event = payload as unknown as TicketCreatedEvent;
         this.logger.log(`Handling ticket.created for ticket ${event.displayId}`);
 
         try {
@@ -57,7 +57,7 @@ export class TicketEventsHandler {
      */
     @OnEvent(TICKET_MESSAGE_ADDED)
     async handleTicketMessageAdded(payload: Record<string, unknown>) {
-        const event = payload as TicketMessageAddedEvent;
+        const event = payload as unknown as TicketMessageAddedEvent;
         this.logger.log(`Handling ticket.message.added for ticket ${event.displayId}`);
 
         try {
@@ -87,7 +87,7 @@ export class TicketEventsHandler {
      */
     @OnEvent(TICKET_STATUS_CHANGED)
     async handleTicketStatusChanged(payload: Record<string, unknown>) {
-        const event = payload as TicketStatusChangedEvent;
+        const event = payload as unknown as TicketStatusChangedEvent;
         this.logger.log(`Handling ticket.status.changed for ticket ${event.displayId}`);
 
         try {
