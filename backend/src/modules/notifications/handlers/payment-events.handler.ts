@@ -29,7 +29,7 @@ export class PaymentEventsHandler {
      */
     @OnEvent(PAYMENT_REGISTERED)
     async handlePaymentRegistered(payload: Record<string, unknown>) {
-        const event = payload as PaymentRegisteredEvent;
+        const event = payload as unknown as PaymentRegisteredEvent;
         this.logger.log(`Handling payment.registered for order ${event.orderDisplayId}`);
 
         try {
@@ -59,7 +59,7 @@ export class PaymentEventsHandler {
      */
     @OnEvent(PAYMENT_RECEIVED)
     async handlePaymentReceived(payload: Record<string, unknown>) {
-        const event = payload as PaymentReceivedEvent;
+        const event = payload as unknown as PaymentReceivedEvent;
         this.logger.log(`Handling payment.received for order ${event.orderDisplayId}`);
 
         try {
@@ -88,7 +88,7 @@ export class PaymentEventsHandler {
      */
     @OnEvent(PAYMENT_OVERDUE)
     async handlePaymentOverdue(payload: Record<string, unknown>) {
-        const event = payload as PaymentOverdueEvent;
+        const event = payload as unknown as PaymentOverdueEvent;
         this.logger.log(`Handling payment.overdue for order ${event.orderDisplayId}`);
 
         try {
