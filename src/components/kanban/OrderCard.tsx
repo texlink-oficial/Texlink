@@ -165,19 +165,34 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 draggable={draggable}
                 onDragStart={(e) => draggable && onDragStart && onDragStart(e, order)}
                 onClick={() => onClick(order)}
-                className={`relative bg-white dark:bg-gray-800 p-5 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.06)] border transition-all group active:scale-[0.99] active:shadow-sm
-        ${isFinalized
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onClick(order);
+                    }
+                }}
+                aria-label={`Pedido ${order.displayId} - ${order.productName}`}
+                className={`
+                    relative bg-white dark:bg-gray-800 p-5 rounded-xl
+                    shadow-card border
+                    transition-all duration-300 ease-spring
+                    group
+                    active:scale-[0.99] active:shadow-sm
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                    ${isFinalized
                         ? 'border-green-100 dark:border-green-900/50 hover:border-green-300 dark:hover:border-green-700'
                         : isNewOrder
-                            ? 'border-brand-200 dark:border-brand-800 hover:border-brand-400 dark:hover:border-brand-600 ring-1 ring-brand-100 dark:ring-brand-900'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-md'}
-        ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
-        `}
+                            ? 'border-brand-200 dark:border-brand-800 hover:border-brand-400 dark:hover:border-brand-600 ring-1 ring-brand-100 dark:ring-brand-900 animate-fade-up'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-card-hover hover:-translate-y-0.5'}
+                    ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
+                `}
             >
 
                 {/* NEW badge for new orders */}
                 {isNewOrder && (
-                    <div className="absolute -top-2.5 -right-2.5 bg-brand-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md z-10 border-2 border-white dark:border-gray-900">
+                    <div className="absolute -top-2.5 -right-2.5 gradient-brand text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-card z-10 border-2 border-white dark:border-gray-900 animate-scale-in">
                         NOVO
                     </div>
                 )}
@@ -269,17 +284,19 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                         <button
                             onClick={handleAccept}
                             disabled={isProcessing}
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
+                            aria-label="Aceitar pedido"
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-sm press-scale touch-feedback focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
                         >
-                            <Check className="h-4 w-4" />
+                            <Check className="h-4 w-4" aria-hidden="true" />
                             Aceitar
                         </button>
                         <button
                             onClick={handleReject}
                             disabled={isProcessing}
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
+                            aria-label="Recusar pedido"
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-sm press-scale touch-feedback focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                         >
-                            <X className="h-4 w-4" />
+                            <X className="h-4 w-4" aria-hidden="true" />
                             Recusar
                         </button>
                     </div>
