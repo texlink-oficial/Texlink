@@ -10,6 +10,7 @@ import {
   SupplierDocumentType,
   SupplierDocumentStatus,
   CompanyType,
+  RelationshipStatus,
 } from '@prisma/client';
 import { LocalStorageProvider, UploadedFile } from '../upload/storage.provider';
 
@@ -482,6 +483,65 @@ export class SupplierDocumentsService {
         isMonthly: MONTHLY_DOCUMENTS.includes(type),
         requiresExpiry: DOCUMENTS_WITH_EXPIRY.includes(type),
       };
+    });
+  }
+
+  // Get brand company for user
+  private async getBrandCompanyId(userId: string): Promise<string> {
+    const companyUser = await this.prisma.companyUser.findFirst({
+      where: {
+        userId,
+        company: { type: CompanyType.BRAND },
+      },
+    });
+
+    if (!companyUser) {
+      throw new ForbiddenException(
+        'You must be associated with a brand company',
+      );
+    }
+
+    return companyUser.companyId;
+  }
+
+  // Get supplier documents for a brand (with active relationship verification)
+  async getSupplierDocumentsForBrand(supplierId: string, userId: string) {
+    const brandId = await this.getBrandCompanyId(userId);
+
+    // Verify there is an ACTIVE relationship between the brand and supplier
+    const relationship = await this.prisma.supplierBrandRelationship.findFirst({
+      where: {
+        brandId,
+        supplierId,
+        status: RelationshipStatus.ACTIVE,
+      },
+    });
+
+    if (!relationship) {
+      throw new ForbiddenException(
+        'You do not have an active relationship with this supplier',
+      );
+    }
+
+    // Get documents for the supplier
+    const documents = await this.prisma.supplierDocument.findMany({
+      where: { companyId: supplierId },
+      include: {
+        uploadedBy: { select: { id: true, name: true } },
+      },
+      orderBy: [{ type: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    // Recalculate status for accuracy
+    return documents.map((doc) => {
+      if (doc.expiresAt && doc.fileUrl) {
+        const newStatus = this.calculateStatus(doc.expiresAt);
+        return { ...doc, status: newStatus };
+      }
+      if (!doc.fileUrl) {
+        return { ...doc, status: SupplierDocumentStatus.PENDING };
+      }
+      return doc;
     });
   }
 }

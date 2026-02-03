@@ -143,4 +143,18 @@ export class SupplierDocumentsController {
   async remove(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.supplierDocumentsService.remove(id, userId);
   }
+
+  // Get supplier documents for a brand (requires active relationship)
+  @Get('brand/suppliers/:supplierId')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.BRAND)
+  async getSupplierDocumentsForBrand(
+    @Param('supplierId') supplierId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.supplierDocumentsService.getSupplierDocumentsForBrand(
+      supplierId,
+      userId,
+    );
+  }
 }

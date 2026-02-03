@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { OrderStatus, CompanyStatus, CompanyType } from '@prisma/client';
+import { OrderStatus, CompanyStatus, CompanyType, SupplierDocumentType, SupplierDocumentStatus } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -133,6 +133,132 @@ export class AdminService {
         supplier: { select: { id: true, tradeName: true } },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // Calculate document status based on expiration date
+  private calculateDocumentStatus(expiresAt: Date | null, hasFile: boolean): SupplierDocumentStatus {
+    if (!hasFile) {
+      return SupplierDocumentStatus.PENDING;
+    }
+    if (!expiresAt) {
+      return SupplierDocumentStatus.VALID;
+    }
+
+    const now = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+    if (expiresAt < now) {
+      return SupplierDocumentStatus.EXPIRED;
+    } else if (expiresAt < thirtyDaysFromNow) {
+      return SupplierDocumentStatus.EXPIRING_SOON;
+    }
+
+    return SupplierDocumentStatus.VALID;
+  }
+
+  // Get all documents from all suppliers
+  async getAllDocuments(
+    supplierId?: string,
+    type?: SupplierDocumentType,
+    status?: SupplierDocumentStatus,
+  ) {
+    const whereClause: any = {};
+
+    if (supplierId) {
+      whereClause.companyId = supplierId;
+    }
+
+    if (type) {
+      whereClause.type = type;
+    }
+
+    const documents = await this.prisma.supplierDocument.findMany({
+      where: whereClause,
+      include: {
+        company: { select: { id: true, tradeName: true, document: true } },
+        uploadedBy: { select: { id: true, name: true } },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+    });
+
+    // Recalculate status and filter if needed
+    const processedDocs = documents.map((doc) => {
+      const calculatedStatus = this.calculateDocumentStatus(doc.expiresAt, !!doc.fileUrl);
+      return { ...doc, status: calculatedStatus };
+    });
+
+    // Filter by status after recalculation
+    if (status) {
+      return processedDocs.filter((doc) => doc.status === status);
+    }
+
+    return processedDocs;
+  }
+
+  // Get document stats across all suppliers
+  async getDocumentsStats() {
+    const documents = await this.prisma.supplierDocument.findMany({
+      select: {
+        id: true,
+        fileUrl: true,
+        expiresAt: true,
+      },
+    });
+
+    let valid = 0;
+    let expiringSoon = 0;
+    let expired = 0;
+    let pending = 0;
+
+    documents.forEach((doc) => {
+      const status = this.calculateDocumentStatus(doc.expiresAt, !!doc.fileUrl);
+      switch (status) {
+        case SupplierDocumentStatus.VALID:
+          valid++;
+          break;
+        case SupplierDocumentStatus.EXPIRING_SOON:
+          expiringSoon++;
+          break;
+        case SupplierDocumentStatus.EXPIRED:
+          expired++;
+          break;
+        case SupplierDocumentStatus.PENDING:
+          pending++;
+          break;
+      }
+    });
+
+    // Get unique supplier count
+    const suppliersWithDocs = await this.prisma.supplierDocument.groupBy({
+      by: ['companyId'],
+    });
+
+    return {
+      total: documents.length,
+      valid,
+      expiringSoon,
+      expired,
+      pending,
+      suppliersCount: suppliersWithDocs.length,
+    };
+  }
+
+  // Get documents for a specific supplier
+  async getSupplierDocuments(supplierId: string) {
+    const documents = await this.prisma.supplierDocument.findMany({
+      where: { companyId: supplierId },
+      include: {
+        uploadedBy: { select: { id: true, name: true } },
+      },
+      orderBy: [{ type: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    // Recalculate status for accuracy
+    return documents.map((doc) => {
+      const calculatedStatus = this.calculateDocumentStatus(doc.expiresAt, !!doc.fileUrl);
+      return { ...doc, status: calculatedStatus };
     });
   }
 }

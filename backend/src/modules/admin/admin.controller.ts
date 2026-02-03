@@ -11,7 +11,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole, CompanyStatus, OrderStatus } from '@prisma/client';
+import { UserRole, CompanyStatus, OrderStatus, SupplierDocumentType, SupplierDocumentStatus } from '@prisma/client';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -50,5 +50,24 @@ export class AdminController {
   @Get('orders')
   async getOrders(@Query('status') status?: OrderStatus) {
     return this.adminService.getOrders(status);
+  }
+
+  @Get('documents')
+  async getAllDocuments(
+    @Query('supplierId') supplierId?: string,
+    @Query('type') type?: SupplierDocumentType,
+    @Query('status') status?: SupplierDocumentStatus,
+  ) {
+    return this.adminService.getAllDocuments(supplierId, type, status);
+  }
+
+  @Get('documents/stats')
+  async getDocumentsStats() {
+    return this.adminService.getDocumentsStats();
+  }
+
+  @Get('suppliers/:id/documents')
+  async getSupplierDocuments(@Param('id') supplierId: string) {
+    return this.adminService.getSupplierDocuments(supplierId);
   }
 }
