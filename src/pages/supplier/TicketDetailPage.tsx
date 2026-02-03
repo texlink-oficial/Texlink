@@ -18,11 +18,11 @@ const CATEGORY_ICONS: Record<SupportTicketCategory, React.ElementType> = {
 };
 
 const STATUS_COLORS: Record<SupportTicketStatus, { bg: string; text: string; dot: string }> = {
-    ABERTO: { bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-400' },
-    EM_ANDAMENTO: { bg: 'bg-yellow-500/10', text: 'text-yellow-400', dot: 'bg-yellow-400' },
-    AGUARDANDO_RESPOSTA: { bg: 'bg-purple-500/10', text: 'text-purple-400', dot: 'bg-purple-400' },
-    RESOLVIDO: { bg: 'bg-green-500/10', text: 'text-green-400', dot: 'bg-green-400' },
-    FECHADO: { bg: 'bg-gray-500/10', text: 'text-gray-400', dot: 'bg-gray-400' },
+    ABERTO: { bg: 'bg-blue-100 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', dot: 'bg-blue-500 dark:bg-blue-400' },
+    EM_ANDAMENTO: { bg: 'bg-yellow-100 dark:bg-yellow-500/10', text: 'text-yellow-700 dark:text-yellow-400', dot: 'bg-yellow-500 dark:bg-yellow-400' },
+    AGUARDANDO_RESPOSTA: { bg: 'bg-purple-100 dark:bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', dot: 'bg-purple-500 dark:bg-purple-400' },
+    RESOLVIDO: { bg: 'bg-green-100 dark:bg-green-500/10', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500 dark:bg-green-400' },
+    FECHADO: { bg: 'bg-gray-100 dark:bg-gray-500/10', text: 'text-gray-700 dark:text-gray-400', dot: 'bg-gray-500 dark:bg-gray-400' },
 };
 
 const TicketDetailPage: React.FC = () => {
@@ -128,18 +128,18 @@ const TicketDetailPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-brand-950 flex items-center justify-center">
-                <RefreshCw className="w-8 h-8 text-brand-400 animate-spin" />
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+                <RefreshCw className="w-8 h-8 text-brand-500 animate-spin" />
             </div>
         );
     }
 
     if (!ticket) {
         return (
-            <div className="min-h-screen bg-brand-950 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
                 <div className="text-center">
-                    <HelpCircle className="w-12 h-12 text-brand-600 mx-auto mb-4" />
-                    <p className="text-white">Chamado não encontrado</p>
+                    <HelpCircle className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-900 dark:text-white">Chamado não encontrado</p>
                 </div>
             </div>
         );
@@ -150,17 +150,17 @@ const TicketDetailPage: React.FC = () => {
     const isClosed = ticket.status === 'FECHADO';
 
     return (
-        <div className="min-h-screen bg-brand-950 flex flex-col">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
             {/* Header */}
-            <header className="bg-brand-900/80 border-b border-brand-800 sticky top-0 z-10">
+            <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Link to="/portal/suporte" className="text-brand-400 hover:text-white transition-colors">
+                            <Link to="/portal/suporte" className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
                                 <ArrowLeft className="w-5 h-5" />
                             </Link>
                             <div className="flex items-center gap-3">
-                                <span className="text-sm font-mono text-brand-500">
+                                <span className="text-sm font-mono text-gray-500 dark:text-gray-400">
                                     #{ticket.displayId}
                                 </span>
                                 <span className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${statusColors.bg} ${statusColors.text}`}>
@@ -173,7 +173,7 @@ const TicketDetailPage: React.FC = () => {
                         {!isClosed && (
                             <button
                                 onClick={() => setShowCloseConfirm(true)}
-                                className="text-sm text-brand-400 hover:text-white transition-colors"
+                                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                             >
                                 Fechar Chamado
                             </button>
@@ -181,8 +181,8 @@ const TicketDetailPage: React.FC = () => {
                     </div>
 
                     <div className="mt-3">
-                        <h1 className="text-lg font-medium text-white">{ticket.title}</h1>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-brand-400">
+                        <h1 className="text-lg font-medium text-gray-900 dark:text-white">{ticket.title}</h1>
+                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
                             <span className="flex items-center gap-1">
                                 <CategoryIcon className="w-4 h-4" />
                                 {TICKET_CATEGORY_LABELS[ticket.category]}
@@ -203,18 +203,18 @@ const TicketDetailPage: React.FC = () => {
                     <div className="flex justify-start">
                         <div className="max-w-[80%]">
                             <div className="flex items-center gap-2 mb-1">
-                                <div className="w-6 h-6 rounded-full bg-brand-700 flex items-center justify-center">
-                                    <User className="w-4 h-4 text-brand-400" />
+                                <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                    <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                                 </div>
-                                <span className="text-sm text-brand-400">
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
                                     {ticket.createdBy?.name || 'Você'}
                                 </span>
-                                <span className="text-xs text-brand-500">
+                                <span className="text-xs text-gray-400 dark:text-gray-500">
                                     {formatMessageDate(ticket.createdAt)}
                                 </span>
                             </div>
-                            <div className="bg-brand-800/50 rounded-2xl rounded-tl-md p-4">
-                                <p className="text-white whitespace-pre-wrap">{ticket.description}</p>
+                            <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-md p-4 shadow-sm">
+                                <p className="text-gray-900 dark:text-white whitespace-pre-wrap">{ticket.description}</p>
                             </div>
                         </div>
                     </div>
@@ -235,26 +235,26 @@ const TicketDetailPage: React.FC = () => {
                                                 <Headphones className="w-4 h-4 text-white" />
                                             </div>
                                         )}
-                                        <span className="text-sm text-brand-400">
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">
                                             {isSupport ? 'Suporte Texlink' : (message.sender?.name || 'Você')}
                                         </span>
-                                        <span className="text-xs text-brand-500">
+                                        <span className="text-xs text-gray-400 dark:text-gray-500">
                                             {formatMessageDate(message.createdAt)}
                                         </span>
                                         {!isSupport && (
-                                            <div className="w-6 h-6 rounded-full bg-brand-700 flex items-center justify-center">
-                                                <User className="w-4 h-4 text-brand-400" />
+                                            <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                                <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                                             </div>
                                         )}
                                     </div>
                                     <div
-                                        className={`rounded-2xl p-4 ${
+                                        className={`rounded-2xl p-4 shadow-sm ${
                                             isSupport
-                                                ? 'bg-brand-500/20 rounded-tl-md border border-brand-500/30'
-                                                : 'bg-brand-800/50 rounded-tr-md'
+                                                ? 'bg-brand-50 dark:bg-brand-500/20 rounded-tl-md border border-brand-200 dark:border-brand-500/30'
+                                                : 'bg-gray-100 dark:bg-gray-800 rounded-tr-md'
                                         }`}
                                     >
-                                        <p className="text-white whitespace-pre-wrap">{message.content}</p>
+                                        <p className="text-gray-900 dark:text-white whitespace-pre-wrap">{message.content}</p>
                                     </div>
                                 </div>
                             </div>
@@ -267,7 +267,7 @@ const TicketDetailPage: React.FC = () => {
 
             {/* Input Area */}
             {!isClosed ? (
-                <div className="bg-brand-900/80 border-t border-brand-800 p-4">
+                <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
                     <div className="max-w-4xl mx-auto">
                         <div className="flex gap-3">
                             <input
@@ -276,13 +276,13 @@ const TicketDetailPage: React.FC = () => {
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                                 placeholder="Digite sua mensagem..."
-                                className="flex-1 px-4 py-3 bg-brand-800/50 border border-brand-700 rounded-xl text-white placeholder-brand-500 focus:outline-none focus:border-brand-500"
+                                className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                                 disabled={isSending}
                             />
                             <button
                                 onClick={handleSendMessage}
                                 disabled={!newMessage.trim() || isSending}
-                                className="px-4 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-700 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
+                                className="px-4 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
                             >
                                 {isSending ? (
                                     <RefreshCw className="w-5 h-5 animate-spin" />
@@ -294,10 +294,10 @@ const TicketDetailPage: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                <div className="bg-brand-900/80 border-t border-brand-800 p-4">
+                <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
                     <div className="max-w-4xl mx-auto text-center">
-                        <p className="text-brand-400">
-                            <CheckCircle className="w-5 h-5 inline mr-2" />
+                        <p className="text-gray-500 dark:text-gray-400">
+                            <CheckCircle className="w-5 h-5 inline mr-2 text-green-500" />
                             Este chamado foi fechado em {formatDate(ticket.closedAt || ticket.updatedAt)}
                         </p>
                     </div>
@@ -306,21 +306,21 @@ const TicketDetailPage: React.FC = () => {
 
             {/* Close Confirmation Modal */}
             {showCloseConfirm && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                    <div className="bg-brand-900 border border-brand-800 rounded-2xl w-full max-w-md p-6">
+                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl w-full max-w-md p-6 shadow-xl">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="p-3 bg-yellow-500/10 rounded-xl">
-                                <AlertTriangle className="w-6 h-6 text-yellow-400" />
+                            <div className="p-3 bg-yellow-100 dark:bg-yellow-500/10 rounded-xl">
+                                <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                             </div>
-                            <h3 className="text-lg font-bold text-white">Fechar Chamado</h3>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Fechar Chamado</h3>
                         </div>
-                        <p className="text-brand-300 mb-6">
+                        <p className="text-gray-600 dark:text-gray-300 mb-6">
                             Tem certeza que deseja fechar este chamado? Você não poderá enviar novas mensagens após o fechamento.
                         </p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowCloseConfirm(false)}
-                                className="flex-1 px-4 py-3 bg-brand-800 hover:bg-brand-700 text-white rounded-xl transition-colors"
+                                className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-xl transition-colors"
                             >
                                 Cancelar
                             </button>

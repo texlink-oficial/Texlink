@@ -161,7 +161,7 @@ const TeamPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-400">
+      <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-4 text-red-600 dark:text-red-400">
         <AlertCircle className="w-5 h-5 inline mr-2" />
         {error}
       </div>
@@ -173,8 +173,8 @@ const TeamPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Equipe</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Equipe</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
             Gerencie os membros e permissões da sua equipe
           </p>
         </div>
@@ -183,7 +183,7 @@ const TeamPage: React.FC = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setShowInviteModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-800/50 text-brand-400 rounded-lg hover:bg-brand-800 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               <Mail className="w-4 h-4" />
               Convidar por Email
@@ -200,13 +200,13 @@ const TeamPage: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 border-b border-brand-800">
+      <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setActiveTab('members')}
           className={`pb-3 px-1 text-sm font-medium transition-colors ${
             activeTab === 'members'
-              ? 'text-brand-400 border-b-2 border-brand-400'
-              : 'text-gray-400 hover:text-white'
+              ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-600 dark:border-brand-400'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white'
           }`}
         >
           <Users className="w-4 h-4 inline mr-2" />
@@ -216,8 +216,8 @@ const TeamPage: React.FC = () => {
           onClick={() => setActiveTab('invitations')}
           className={`pb-3 px-1 text-sm font-medium transition-colors ${
             activeTab === 'invitations'
-              ? 'text-brand-400 border-b-2 border-brand-400'
-              : 'text-gray-400 hover:text-white'
+              ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-600 dark:border-brand-400'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white'
           }`}
         >
           <Mail className="w-4 h-4 inline mr-2" />
@@ -237,13 +237,13 @@ const TeamPage: React.FC = () => {
                 placeholder="Buscar por nome ou email..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-brand-900/50 border border-brand-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-brand-500"
+                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               />
             </div>
             <select
               value={roleFilter}
               onChange={e => setRoleFilter(e.target.value as CompanyRole | 'ALL')}
-              className="px-4 py-2 bg-brand-900/50 border border-brand-800 rounded-lg text-white focus:outline-none focus:border-brand-500"
+              className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             >
               <option value="ALL">Todos os Roles</option>
               {ALL_COMPANY_ROLES.map(role => (
@@ -255,68 +255,68 @@ const TeamPage: React.FC = () => {
           </div>
 
           {/* Members List */}
-          <div className="bg-brand-900/30 rounded-xl border border-brand-800 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-brand-800">
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Membro
                   </th>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Role
                   </th>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Entrada
                   </th>
-                  <th className="text-right px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="text-right px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-brand-800">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredMembers.map(member => (
-                  <tr key={member.id} className="hover:bg-brand-800/30 transition-colors">
+                  <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-brand-800 flex items-center justify-center text-brand-400 font-medium">
+                        <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-brand-600 dark:text-brand-400 font-medium">
                           {member.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-medium">{member.name}</span>
+                            <span className="text-gray-900 dark:text-white font-medium">{member.name}</span>
                             {member.isCompanyAdmin && (
-                              <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded-full flex items-center gap-1">
+                              <span className="px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full flex items-center gap-1">
                                 <ShieldCheck className="w-3 h-3" />
                                 Admin
                               </span>
                             )}
                           </div>
-                          <span className="text-gray-400 text-sm">{member.email}</span>
+                          <span className="text-gray-500 dark:text-gray-400 text-sm">{member.email}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-3 py-1 text-xs bg-brand-800 text-brand-300 rounded-full">
+                      <span className="px-3 py-1 text-xs bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 rounded-full">
                         {ROLE_NAMES[member.companyRole]}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       {member.isActive ? (
-                        <span className="flex items-center gap-1 text-green-400 text-sm">
+                        <span className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm">
                           <CheckCircle className="w-4 h-4" />
                           Ativo
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 text-gray-400 text-sm">
+                        <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm">
                           <XCircle className="w-4 h-4" />
                           Inativo
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-gray-400 text-sm">
+                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">
                       {new Date(member.joinedAt).toLocaleDateString('pt-BR')}
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -324,16 +324,16 @@ const TeamPage: React.FC = () => {
                         <div className="relative inline-block">
                           <button
                             onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
-                            className="p-2 text-gray-400 hover:text-white hover:bg-brand-800 rounded-lg transition-colors"
+                            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                           >
                             <MoreVertical className="w-4 h-4" />
                           </button>
 
                           {openMenuId === member.id && (
-                            <div className="absolute right-0 mt-2 w-48 bg-brand-900 border border-brand-800 rounded-lg shadow-xl z-10">
+                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-10">
                               <button
                                 onClick={() => handleEditMember(member)}
-                                className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-brand-800 flex items-center gap-2"
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                               >
                                 <Edit3 className="w-4 h-4" />
                                 Editar Role
@@ -341,7 +341,7 @@ const TeamPage: React.FC = () => {
                               <PermissionGate permission="TEAM_MANAGE_PERMISSIONS">
                                 <button
                                   onClick={() => handleEditPermissions(member)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-brand-800 flex items-center gap-2"
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                                 >
                                   <Shield className="w-4 h-4" />
                                   Editar Permissões
@@ -350,7 +350,7 @@ const TeamPage: React.FC = () => {
                               {member.userId !== user?.id && (
                                 <button
                                   onClick={() => handleRemoveMember(member)}
-                                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+                                  className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                   Remover
@@ -367,7 +367,7 @@ const TeamPage: React.FC = () => {
             </table>
 
             {filteredMembers.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>Nenhum membro encontrado</p>
               </div>
@@ -378,49 +378,49 @@ const TeamPage: React.FC = () => {
 
       {/* Invitations Tab */}
       {activeTab === 'invitations' && (
-        <div className="bg-brand-900/30 rounded-xl border border-brand-800 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
           {invitations.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <Mail className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>Nenhum convite pendente</p>
             </div>
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="border-b border-brand-800">
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Email
                   </th>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Role
                   </th>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Convidado por
                   </th>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Expira em
                   </th>
-                  <th className="text-right px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="text-right px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-brand-800">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {invitations.map(invitation => (
-                  <tr key={invitation.id} className="hover:bg-brand-800/30 transition-colors">
+                  <tr key={invitation.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <td className="px-6 py-4">
-                      <span className="text-white">{invitation.email}</span>
+                      <span className="text-gray-900 dark:text-white">{invitation.email}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-3 py-1 text-xs bg-brand-800 text-brand-300 rounded-full">
+                      <span className="px-3 py-1 text-xs bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 rounded-full">
                         {ROLE_NAMES[invitation.companyRole]}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-400 text-sm">{invitation.invitedBy}</td>
+                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">{invitation.invitedBy}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="w-4 h-4 text-gray-400" />
-                        <span className={invitation.isExpired ? 'text-red-400' : 'text-gray-400'}>
+                        <span className={invitation.isExpired ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}>
                           {new Date(invitation.expiresAt).toLocaleDateString('pt-BR')}
                           {invitation.isExpired && ' (Expirado)'}
                         </span>
@@ -430,21 +430,21 @@ const TeamPage: React.FC = () => {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => copyInviteLink(invitation.inviteUrl)}
-                          className="p-2 text-gray-400 hover:text-white hover:bg-brand-800 rounded-lg transition-colors"
+                          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                           title="Copiar link"
                         >
                           <Copy className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleResendInvitation(invitation.id)}
-                          className="p-2 text-gray-400 hover:text-white hover:bg-brand-800 rounded-lg transition-colors"
+                          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                           title="Reenviar"
                         >
                           <RefreshCw className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleCancelInvitation(invitation.id)}
-                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                           title="Cancelar"
                         >
                           <Trash2 className="w-4 h-4" />

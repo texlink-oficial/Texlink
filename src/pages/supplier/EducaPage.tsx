@@ -9,13 +9,13 @@ import type { EducationalContent, EducationalContentCategory, EducationalContent
 import { EDUCATIONAL_CATEGORY_LABELS, EDUCATIONAL_CONTENT_TYPE_LABELS } from '../../types';
 
 const CATEGORY_COLORS: Record<EducationalContentCategory, { bg: string; text: string; border: string }> = {
-    TUTORIAL_SISTEMA: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20' },
-    BOAS_PRATICAS: { bg: 'bg-green-500/10', text: 'text-green-400', border: 'border-green-500/20' },
-    COMPLIANCE: { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20' },
-    PRODUCAO: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20' },
-    FINANCEIRO: { bg: 'bg-yellow-500/10', text: 'text-yellow-400', border: 'border-yellow-500/20' },
-    QUALIDADE: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/20' },
-    NOVIDADES: { bg: 'bg-pink-500/10', text: 'text-pink-400', border: 'border-pink-500/20' },
+    TUTORIAL_SISTEMA: { bg: 'bg-blue-100 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-500/20' },
+    BOAS_PRATICAS: { bg: 'bg-green-100 dark:bg-green-500/10', text: 'text-green-700 dark:text-green-400', border: 'border-green-200 dark:border-green-500/20' },
+    COMPLIANCE: { bg: 'bg-purple-100 dark:bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', border: 'border-purple-200 dark:border-purple-500/20' },
+    PRODUCAO: { bg: 'bg-orange-100 dark:bg-orange-500/10', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-500/20' },
+    FINANCEIRO: { bg: 'bg-yellow-100 dark:bg-yellow-500/10', text: 'text-yellow-700 dark:text-yellow-400', border: 'border-yellow-200 dark:border-yellow-500/20' },
+    QUALIDADE: { bg: 'bg-cyan-100 dark:bg-cyan-500/10', text: 'text-cyan-700 dark:text-cyan-400', border: 'border-cyan-200 dark:border-cyan-500/20' },
+    NOVIDADES: { bg: 'bg-pink-100 dark:bg-pink-500/10', text: 'text-pink-700 dark:text-pink-400', border: 'border-pink-200 dark:border-pink-500/20' },
 };
 
 const TYPE_ICONS: Record<EducationalContentType, React.ElementType> = {
@@ -85,27 +85,27 @@ const EducaPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-brand-950 flex items-center justify-center">
-                <RefreshCw className="w-8 h-8 text-brand-400 animate-spin" />
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+                <RefreshCw className="w-8 h-8 text-brand-500 animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-brand-950">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             {/* Header */}
-            <header className="bg-gradient-to-r from-brand-900 to-brand-800 border-b border-brand-700">
+            <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="flex items-center gap-4 mb-4">
-                        <Link to="/portal" className="text-brand-400 hover:text-white transition-colors">
+                        <Link to="/portal" className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
                             <ArrowLeft className="w-5 h-5" />
                         </Link>
-                        <div className="p-3 bg-brand-500/20 rounded-xl">
-                            <GraduationCap className="w-8 h-8 text-brand-400" />
+                        <div className="p-3 bg-brand-100 dark:bg-brand-500/20 rounded-xl">
+                            <GraduationCap className="w-8 h-8 text-brand-600 dark:text-brand-400" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-white">Texlink Educa</h1>
-                            <p className="text-brand-300">
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Texlink Educa</h1>
+                            <p className="text-gray-500 dark:text-gray-400">
                                 Aprenda a usar a plataforma e melhore sua produção
                             </p>
                         </div>
@@ -114,8 +114,8 @@ const EducaPage: React.FC = () => {
                     {/* Stats */}
                     <div className="flex items-center gap-6 mt-6">
                         <div className="flex items-center gap-2">
-                            <BookOpen className="w-5 h-5 text-brand-400" />
-                            <span className="text-white font-medium">{totalContents} conteúdos disponíveis</span>
+                            <BookOpen className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                            <span className="text-gray-900 dark:text-white font-medium">{totalContents} conteúdos disponíveis</span>
                         </div>
                     </div>
                 </div>
@@ -124,18 +124,18 @@ const EducaPage: React.FC = () => {
             {/* Search Bar */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-500" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
                         placeholder="Buscar conteúdo..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-brand-800/50 border border-brand-700 rounded-xl text-white placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
                     {searchTerm && (
                         <button
                             onClick={() => setSearchTerm('')}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-500 hover:text-white"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-white"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -151,7 +151,7 @@ const EducaPage: React.FC = () => {
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                             selectedCategory === ''
                                 ? 'bg-brand-500 text-white'
-                                : 'bg-brand-800/50 text-brand-300 hover:bg-brand-800 hover:text-white'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                         }`}
                     >
                         Todos ({totalContents})
@@ -167,7 +167,7 @@ const EducaPage: React.FC = () => {
                                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                                     isSelected
                                         ? `${colors.bg} ${colors.text} ${colors.border} border`
-                                        : 'bg-brand-800/50 text-brand-300 hover:bg-brand-800 hover:text-white'
+                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                                 }`}
                             >
                                 {EDUCATIONAL_CATEGORY_LABELS[category]} ({count})
@@ -181,11 +181,11 @@ const EducaPage: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
                 {filteredContents.length === 0 ? (
                     <div className="text-center py-12">
-                        <GraduationCap className="w-12 h-12 text-brand-600 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-white mb-2">
+                        <GraduationCap className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                             Nenhum conteúdo encontrado
                         </h3>
-                        <p className="text-brand-400">
+                        <p className="text-gray-500 dark:text-gray-400">
                             {searchTerm
                                 ? 'Tente buscar por outro termo.'
                                 : 'Não há conteúdos disponíveis nesta categoria no momento.'}
@@ -201,10 +201,10 @@ const EducaPage: React.FC = () => {
                                 <div
                                     key={content.id}
                                     onClick={() => handleContentClick(content)}
-                                    className="bg-brand-900/50 rounded-2xl border border-brand-800 overflow-hidden hover:border-brand-600 transition-all cursor-pointer group"
+                                    className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-brand-500 dark:hover:border-brand-500 transition-all cursor-pointer group shadow-sm hover:shadow-md"
                                 >
                                     {/* Thumbnail / Media Preview */}
-                                    <div className="relative aspect-video bg-brand-800">
+                                    <div className="relative aspect-video bg-gray-100 dark:bg-gray-700">
                                         {content.thumbnailUrl ? (
                                             <img
                                                 src={content.thumbnailUrl}
@@ -213,7 +213,7 @@ const EducaPage: React.FC = () => {
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center">
-                                                <TypeIcon className="w-16 h-16 text-brand-600" />
+                                                <TypeIcon className="w-16 h-16 text-gray-400 dark:text-gray-600" />
                                             </div>
                                         )}
 
@@ -248,12 +248,12 @@ const EducaPage: React.FC = () => {
                                     {/* Content Info */}
                                     <div className="p-6">
                                         <div className="flex items-start justify-between gap-2 mb-2">
-                                            <h3 className="font-bold text-white group-hover:text-brand-400 transition-colors line-clamp-2">
+                                            <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors line-clamp-2">
                                                 {content.title}
                                             </h3>
                                         </div>
 
-                                        <p className="text-brand-300 text-sm line-clamp-2 mb-4">
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm line-clamp-2 mb-4">
                                             {content.description}
                                         </p>
 
@@ -263,7 +263,7 @@ const EducaPage: React.FC = () => {
                                             </span>
 
                                             {content.contentType !== 'VIDEO' && (
-                                                <span className="flex items-center gap-1 text-xs text-brand-400">
+                                                <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                                                     <ExternalLink className="w-3 h-3" />
                                                     Abrir
                                                 </span>
@@ -280,26 +280,26 @@ const EducaPage: React.FC = () => {
             {/* Video Modal */}
             {selectedVideo && (
                 <div
-                    className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+                    className="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50 p-4"
                     onClick={() => setSelectedVideo(null)}
                 >
                     <div
-                        className="bg-brand-900 rounded-2xl border border-brand-700 w-full max-w-4xl overflow-hidden"
+                        className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 w-full max-w-4xl overflow-hidden shadow-xl"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between p-4 border-b border-brand-700">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                             <div>
-                                <h2 className="text-lg font-bold text-white">
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                                     {selectedVideo.title}
                                 </h2>
-                                <p className="text-sm text-brand-400">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {EDUCATIONAL_CATEGORY_LABELS[selectedVideo.category]}
                                     {selectedVideo.duration && ` • ${selectedVideo.duration}`}
                                 </p>
                             </div>
                             <button
                                 onClick={() => setSelectedVideo(null)}
-                                className="p-2 text-brand-400 hover:text-white hover:bg-brand-700 rounded-lg"
+                                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -314,8 +314,8 @@ const EducaPage: React.FC = () => {
                             />
                         </div>
 
-                        <div className="p-4 border-t border-brand-700">
-                            <p className="text-brand-300 text-sm">
+                        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                            <p className="text-gray-600 dark:text-gray-300 text-sm">
                                 {selectedVideo.description}
                             </p>
                         </div>

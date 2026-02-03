@@ -15,10 +15,10 @@ import type {
 import { SUPPLIER_DOCUMENT_TYPE_LABELS } from '../../types';
 
 const STATUS_CONFIG: Record<SupplierDocumentStatus, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
-    VALID: { label: 'Válido', color: 'text-green-400', bgColor: 'bg-green-500/10', icon: CheckCircle },
-    EXPIRING_SOON: { label: 'Vencendo', color: 'text-yellow-400', bgColor: 'bg-yellow-500/10', icon: AlertTriangle },
-    EXPIRED: { label: 'Vencido', color: 'text-red-400', bgColor: 'bg-red-500/10', icon: XCircle },
-    PENDING: { label: 'Pendente', color: 'text-brand-400', bgColor: 'bg-brand-500/10', icon: Clock },
+    VALID: { label: 'Válido', color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-100 dark:bg-green-500/10', icon: CheckCircle },
+    EXPIRING_SOON: { label: 'Vencendo', color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-100 dark:bg-yellow-500/10', icon: AlertTriangle },
+    EXPIRED: { label: 'Vencido', color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-100 dark:bg-red-500/10', icon: XCircle },
+    PENDING: { label: 'Pendente', color: 'text-brand-600 dark:text-brand-400', bgColor: 'bg-brand-100 dark:bg-brand-500/10', icon: Clock },
 };
 
 const DocumentsPage: React.FC = () => {
@@ -122,14 +122,14 @@ const DocumentsPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-brand-950 flex items-center justify-center">
-                <RefreshCw className="w-8 h-8 text-brand-400 animate-spin" />
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+                <RefreshCw className="w-8 h-8 text-brand-500 animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-brand-950">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             {/* Hidden file input */}
             <input
                 ref={fileInputRef}
@@ -140,21 +140,21 @@ const DocumentsPage: React.FC = () => {
             />
 
             {/* Header */}
-            <header className="bg-brand-900/50 border-b border-brand-800 sticky top-0 z-10">
+            <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Link to="/portal" className="text-brand-400 hover:text-white transition-colors">
+                            <Link to="/portal" className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
                                 <ArrowLeft className="w-5 h-5" />
                             </Link>
                             <div>
-                                <h1 className="text-xl font-bold text-white">Documentos</h1>
-                                <p className="text-sm text-brand-400">Gerencie seus documentos de compliance e fiscal</p>
+                                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Documentos</h1>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Gerencie seus documentos de compliance e fiscal</p>
                             </div>
                         </div>
                         <button
                             onClick={loadData}
-                            className="p-2 text-brand-400 hover:text-white hover:bg-brand-800 rounded-lg transition-colors"
+                            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                         >
                             <RefreshCw className="w-5 h-5" />
                         </button>
@@ -166,25 +166,25 @@ const DocumentsPage: React.FC = () => {
             {summary && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className="bg-brand-900/50 rounded-xl p-4 border border-brand-800">
-                            <div className="text-2xl font-bold text-white">{summary.total}</div>
-                            <div className="text-sm text-brand-400">Total</div>
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+                            <div className="text-2xl font-bold text-gray-900 dark:text-white">{summary.total}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
                         </div>
-                        <div className="bg-green-500/10 rounded-xl p-4 border border-green-500/20">
-                            <div className="text-2xl font-bold text-green-400">{summary.valid}</div>
-                            <div className="text-sm text-green-400/70">Válidos</div>
+                        <div className="bg-green-50 dark:bg-green-500/10 rounded-xl p-4 border border-green-200 dark:border-green-500/20">
+                            <div className="text-2xl font-bold text-green-700 dark:text-green-400">{summary.valid}</div>
+                            <div className="text-sm text-green-600 dark:text-green-400/70">Válidos</div>
                         </div>
-                        <div className="bg-yellow-500/10 rounded-xl p-4 border border-yellow-500/20">
-                            <div className="text-2xl font-bold text-yellow-400">{summary.expiringSoon}</div>
-                            <div className="text-sm text-yellow-400/70">Vencendo</div>
+                        <div className="bg-yellow-50 dark:bg-yellow-500/10 rounded-xl p-4 border border-yellow-200 dark:border-yellow-500/20">
+                            <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{summary.expiringSoon}</div>
+                            <div className="text-sm text-yellow-600 dark:text-yellow-400/70">Vencendo</div>
                         </div>
-                        <div className="bg-red-500/10 rounded-xl p-4 border border-red-500/20">
-                            <div className="text-2xl font-bold text-red-400">{summary.expired}</div>
-                            <div className="text-sm text-red-400/70">Vencidos</div>
+                        <div className="bg-red-50 dark:bg-red-500/10 rounded-xl p-4 border border-red-200 dark:border-red-500/20">
+                            <div className="text-2xl font-bold text-red-700 dark:text-red-400">{summary.expired}</div>
+                            <div className="text-sm text-red-600 dark:text-red-400/70">Vencidos</div>
                         </div>
-                        <div className="bg-brand-500/10 rounded-xl p-4 border border-brand-500/20">
-                            <div className="text-2xl font-bold text-brand-400">{summary.pending}</div>
-                            <div className="text-sm text-brand-400/70">Pendentes</div>
+                        <div className="bg-brand-50 dark:bg-brand-500/10 rounded-xl p-4 border border-brand-200 dark:border-brand-500/20">
+                            <div className="text-2xl font-bold text-brand-700 dark:text-brand-400">{summary.pending}</div>
+                            <div className="text-sm text-brand-600 dark:text-brand-400/70">Pendentes</div>
                         </div>
                     </div>
                 </div>
@@ -193,11 +193,11 @@ const DocumentsPage: React.FC = () => {
             {/* Filter */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
                 <div className="flex items-center gap-4">
-                    <Filter className="w-4 h-4 text-brand-400" />
+                    <Filter className="w-4 h-4 text-gray-400" />
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as SupplierDocumentStatus | '')}
-                        className="bg-brand-900 border border-brand-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                     >
                         <option value="">Todos os status</option>
                         <option value="VALID">Válidos</option>
@@ -210,8 +210,8 @@ const DocumentsPage: React.FC = () => {
 
             {/* Documents Checklist */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-                <div className="bg-brand-900/50 rounded-xl border border-brand-800 overflow-hidden">
-                    <div className="divide-y divide-brand-800">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
                         {filteredChecklist.map((item) => {
                             const statusConfig = STATUS_CONFIG[item.status];
                             const StatusIcon = statusConfig.icon;
@@ -220,7 +220,7 @@ const DocumentsPage: React.FC = () => {
                             return (
                                 <div
                                     key={item.type}
-                                    className="p-4 hover:bg-brand-800/30 transition-colors"
+                                    className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                                 >
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="flex items-start gap-4 flex-1 min-w-0">
@@ -228,7 +228,7 @@ const DocumentsPage: React.FC = () => {
                                                 <StatusIcon className={`w-5 h-5 ${statusConfig.color}`} />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <h3 className="text-white font-medium truncate">
+                                                <h3 className="text-gray-900 dark:text-white font-medium truncate">
                                                     {SUPPLIER_DOCUMENT_TYPE_LABELS[item.type]}
                                                 </h3>
                                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm">
@@ -236,23 +236,23 @@ const DocumentsPage: React.FC = () => {
                                                         {statusConfig.label}
                                                     </span>
                                                     {item.isMonthly && (
-                                                        <span className="text-brand-500">Mensal</span>
+                                                        <span className="text-gray-400 dark:text-gray-500">Mensal</span>
                                                     )}
                                                     {item.requiresExpiry && (
-                                                        <span className="text-brand-500">Requer validade</span>
+                                                        <span className="text-gray-400 dark:text-gray-500">Requer validade</span>
                                                     )}
                                                     {item.expiresAt && (
-                                                        <span className="text-brand-400 flex items-center gap-1">
+                                                        <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                                             <Calendar className="w-3 h-3" />
                                                             Validade: {formatDate(item.expiresAt)}
                                                         </span>
                                                     )}
                                                 </div>
                                                 {doc?.fileName && (
-                                                    <div className="mt-2 flex items-center gap-2 text-sm text-brand-400">
+                                                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                                                         <FileText className="w-4 h-4" />
                                                         <span className="truncate">{doc.fileName}</span>
-                                                        <span className="text-brand-500">
+                                                        <span className="text-gray-400 dark:text-gray-500">
                                                             ({formatFileSize(doc.fileSize)})
                                                         </span>
                                                     </div>
@@ -267,7 +267,7 @@ const DocumentsPage: React.FC = () => {
                                                         href={doc.fileUrl}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="p-2 text-brand-400 hover:text-white hover:bg-brand-700 rounded-lg transition-colors"
+                                                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                                         title="Visualizar"
                                                     >
                                                         <Eye className="w-4 h-4" />
@@ -275,14 +275,14 @@ const DocumentsPage: React.FC = () => {
                                                     <a
                                                         href={doc.fileUrl}
                                                         download
-                                                        className="p-2 text-brand-400 hover:text-white hover:bg-brand-700 rounded-lg transition-colors"
+                                                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                                         title="Download"
                                                     >
                                                         <Download className="w-4 h-4" />
                                                     </a>
                                                     <button
                                                         onClick={() => doc.id && handleDelete(doc.id)}
-                                                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                        className="p-2 text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                                                         title="Excluir"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -308,26 +308,26 @@ const DocumentsPage: React.FC = () => {
             {/* Upload Modal for documents requiring extra info */}
             {uploadingType && checklist.find(c => c.type === uploadingType)?.requiresExpiry && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-brand-900 rounded-xl border border-brand-700 p-6 w-full max-w-md">
-                        <h2 className="text-lg font-bold text-white mb-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 w-full max-w-md shadow-xl">
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                             {SUPPLIER_DOCUMENT_TYPE_LABELS[uploadingType]}
                         </h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-brand-300 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Data de Validade
                                 </label>
                                 <input
                                     type="date"
                                     value={expiryDate}
                                     onChange={(e) => setExpiryDate(e.target.value)}
-                                    className="w-full bg-brand-800 border border-brand-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                    className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                                 />
                             </div>
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setUploadingType(null)}
-                                    className="flex-1 px-4 py-2 border border-brand-600 text-brand-300 rounded-lg hover:bg-brand-800 transition-colors"
+                                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                 >
                                     Cancelar
                                 </button>
@@ -346,20 +346,20 @@ const DocumentsPage: React.FC = () => {
             {/* Upload Modal for monthly documents */}
             {uploadingType && checklist.find(c => c.type === uploadingType)?.isMonthly && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-brand-900 rounded-xl border border-brand-700 p-6 w-full max-w-md">
-                        <h2 className="text-lg font-bold text-white mb-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 w-full max-w-md shadow-xl">
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                             {SUPPLIER_DOCUMENT_TYPE_LABELS[uploadingType]}
                         </h2>
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-brand-300 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Mês de Competência
                                     </label>
                                     <select
                                         value={competenceMonth}
                                         onChange={(e) => setCompetenceMonth(e.target.value)}
-                                        className="w-full bg-brand-800 border border-brand-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                                     >
                                         <option value="">Selecione</option>
                                         {Array.from({ length: 12 }, (_, i) => (
@@ -370,13 +370,13 @@ const DocumentsPage: React.FC = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-brand-300 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Ano
                                     </label>
                                     <select
                                         value={competenceYear}
                                         onChange={(e) => setCompetenceYear(e.target.value)}
-                                        className="w-full bg-brand-800 border border-brand-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                                     >
                                         <option value="">Selecione</option>
                                         {Array.from({ length: 5 }, (_, i) => {
@@ -389,7 +389,7 @@ const DocumentsPage: React.FC = () => {
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setUploadingType(null)}
-                                    className="flex-1 px-4 py-2 border border-brand-600 text-brand-300 rounded-lg hover:bg-brand-800 transition-colors"
+                                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                 >
                                     Cancelar
                                 </button>
