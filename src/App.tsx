@@ -71,6 +71,9 @@ const AdminBrands = React.lazy(() => import('./pages/admin/BrandsPage'));
 const AdminOrders = React.lazy(() => import('./pages/admin/OrdersPage'));
 const AdminDocuments = React.lazy(() => import('./pages/admin/DocumentsPage'));
 
+// Shared pages
+const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage'));
+
 // Portal do Parceiro pages
 const PortalLayout = React.lazy(() => import('./components/portal/PortalLayout'));
 const PortalDashboard = React.lazy(() => import('./pages/portal/PortalDashboard'));
@@ -107,134 +110,137 @@ const App: React.FC = () => {
                         <NotificationProvider>
                             <PermissionProvider>
                                 <BrowserRouter>
-                            <React.Suspense
-                        fallback={
-                            <div className="min-h-screen bg-brand-950 flex items-center justify-center">
-                                <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
-                            </div>
-                        }
-                    >
-                        <Routes>
-                            {/* Public routes */}
-                            <Route path="/login" element={<LoginPage />} />
-                            <Route path="/register" element={<RegisterPage />} />
-                            <Route path="/convite/:token" element={<AcceptInvitePage />} />
+                                    <React.Suspense
+                                        fallback={
+                                            <div className="min-h-screen bg-brand-950 flex items-center justify-center">
+                                                <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                                            </div>
+                                        }
+                                    >
+                                        <Routes>
+                                            {/* Public routes */}
+                                            <Route path="/login" element={<LoginPage />} />
+                                            <Route path="/register" element={<RegisterPage />} />
+                                            <Route path="/convite/:token" element={<AcceptInvitePage />} />
 
-                            {/* Onboarding routes (protected, supplier only) */}
-                            <Route path="/onboarding" element={<ProtectedRoute allowedRoles={['SUPPLIER']}><OnboardingLayout /></ProtectedRoute>}>
-                                <Route path="phase2" element={<Phase2Page />} />
-                                <Route path="phase3" element={<Phase3Page />} />
-                            </Route>
+                                            {/* Onboarding routes (protected, supplier only) */}
+                                            <Route path="/onboarding" element={<ProtectedRoute allowedRoles={['SUPPLIER']}><OnboardingLayout /></ProtectedRoute>}>
+                                                <Route path="phase2" element={<Phase2Page />} />
+                                                <Route path="phase3" element={<Phase3Page />} />
+                                            </Route>
 
-                            {/* Dashboard redirect */}
-                            <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
+                                            {/* Dashboard redirect */}
+                                            <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
 
-                            {/* Portal do Parceiro routes - includes all supplier pages with sidebar */}
-                            <Route path="/portal" element={<ProtectedRoute allowedRoles={['SUPPLIER']}><PortalLayout /></ProtectedRoute>}>
-                                <Route index element={<Navigate to="/portal/inicio" replace />} />
-                                <Route path="inicio" element={<PortalDashboard />} />
-                                <Route path="desempenho" element={<PerformancePage />} />
-                                <Route path="relatorios" element={<ReportsPage />} />
-                                {/* Pedidos - integrated supplier pages */}
-                                <Route path="pedidos" element={<SupplierKanbanDashboard />} />
-                                <Route path="pedidos/lista" element={<SupplierOrdersList />} />
-                                <Route path="pedidos/:id" element={<SupplierOrderDetails />} />
-                                <Route path="oportunidades" element={<SupplierOpportunities />} />
-                                <Route path="capacidade" element={<SupplierCapacity />} />
-                                {/* Marcas (V3 N:M Relationships) */}
-                                <Route path="marcas" element={<SupplierBrandsPage />} />
-                                {/* Documentos */}
-                                <Route path="documentos" element={<SupplierDocuments />} />
-                                {/* Parceiros */}
-                                <Route path="parceiros" element={<SupplierPartners />} />
-                                {/* Texlink Educa */}
-                                <Route path="educa" element={<SupplierEduca />} />
-                                {/* Central de Ajuda */}
-                                <Route path="suporte" element={<SupplierHelpCenter />} />
-                                <Route path="suporte/:id" element={<SupplierTicketDetail />} />
-                                {/* Financeiro */}
-                                <Route path="financeiro/depositos" element={<DepositsPage />} />
-                                <Route path="financeiro/depositos/:id" element={<DepositDetailPage />} />
-                                <Route path="financeiro/dados-bancarios" element={<BankDetailsPage />} />
-                                <Route path="financeiro/frequencia" element={<PayoutFrequencyPage />} />
-                                <Route path="financeiro/antecipacao" element={<AdvancePage />} />
-                                {/* Configurações */}
-                                <Route path="equipe" element={<TeamPage />} />
-                                <Route path="configuracoes" element={<SupplierSettings />} />
-                            </Route>
+                                            {/* Portal do Parceiro routes - includes all supplier pages with sidebar */}
+                                            <Route path="/portal" element={<ProtectedRoute allowedRoles={['SUPPLIER']}><PortalLayout /></ProtectedRoute>}>
+                                                <Route index element={<Navigate to="/portal/inicio" replace />} />
+                                                <Route path="inicio" element={<PortalDashboard />} />
+                                                <Route path="desempenho" element={<PerformancePage />} />
+                                                <Route path="relatorios" element={<ReportsPage />} />
+                                                {/* Pedidos - integrated supplier pages */}
+                                                <Route path="pedidos" element={<SupplierKanbanDashboard />} />
+                                                <Route path="pedidos/lista" element={<SupplierOrdersList />} />
+                                                <Route path="pedidos/:id" element={<SupplierOrderDetails />} />
+                                                <Route path="oportunidades" element={<SupplierOpportunities />} />
+                                                <Route path="capacidade" element={<SupplierCapacity />} />
+                                                {/* Marcas (V3 N:M Relationships) */}
+                                                <Route path="marcas" element={<SupplierBrandsPage />} />
+                                                {/* Documentos */}
+                                                <Route path="documentos" element={<SupplierDocuments />} />
+                                                {/* Parceiros */}
+                                                <Route path="parceiros" element={<SupplierPartners />} />
+                                                {/* Texlink Educa */}
+                                                <Route path="educa" element={<SupplierEduca />} />
+                                                {/* Central de Ajuda */}
+                                                <Route path="suporte" element={<SupplierHelpCenter />} />
+                                                <Route path="suporte/:id" element={<SupplierTicketDetail />} />
+                                                {/* Financeiro */}
+                                                <Route path="financeiro/depositos" element={<DepositsPage />} />
+                                                <Route path="financeiro/depositos/:id" element={<DepositDetailPage />} />
+                                                <Route path="financeiro/dados-bancarios" element={<BankDetailsPage />} />
+                                                <Route path="financeiro/frequencia" element={<PayoutFrequencyPage />} />
+                                                <Route path="financeiro/antecipacao" element={<AdvancePage />} />
+                                                {/* Configurações */}
+                                                <Route path="equipe" element={<TeamPage />} />
+                                                <Route path="configuracoes" element={<SupplierSettings />} />
+                                                <Route path="notificacoes" element={<NotificationsPage />} />
+                                            </Route>
 
-                            {/* Legacy supplier routes - redirect to portal */}
-                            <Route path="/supplier" element={<Navigate to="/portal/pedidos" replace />} />
-                            <Route path="/supplier/orders" element={<Navigate to="/portal/pedidos/lista" replace />} />
-                            <Route path="/supplier/orders/:id" element={<ProtectedRoute allowedRoles={['SUPPLIER']}><SupplierOrderDetails /></ProtectedRoute>} />
-                            <Route path="/supplier/opportunities" element={<Navigate to="/portal/oportunidades" replace />} />
-                            <Route path="/supplier/financial" element={<Navigate to="/portal/financeiro/depositos" replace />} />
-                            <Route path="/supplier/capacity" element={<Navigate to="/portal/capacidade" replace />} />
+                                            {/* Legacy supplier routes - redirect to portal */}
+                                            <Route path="/supplier" element={<Navigate to="/portal/pedidos" replace />} />
+                                            <Route path="/supplier/orders" element={<Navigate to="/portal/pedidos/lista" replace />} />
+                                            <Route path="/supplier/orders/:id" element={<ProtectedRoute allowedRoles={['SUPPLIER']}><SupplierOrderDetails /></ProtectedRoute>} />
+                                            <Route path="/supplier/opportunities" element={<Navigate to="/portal/oportunidades" replace />} />
+                                            <Route path="/supplier/financial" element={<Navigate to="/portal/financeiro/depositos" replace />} />
+                                            <Route path="/supplier/capacity" element={<Navigate to="/portal/capacidade" replace />} />
 
-                            {/* Brand Portal routes - includes all brand pages with sidebar */}
-                            <Route path="/brand" element={<ProtectedRoute allowedRoles={['BRAND']}><BrandPortalLayout /></ProtectedRoute>}>
-                                <Route index element={<Navigate to="/brand/inicio" replace />} />
-                                <Route path="inicio" element={<BrandDashboard />} />
-                                {/* Pedidos */}
-                                <Route path="pedidos" element={<BrandKanbanDashboard />} />
-                                <Route path="pedidos/lista" element={<BrandOrdersList />} />
-                                <Route path="pedidos/novo" element={<BrandCreateOrder />} />
-                                <Route path="pedidos/:id" element={<BrandOrderDetails />} />
-                                {/* Facções */}
-                                <Route path="faccoes" element={<BrandSuppliers />} />
-                                <Route path="faccoes/parceiros" element={<BrandPartners />} />
-                                <Route path="faccoes/:id" element={<BrandSupplierProfile />} />
-                                {/* Fornecedores (V3 N:M Relationships) */}
-                                <Route path="fornecedores" element={<BrandSuppliersPage />} />
-                                <Route path="fornecedores/adicionar" element={<AddSupplierPage />} />
-                                <Route path="fornecedores/:id" element={<RelationshipDetailsPage />} />
-                                {/* Mensagens */}
-                                <Route path="mensagens" element={<BrandMessages />} />
-                                {/* Financeiro */}
-                                <Route path="financeiro/pagamentos" element={<BrandPayments />} />
-                                <Route path="financeiro/historico" element={<BrandPaymentHistory />} />
-                                {/* Relatórios */}
-                                <Route path="relatorios" element={<BrandReports />} />
-                                {/* Favoritos */}
-                                <Route path="favoritos" element={<BrandFavorites />} />
-                                {/* Credenciamento */}
-                                <Route path="credenciamento" element={<CredentialsListPage />} />
-                                <Route path="credenciamento/novo" element={<NewCredentialPage />} />
-                                <Route path="credenciamento/:id" element={<CredentialDetailsPage />} />
-                                {/* Central de Ajuda */}
-                                <Route path="suporte" element={<BrandHelpCenter />} />
-                                <Route path="suporte/:id" element={<BrandTicketDetail />} />
-                                {/* Configurações */}
-                                <Route path="equipe" element={<TeamPage />} />
-                            </Route>
+                                            {/* Brand Portal routes - includes all brand pages with sidebar */}
+                                            <Route path="/brand" element={<ProtectedRoute allowedRoles={['BRAND']}><BrandPortalLayout /></ProtectedRoute>}>
+                                                <Route index element={<Navigate to="/brand/inicio" replace />} />
+                                                <Route path="inicio" element={<BrandDashboard />} />
+                                                {/* Pedidos */}
+                                                <Route path="pedidos" element={<BrandKanbanDashboard />} />
+                                                <Route path="pedidos/lista" element={<BrandOrdersList />} />
+                                                <Route path="pedidos/novo" element={<BrandCreateOrder />} />
+                                                <Route path="pedidos/:id" element={<BrandOrderDetails />} />
+                                                {/* Facções */}
+                                                <Route path="faccoes" element={<BrandSuppliers />} />
+                                                <Route path="faccoes/parceiros" element={<BrandPartners />} />
+                                                <Route path="faccoes/:id" element={<BrandSupplierProfile />} />
+                                                {/* Fornecedores (V3 N:M Relationships) */}
+                                                <Route path="fornecedores" element={<BrandSuppliersPage />} />
+                                                <Route path="fornecedores/adicionar" element={<AddSupplierPage />} />
+                                                <Route path="fornecedores/:id" element={<RelationshipDetailsPage />} />
+                                                {/* Mensagens */}
+                                                <Route path="mensagens" element={<BrandMessages />} />
+                                                {/* Financeiro */}
+                                                <Route path="financeiro/pagamentos" element={<BrandPayments />} />
+                                                <Route path="financeiro/historico" element={<BrandPaymentHistory />} />
+                                                {/* Relatórios */}
+                                                <Route path="relatorios" element={<BrandReports />} />
+                                                {/* Favoritos */}
+                                                <Route path="favoritos" element={<BrandFavorites />} />
+                                                {/* Credenciamento */}
+                                                <Route path="credenciamento" element={<CredentialsListPage />} />
+                                                <Route path="credenciamento/novo" element={<NewCredentialPage />} />
+                                                <Route path="credenciamento/:id" element={<CredentialDetailsPage />} />
+                                                {/* Central de Ajuda */}
+                                                <Route path="suporte" element={<BrandHelpCenter />} />
+                                                <Route path="suporte/:id" element={<BrandTicketDetail />} />
+                                                {/* Configurações */}
+                                                <Route path="equipe" element={<TeamPage />} />
+                                                <Route path="notificacoes" element={<NotificationsPage />} />
+                                            </Route>
 
-                            {/* Legacy brand routes - redirect to new portal */}
-                            <Route path="/brand/orders" element={<Navigate to="/brand/pedidos/lista" replace />} />
-                            <Route path="/brand/orders/new" element={<Navigate to="/brand/pedidos/novo" replace />} />
-                            <Route path="/brand/suppliers" element={<Navigate to="/brand/faccoes" replace />} />
+                                            {/* Legacy brand routes - redirect to new portal */}
+                                            <Route path="/brand/orders" element={<Navigate to="/brand/pedidos/lista" replace />} />
+                                            <Route path="/brand/orders/new" element={<Navigate to="/brand/pedidos/novo" replace />} />
+                                            <Route path="/brand/suppliers" element={<Navigate to="/brand/faccoes" replace />} />
 
-                            {/* Admin routes */}
-                            <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
-                            <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminApprovals /></ProtectedRoute>} />
-                            <Route path="/admin/suppliers" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliers /></ProtectedRoute>} />
-                            <Route path="/admin/suppliers-pool" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliersPool /></ProtectedRoute>} />
-                            <Route path="/admin/brands" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminBrands /></ProtectedRoute>} />
-                            <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminOrders /></ProtectedRoute>} />
-                            <Route path="/admin/partners" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminPartners /></ProtectedRoute>} />
-                            <Route path="/admin/educational-content" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminEducationalContent /></ProtectedRoute>} />
-                            <Route path="/admin/support" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSupportTickets /></ProtectedRoute>} />
-                            <Route path="/admin/documents" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDocuments /></ProtectedRoute>} />
+                                            {/* Admin routes */}
+                                            <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+                                            <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminApprovals /></ProtectedRoute>} />
+                                            <Route path="/admin/suppliers" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliers /></ProtectedRoute>} />
+                                            <Route path="/admin/suppliers-pool" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSuppliersPool /></ProtectedRoute>} />
+                                            <Route path="/admin/brands" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminBrands /></ProtectedRoute>} />
+                                            <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminOrders /></ProtectedRoute>} />
+                                            <Route path="/admin/partners" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminPartners /></ProtectedRoute>} />
+                                            <Route path="/admin/educational-content" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminEducationalContent /></ProtectedRoute>} />
+                                            <Route path="/admin/support" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSupportTickets /></ProtectedRoute>} />
+                                            <Route path="/admin/documents" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDocuments /></ProtectedRoute>} />
+                                            <Route path="/admin/notificacoes" element={<ProtectedRoute allowedRoles={['ADMIN']}><NotificationsPage /></ProtectedRoute>} />
 
-                            {/* Error pages */}
-                            <Route path="/500" element={<ServerErrorPage />} />
+                                            {/* Error pages */}
+                                            <Route path="/500" element={<ServerErrorPage />} />
 
-                            {/* Default redirect */}
-                            <Route path="/" element={<Navigate to="/login" replace />} />
+                                            {/* Default redirect */}
+                                            <Route path="/" element={<Navigate to="/login" replace />} />
 
-                            {/* 404 - must be last */}
-                            <Route path="*" element={<NotFoundPage />} />
-                        </Routes>
-                            </React.Suspense>
+                                            {/* 404 - must be last */}
+                                            <Route path="*" element={<NotFoundPage />} />
+                                        </Routes>
+                                    </React.Suspense>
                                     <ToastContainer />
                                 </BrowserRouter>
                             </PermissionProvider>
