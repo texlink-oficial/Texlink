@@ -11,6 +11,14 @@ import { MockCreditProvider } from './providers/credit/mock-credit.provider';
 import { SerasaCreditProvider } from './providers/credit/serasa.provider';
 import { SPCCreditProvider } from './providers/credit/spc.provider';
 
+// Legal Providers
+import { MockLegalProvider } from './providers/legal/mock-legal.provider';
+import { DatajudLegalProvider } from './providers/legal/datajud.provider';
+
+// Restrictions Providers
+import { MockRestrictionsProvider } from './providers/restrictions/mock-restrictions.provider';
+import { PortalTransparenciaProvider } from './providers/restrictions/portal-transparencia.provider';
+
 // Notification Providers
 import { SendGridProvider } from './providers/notification/sendgrid.provider';
 import { TwilioWhatsappProvider } from './providers/notification/twilio-whatsapp.provider';
@@ -33,6 +41,8 @@ import { IntegrationService } from './services/integration.service';
  * - Crédito: CREDIT_PROVIDER (mock|serasa|spc)
  *   - Serasa: SERASA_API_URL, SERASA_CLIENT_ID, SERASA_CLIENT_SECRET
  *   - SPC: SPC_API_URL, SPC_USERNAME, SPC_PASSWORD
+ * - Legal: DATAJUD_API_KEY (API pública CNJ)
+ * - Restrições: PORTAL_TRANSPARENCIA_API_KEY
  */
 @Global()
 @Module({
@@ -53,6 +63,14 @@ import { IntegrationService } from './services/integration.service';
     SerasaCreditProvider,
     SPCCreditProvider,
 
+    // Legal Providers
+    MockLegalProvider,
+    DatajudLegalProvider,
+
+    // Restrictions Providers
+    MockRestrictionsProvider,
+    PortalTransparenciaProvider,
+
     // Notification Providers
     SendGridProvider,
     TwilioWhatsappProvider,
@@ -70,6 +88,10 @@ import { IntegrationService } from './services/integration.service';
     MockCreditProvider,
     SerasaCreditProvider,
     SPCCreditProvider,
+    MockLegalProvider,
+    DatajudLegalProvider,
+    MockRestrictionsProvider,
+    PortalTransparenciaProvider,
     SendGridProvider,
     TwilioWhatsappProvider,
   ],

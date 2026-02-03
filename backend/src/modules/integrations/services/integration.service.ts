@@ -19,6 +19,22 @@ import { MockCreditProvider } from '../providers/credit/mock-credit.provider';
 import { SerasaCreditProvider } from '../providers/credit/serasa.provider';
 import { SPCCreditProvider } from '../providers/credit/spc.provider';
 
+// Legal Providers
+import {
+  ILegalProvider,
+  LegalAnalysisResult,
+} from '../providers/legal/legal-provider.interface';
+import { MockLegalProvider } from '../providers/legal/mock-legal.provider';
+import { DatajudLegalProvider } from '../providers/legal/datajud.provider';
+
+// Restrictions Providers
+import {
+  IRestrictionsProvider,
+  RestrictionsAnalysisResult,
+} from '../providers/restrictions/restrictions-provider.interface';
+import { MockRestrictionsProvider } from '../providers/restrictions/mock-restrictions.provider';
+import { PortalTransparenciaProvider } from '../providers/restrictions/portal-transparencia.provider';
+
 // Notification Providers
 import {
   NotificationPayload,
@@ -33,6 +49,18 @@ interface CreditCacheEntry {
   expiresAt: Date;
 }
 
+// Cache for legal analysis
+interface LegalCacheEntry {
+  result: LegalAnalysisResult;
+  expiresAt: Date;
+}
+
+// Cache for restrictions analysis
+interface RestrictionsCacheEntry {
+  result: RestrictionsAnalysisResult;
+  expiresAt: Date;
+}
+
 /**
  * Serviço central de integrações
  * Agrega todos os providers externos e implementa fallback automático
@@ -44,10 +72,21 @@ export class IntegrationService {
   // Providers ordenados por prioridade
   private readonly cnpjProviders: ICNPJProvider[];
   private readonly creditProviders: ICreditProvider[];
+  private readonly legalProviders: ILegalProvider[];
+  private readonly restrictionsProviders: IRestrictionsProvider[];
 
   // Credit analysis cache (30 days)
   private readonly creditCache: Map<string, CreditCacheEntry> = new Map();
   private readonly CREDIT_CACHE_TTL_DAYS = 30;
+
+  // Legal analysis cache (7 days)
+  private readonly legalCache: Map<string, LegalCacheEntry> = new Map();
+  private readonly LEGAL_CACHE_TTL_DAYS = 7;
+
+  // Restrictions analysis cache (1 day - more volatile data)
+  private readonly restrictionsCache: Map<string, RestrictionsCacheEntry> =
+    new Map();
+  private readonly RESTRICTIONS_CACHE_TTL_DAYS = 1;
 
   constructor(
     private readonly configService: ConfigService,
@@ -58,6 +97,12 @@ export class IntegrationService {
     private readonly mockCreditProvider: MockCreditProvider,
     private readonly serasaCreditProvider: SerasaCreditProvider,
     private readonly spcCreditProvider: SPCCreditProvider,
+    // Legal Providers
+    private readonly mockLegalProvider: MockLegalProvider,
+    private readonly datajudLegalProvider: DatajudLegalProvider,
+    // Restrictions Providers
+    private readonly mockRestrictionsProvider: MockRestrictionsProvider,
+    private readonly portalTransparenciaProvider: PortalTransparenciaProvider,
     // Notification Providers
     private readonly sendGridProvider: SendGridProvider,
     private readonly twilioWhatsappProvider: TwilioWhatsappProvider,
@@ -73,6 +118,20 @@ export class IntegrationService {
       this.serasaCreditProvider,
       this.spcCreditProvider,
       this.mockCreditProvider,
+    ];
+
+    // Setup legal providers
+    // Order: Datajud (CNJ) → Mock (fallback)
+    this.legalProviders = [
+      this.datajudLegalProvider,
+      this.mockLegalProvider,
+    ];
+
+    // Setup restrictions providers
+    // Order: Portal da Transparência → Mock (fallback)
+    this.restrictionsProviders = [
+      this.portalTransparenciaProvider,
+      this.mockRestrictionsProvider,
     ];
 
     this.logger.log('Integration service initialized');
@@ -378,6 +437,249 @@ export class IntegrationService {
     return recommendations;
   }
 
+  // ==================== LEGAL ANALYSIS ====================
+
+  /**
+   * Analisa processos judiciais de uma empresa pelo CNPJ
+   *
+   * Flow:
+   * 1. Check cache (7 days)
+   * 2. Try JusBrasil provider
+   * 3. Fallback: Mock
+   * 4. Cache result
+   */
+  async analyzeLegalIssues(
+    cnpj: string,
+    forceRefresh = false,
+  ): Promise<LegalAnalysisResult | null> {
+    const cleanCnpj = cnpj.replace(/\D/g, '');
+
+    if (cleanCnpj.length !== 14) {
+      this.logger.warn('CNPJ inválido para análise de processos judiciais');
+      return null;
+    }
+
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = this.getCachedLegalAnalysis(cleanCnpj);
+      if (cached) {
+        this.logger.log(
+          `Legal analysis for ${this.maskCnpj(cleanCnpj)} retrieved from cache`,
+        );
+        return cached;
+      }
+    }
+
+    // Try each provider
+    for (const provider of this.legalProviders) {
+      const isAvailable = await provider.isAvailable();
+
+      if (!isAvailable) {
+        this.logger.debug(`Legal provider ${provider.name} not available`);
+        continue;
+      }
+
+      this.logger.log(`Analyzing legal issues via ${provider.name}`);
+
+      try {
+        const result = await provider.analyze(cleanCnpj);
+
+        // If successful (no error), cache and return
+        if (!result.error) {
+          this.cacheLegalAnalysis(cleanCnpj, result);
+          return result;
+        }
+
+        this.logger.warn(
+          `Provider ${provider.name} returned error: ${result.error}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Error from legal provider ${provider.name}: ${error.message}`,
+        );
+      }
+    }
+
+    // All providers failed - return default no-issues result
+    this.logger.warn(
+      `All legal providers failed for ${this.maskCnpj(cleanCnpj)}`,
+    );
+    return {
+      hasLegalIssues: false,
+      activeLawsuitsCount: 0,
+      riskLevel: 'LOW',
+      recommendations: ['Não foi possível verificar processos judiciais'],
+      source: 'FALLBACK',
+      timestamp: new Date(),
+      error: 'All legal providers failed',
+    };
+  }
+
+  /**
+   * Get cached legal analysis if still valid
+   */
+  private getCachedLegalAnalysis(cnpj: string): LegalAnalysisResult | null {
+    const cacheKey = `legal_analysis:${cnpj}`;
+    const cached = this.legalCache.get(cacheKey);
+
+    if (!cached) {
+      return null;
+    }
+
+    if (new Date() > cached.expiresAt) {
+      this.legalCache.delete(cacheKey);
+      return null;
+    }
+
+    return {
+      ...cached.result,
+      source: `${cached.result.source}_CACHED`,
+    };
+  }
+
+  /**
+   * Cache legal analysis result
+   */
+  private cacheLegalAnalysis(cnpj: string, result: LegalAnalysisResult): void {
+    const cacheKey = `legal_analysis:${cnpj}`;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + this.LEGAL_CACHE_TTL_DAYS);
+
+    this.legalCache.set(cacheKey, {
+      result,
+      expiresAt,
+    });
+
+    this.logger.debug(
+      `Cached legal analysis for ${this.maskCnpj(cnpj)} until ${expiresAt.toISOString()}`,
+    );
+  }
+
+  // ==================== RESTRICTIONS ANALYSIS ====================
+
+  /**
+   * Analisa restrições de uma empresa pelo CNPJ (CADIN, CEIS, CNEP, etc.)
+   *
+   * Flow:
+   * 1. Check cache (1 day)
+   * 2. Try Portal da Transparência provider
+   * 3. Fallback: Mock
+   * 4. Cache result
+   */
+  async analyzeRestrictions(
+    cnpj: string,
+    forceRefresh = false,
+  ): Promise<RestrictionsAnalysisResult | null> {
+    const cleanCnpj = cnpj.replace(/\D/g, '');
+
+    if (cleanCnpj.length !== 14) {
+      this.logger.warn('CNPJ inválido para análise de restrições');
+      return null;
+    }
+
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = this.getCachedRestrictionsAnalysis(cleanCnpj);
+      if (cached) {
+        this.logger.log(
+          `Restrictions analysis for ${this.maskCnpj(cleanCnpj)} retrieved from cache`,
+        );
+        return cached;
+      }
+    }
+
+    // Try each provider
+    for (const provider of this.restrictionsProviders) {
+      const isAvailable = await provider.isAvailable();
+
+      if (!isAvailable) {
+        this.logger.debug(
+          `Restrictions provider ${provider.name} not available`,
+        );
+        continue;
+      }
+
+      this.logger.log(`Analyzing restrictions via ${provider.name}`);
+
+      try {
+        const result = await provider.analyze(cleanCnpj);
+
+        // If successful (no error), cache and return
+        if (!result.error) {
+          this.cacheRestrictionsAnalysis(cleanCnpj, result);
+          return result;
+        }
+
+        this.logger.warn(
+          `Provider ${provider.name} returned error: ${result.error}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Error from restrictions provider ${provider.name}: ${error.message}`,
+        );
+      }
+    }
+
+    // All providers failed - return default no-restrictions result
+    this.logger.warn(
+      `All restrictions providers failed for ${this.maskCnpj(cleanCnpj)}`,
+    );
+    return {
+      hasRestrictions: false,
+      totalRestrictions: 0,
+      riskLevel: 'LOW',
+      recommendations: ['Não foi possível verificar restrições cadastrais'],
+      source: 'FALLBACK',
+      timestamp: new Date(),
+      error: 'All restrictions providers failed',
+    };
+  }
+
+  /**
+   * Get cached restrictions analysis if still valid
+   */
+  private getCachedRestrictionsAnalysis(
+    cnpj: string,
+  ): RestrictionsAnalysisResult | null {
+    const cacheKey = `restrictions_analysis:${cnpj}`;
+    const cached = this.restrictionsCache.get(cacheKey);
+
+    if (!cached) {
+      return null;
+    }
+
+    if (new Date() > cached.expiresAt) {
+      this.restrictionsCache.delete(cacheKey);
+      return null;
+    }
+
+    return {
+      ...cached.result,
+      source: `${cached.result.source}_CACHED`,
+    };
+  }
+
+  /**
+   * Cache restrictions analysis result
+   */
+  private cacheRestrictionsAnalysis(
+    cnpj: string,
+    result: RestrictionsAnalysisResult,
+  ): void {
+    const cacheKey = `restrictions_analysis:${cnpj}`;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + this.RESTRICTIONS_CACHE_TTL_DAYS);
+
+    this.restrictionsCache.set(cacheKey, {
+      result,
+      expiresAt,
+    });
+
+    this.logger.debug(
+      `Cached restrictions analysis for ${this.maskCnpj(cnpj)} until ${expiresAt.toISOString()}`,
+    );
+  }
+
   // ==================== EMAIL NOTIFICATIONS ====================
 
   /**
@@ -469,6 +771,10 @@ export class IntegrationService {
       mockCreditAvailable,
       serasaAvailable,
       spcAvailable,
+      mockLegalAvailable,
+      datajudAvailable,
+      mockRestrictionsAvailable,
+      portalTransparenciaAvailable,
       sendGridAvailable,
       twilioAvailable,
     ] = await Promise.all([
@@ -477,6 +783,10 @@ export class IntegrationService {
       this.mockCreditProvider.isAvailable(),
       this.serasaCreditProvider.isAvailable(),
       this.spcCreditProvider.isAvailable(),
+      this.mockLegalProvider.isAvailable(),
+      this.datajudLegalProvider.isAvailable(),
+      this.mockRestrictionsProvider.isAvailable(),
+      this.portalTransparenciaProvider.isAvailable(),
       this.sendGridProvider.isAvailable(),
       this.twilioWhatsappProvider.isAvailable(),
     ]);
@@ -506,6 +816,26 @@ export class IntegrationService {
         name: this.spcCreditProvider.name,
         type: 'CREDIT',
         available: spcAvailable,
+      },
+      mockLegal: {
+        name: this.mockLegalProvider.name,
+        type: 'LEGAL',
+        available: mockLegalAvailable,
+      },
+      datajud: {
+        name: this.datajudLegalProvider.name,
+        type: 'LEGAL',
+        available: datajudAvailable,
+      },
+      mockRestrictions: {
+        name: this.mockRestrictionsProvider.name,
+        type: 'RESTRICTIONS',
+        available: mockRestrictionsAvailable,
+      },
+      portalTransparencia: {
+        name: this.portalTransparenciaProvider.name,
+        type: 'RESTRICTIONS',
+        available: portalTransparenciaAvailable,
       },
       sendGrid: {
         name: this.sendGridProvider.name,
