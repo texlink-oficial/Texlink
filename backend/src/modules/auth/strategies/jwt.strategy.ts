@@ -45,6 +45,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    return user;
+    // Extract companyId from companyUsers for easier access in controllers
+    const companyId = user.companyUsers?.[0]?.companyId || null;
+    const company = user.companyUsers?.[0]?.company || null;
+
+    return {
+      ...user,
+      companyId,
+      company,
+    };
   }
 }

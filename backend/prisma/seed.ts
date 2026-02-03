@@ -27,6 +27,107 @@ async function main() {
     });
     console.log('✅ Admin:', admin.email);
 
+    // ==================== DEMO USERS ====================
+    // These match the credentials in frontend mockMode.ts
+    const demoPassword = await bcrypt.hash('demo123', 10);
+
+    // Demo Admin
+    const demoAdmin = await prisma.user.upsert({
+        where: { email: 'demo-admin@texlink.com' },
+        update: {},
+        create: {
+            email: 'demo-admin@texlink.com',
+            passwordHash: demoPassword,
+            name: 'Demo Admin',
+            role: UserRole.ADMIN,
+            isActive: true,
+        },
+    });
+    console.log('✅ Demo Admin:', demoAdmin.email);
+
+    // Demo Brand
+    const demoBrandUser = await prisma.user.upsert({
+        where: { email: 'demo-brand@texlink.com' },
+        update: {},
+        create: {
+            email: 'demo-brand@texlink.com',
+            passwordHash: demoPassword,
+            name: 'Demo Marca',
+            role: UserRole.BRAND,
+            isActive: true,
+        },
+    });
+
+    const demoBrandCompany = await prisma.company.upsert({
+        where: { document: '00000000000100' },
+        update: {},
+        create: {
+            legalName: 'Demo Marca LTDA',
+            tradeName: 'Demo Brand',
+            document: '00000000000100',
+            type: CompanyType.BRAND,
+            status: CompanyStatus.ACTIVE,
+            city: 'São Paulo',
+            state: 'SP',
+        },
+    });
+
+    await prisma.companyUser.upsert({
+        where: { userId_companyId: { userId: demoBrandUser.id, companyId: demoBrandCompany.id } },
+        update: { companyRole: CompanyRole.ADMIN, isCompanyAdmin: true },
+        create: { userId: demoBrandUser.id, companyId: demoBrandCompany.id, role: 'OWNER', companyRole: CompanyRole.ADMIN, isCompanyAdmin: true },
+    });
+    console.log('✅ Demo Brand:', demoBrandUser.email);
+
+    // Demo Supplier
+    const demoSupplierUser = await prisma.user.upsert({
+        where: { email: 'demo-supplier@texlink.com' },
+        update: {},
+        create: {
+            email: 'demo-supplier@texlink.com',
+            passwordHash: demoPassword,
+            name: 'Demo Facção',
+            role: UserRole.SUPPLIER,
+            isActive: true,
+        },
+    });
+
+    const demoSupplierCompany = await prisma.company.upsert({
+        where: { document: '00000000000199' },
+        update: {},
+        create: {
+            legalName: 'Demo Confecções LTDA',
+            tradeName: 'Demo Supplier',
+            document: '00000000000199',
+            type: CompanyType.SUPPLIER,
+            status: CompanyStatus.ACTIVE,
+            city: 'Blumenau',
+            state: 'SC',
+            avgRating: 4.5,
+        },
+    });
+
+    await prisma.companyUser.upsert({
+        where: { userId_companyId: { userId: demoSupplierUser.id, companyId: demoSupplierCompany.id } },
+        update: { companyRole: CompanyRole.ADMIN, isCompanyAdmin: true },
+        create: { userId: demoSupplierUser.id, companyId: demoSupplierCompany.id, role: 'OWNER', companyRole: CompanyRole.ADMIN, isCompanyAdmin: true },
+    });
+
+    await prisma.supplierProfile.upsert({
+        where: { companyId: demoSupplierCompany.id },
+        update: {},
+        create: {
+            companyId: demoSupplierCompany.id,
+            onboardingPhase: 3,
+            onboardingComplete: true,
+            productTypes: ['Camiseta', 'Calça', 'Vestido'],
+            specialties: ['Malha', 'Jeans'],
+            monthlyCapacity: 5000,
+            currentOccupancy: 30,
+        },
+    });
+    console.log('✅ Demo Supplier:', demoSupplierUser.email);
+
     // ==================== BRANDS ====================
     const brandsData = [
         { email: 'marca@teste.com', name: 'João Silva', company: { legalName: 'Moda Fashion LTDA', tradeName: 'Moda Fashion', document: '12345678000100', city: 'São Paulo', state: 'SP' } },
