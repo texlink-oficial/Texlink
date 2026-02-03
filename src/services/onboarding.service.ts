@@ -301,4 +301,77 @@ export const onboardingService = {
         }
         await api.delete(`/onboarding/${token}/documents/${documentId}`);
     },
+
+    /**
+     * Step 2: Criar senha do usuário (público)
+     */
+    async createPassword(token: string, password: string): Promise<{ success: boolean; userId: string }> {
+        if (MOCK_MODE) {
+            await simulateDelay(500);
+            return { success: true, userId: 'mock-user-001' };
+        }
+        const response = await api.post(`/onboarding/${token}/password`, { password });
+        return response.data;
+    },
+
+    /**
+     * Step 3: Salvar dados da empresa (público)
+     */
+    async saveCompanyData(
+        token: string,
+        data: {
+            interesse: string;
+            faturamentoDesejado: number;
+            maturidadeGestao: string;
+            qtdColaboradores: number;
+            tempoMercado: string;
+        }
+    ): Promise<{ success: boolean; onboardingId: string; currentStep: number }> {
+        if (MOCK_MODE) {
+            await simulateDelay(500);
+            return { success: true, onboardingId: 'onb-001', currentStep: 4 };
+        }
+        const response = await api.post(`/onboarding/${token}/company-data`, data);
+        return response.data;
+    },
+
+    /**
+     * Step 5: Salvar capacidades produtivas (público)
+     */
+    async saveCapabilities(
+        token: string,
+        data: {
+            productTypes: string[];
+            specialties?: string[];
+            monthlyCapacity: number;
+            currentOccupancy: number;
+        }
+    ): Promise<{ success: boolean; onboardingId: string; currentStep: number }> {
+        if (MOCK_MODE) {
+            await simulateDelay(500);
+            return { success: true, onboardingId: 'onb-001', currentStep: 6 };
+        }
+        const response = await api.post(`/onboarding/${token}/capabilities`, data);
+        return response.data;
+    },
+
+    /**
+     * Atualizar progresso de um step específico
+     */
+    async updateStepProgress(
+        token: string,
+        stepNumber: number
+    ): Promise<{ success: boolean; currentStep: number; completedSteps: number[]; isComplete: boolean }> {
+        if (MOCK_MODE) {
+            await simulateDelay(300);
+            return {
+                success: true,
+                currentStep: stepNumber + 1,
+                completedSteps: Array.from({ length: stepNumber }, (_, i) => i + 1),
+                isComplete: stepNumber >= 6,
+            };
+        }
+        const response = await api.post(`/onboarding/${token}/step/${stepNumber}`);
+        return response.data;
+    },
 };

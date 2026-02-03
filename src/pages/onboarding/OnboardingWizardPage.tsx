@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { OnboardingLayout } from '../../components/layout/OnboardingLayout';
+import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { useOnboardingWizard } from './hooks/useOnboardingWizard';
 import { WizardStepper, type WizardStep } from './components/WizardStepper';
 import { WizardNavigation } from './components/WizardNavigation';

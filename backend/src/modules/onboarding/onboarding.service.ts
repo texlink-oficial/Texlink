@@ -3,12 +3,20 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  Inject,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { SupplierCredentialStatus } from '@prisma/client';
-import { UploadedFile } from '../upload/storage.provider';
-import { LocalStorageProvider } from '../upload/storage.provider';
+import { SupplierCredentialStatus, Company, SupplierProfile } from '@prisma/client';
+import type {
+  UploadedFile,
+  StorageProvider,
+} from '../upload/storage.provider';
+import { STORAGE_PROVIDER } from '../upload/storage.provider';
+import { CompanyDataDto } from './dto/company-data.dto';
+import { CapabilitiesDto } from './dto/capabilities.dto';
+import * as bcrypt from 'bcrypt';
 
 /**
  * Serviço de Onboarding - Lida com fluxo público de onboarding de facções
@@ -21,11 +29,12 @@ import { LocalStorageProvider } from '../upload/storage.provider';
 @Injectable()
 export class OnboardingService {
   private readonly logger = new Logger(OnboardingService.name);
-  private readonly storage = new LocalStorageProvider();
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    @Inject(STORAGE_PROVIDER)
+    private readonly storage: StorageProvider,
   ) {}
 
   /**
@@ -520,6 +529,392 @@ export class OnboardingService {
     );
 
     return { success: true };
+  }
+
+  // ==================== STEP 2: PASSWORD CREATION ====================
+
+  /**
+   * Step 2: Criar senha para o usuário
+   *
+   * - Cria usuário vinculado ao supplier
+   * - Hash da senha com bcrypt
+   * - Atualiza progresso do onboarding
+   */
+  async createPassword(token: string, password: string) {
+    // Validar token e buscar invitation
+    const invitation = await this.prisma.credentialInvitation.findUnique({
+      where: { token },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('Convite não encontrado');
+    }
+
+    // Buscar credential com onboarding
+    const credential = await this.prisma.supplierCredential.findUnique({
+      where: { id: invitation.credentialId },
+      include: {
+        onboarding: true,
+      },
+    });
+
+    if (!credential || !credential.onboarding) {
+      throw new NotFoundException(
+        'Onboarding não encontrado. Inicie o processo primeiro.',
+      );
+    }
+
+    const onboarding = credential.onboarding;
+
+    // Check if user already exists for this email
+    if (!credential.contactEmail) {
+      throw new BadRequestException('Email de contato não configurado');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: credential.contactEmail },
+    });
+
+    if (existingUser) {
+      throw new ConflictException(
+        'Já existe um usuário com este email. Use a opção de login.',
+      );
+    }
+
+    // Hash the password
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // Create the user
+    const user = await this.prisma.user.create({
+      data: {
+        email: credential.contactEmail,
+        name: credential.contactName || 'Usuário',
+        passwordHash,
+        role: 'SUPPLIER',
+        isActive: true,
+      },
+    });
+
+    // Link user to the supplier company
+    if (credential.supplierId) {
+      await this.prisma.companyUser.create({
+        data: {
+          userId: user.id,
+          companyId: credential.supplierId,
+          role: 'OWNER', // First user is owner
+          isCompanyAdmin: true,
+        },
+      });
+    }
+
+    // Update onboarding progress
+    const completedSteps = (onboarding.completedSteps as number[]) || [];
+    if (!completedSteps.includes(2)) {
+      completedSteps.push(2);
+    }
+
+    await this.prisma.supplierOnboarding.update({
+      where: { id: onboarding.id },
+      data: {
+        currentStep: Math.max(onboarding.currentStep, 3),
+        completedSteps,
+        lastActivityAt: new Date(),
+      },
+    });
+
+    this.logger.log(
+      `Password created for user ${user.id} in onboarding ${onboarding.id}`,
+    );
+
+    return {
+      success: true,
+      message: 'Senha criada com sucesso',
+      userId: user.id,
+    };
+  }
+
+  // ==================== STEP 3: COMPANY DATA ====================
+
+  /**
+   * Step 3: Salvar dados da empresa
+   *
+   * - Salva dados de qualificação do negócio
+   * - Atualiza SupplierOnboarding e SupplierCredential
+   */
+  async saveCompanyData(token: string, data: CompanyDataDto) {
+    // Validar token e buscar invitation
+    const invitation = await this.prisma.credentialInvitation.findUnique({
+      where: { token },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('Convite não encontrado');
+    }
+
+    // Buscar credential
+    const credential = await this.prisma.supplierCredential.findUnique({
+      where: { id: invitation.credentialId },
+    });
+
+    if (!credential || !credential.supplierOnboardingId) {
+      throw new NotFoundException(
+        'Onboarding não encontrado. Inicie o processo primeiro.',
+      );
+    }
+
+    // Buscar onboarding
+    const onboarding = await this.prisma.supplierOnboarding.findUnique({
+      where: { id: credential.supplierOnboardingId },
+    });
+
+    if (!onboarding) {
+      throw new NotFoundException('Onboarding não encontrado');
+    }
+
+    // Buscar supplier com profile
+    let supplier: Company | null = null;
+    let supplierProfile: SupplierProfile | null = null;
+    if (credential.supplierId) {
+      supplier = await this.prisma.company.findUnique({
+        where: { id: credential.supplierId },
+      });
+      supplierProfile = await this.prisma.supplierProfile.findUnique({
+        where: { companyId: credential.supplierId },
+      });
+    }
+
+    // Create or update supplier profile with business qualification data
+    if (supplier) {
+      if (supplierProfile) {
+        // Update existing profile
+        await this.prisma.supplierProfile.update({
+          where: { id: supplierProfile.id },
+          data: {
+            businessQualification: data as any,
+            updatedAt: new Date(),
+          },
+        });
+      } else {
+        // Create new profile
+        await this.prisma.supplierProfile.create({
+          data: {
+            companyId: supplier.id,
+            businessQualification: data as any,
+          },
+        });
+      }
+    }
+
+    // Update onboarding progress
+    const completedSteps = (onboarding.completedSteps as number[]) || [];
+    if (!completedSteps.includes(3)) {
+      completedSteps.push(3);
+    }
+
+    await this.prisma.supplierOnboarding.update({
+      where: { id: onboarding.id },
+      data: {
+        currentStep: Math.max(onboarding.currentStep, 4),
+        completedSteps,
+        lastActivityAt: new Date(),
+      },
+    });
+
+    this.logger.log(`Company data saved for onboarding ${onboarding.id}`);
+
+    return {
+      success: true,
+      message: 'Dados da empresa salvos com sucesso',
+      onboardingId: onboarding.id,
+      currentStep: 4,
+    };
+  }
+
+  // ==================== STEP 5: CAPABILITIES ====================
+
+  /**
+   * Step 5: Salvar capacidades produtivas
+   *
+   * - Salva tipos de produtos, especialidades, capacidade
+   * - Atualiza SupplierProfile
+   */
+  async saveCapabilities(token: string, data: CapabilitiesDto) {
+    // Validar token e buscar invitation
+    const invitation = await this.prisma.credentialInvitation.findUnique({
+      where: { token },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('Convite não encontrado');
+    }
+
+    // Buscar credential
+    const credential = await this.prisma.supplierCredential.findUnique({
+      where: { id: invitation.credentialId },
+    });
+
+    if (!credential || !credential.supplierOnboardingId) {
+      throw new NotFoundException(
+        'Onboarding não encontrado. Inicie o processo primeiro.',
+      );
+    }
+
+    // Buscar onboarding
+    const onboarding = await this.prisma.supplierOnboarding.findUnique({
+      where: { id: credential.supplierOnboardingId },
+    });
+
+    if (!onboarding) {
+      throw new NotFoundException('Onboarding não encontrado');
+    }
+
+    // Buscar supplier com profile
+    let supplier: Company | null = null;
+    let supplierProfile: SupplierProfile | null = null;
+    if (credential.supplierId) {
+      supplier = await this.prisma.company.findUnique({
+        where: { id: credential.supplierId },
+      });
+      supplierProfile = await this.prisma.supplierProfile.findUnique({
+        where: { companyId: credential.supplierId },
+      });
+    }
+
+    // Update supplier profile with capabilities
+    if (supplier) {
+      const profileData = {
+        productTypes: data.productTypes,
+        specialties: data.specialties || [],
+        monthlyCapacity: data.monthlyCapacity,
+        currentOccupancy: data.currentOccupancy,
+        updatedAt: new Date(),
+      };
+
+      if (supplierProfile) {
+        await this.prisma.supplierProfile.update({
+          where: { id: supplierProfile.id },
+          data: profileData,
+        });
+      } else {
+        await this.prisma.supplierProfile.create({
+          data: {
+            companyId: supplier.id,
+            ...profileData,
+          },
+        });
+      }
+    }
+
+    // Update onboarding progress
+    const completedSteps = (onboarding.completedSteps as number[]) || [];
+    if (!completedSteps.includes(5)) {
+      completedSteps.push(5);
+    }
+
+    await this.prisma.supplierOnboarding.update({
+      where: { id: onboarding.id },
+      data: {
+        currentStep: Math.max(onboarding.currentStep, 6),
+        completedSteps,
+        lastActivityAt: new Date(),
+      },
+    });
+
+    this.logger.log(`Capabilities saved for onboarding ${onboarding.id}`);
+
+    return {
+      success: true,
+      message: 'Capacidades produtivas salvas com sucesso',
+      onboardingId: onboarding.id,
+      currentStep: 6,
+    };
+  }
+
+  // ==================== UPDATE STEP PROGRESS ====================
+
+  /**
+   * Atualiza progresso de um step específico
+   */
+  async updateStepProgress(token: string, stepNumber: number) {
+    if (stepNumber < 1 || stepNumber > 6) {
+      throw new BadRequestException('Step inválido. Deve ser entre 1 e 6.');
+    }
+
+    // Validar token e buscar invitation
+    const invitation = await this.prisma.credentialInvitation.findUnique({
+      where: { token },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('Convite não encontrado');
+    }
+
+    // Buscar credential com onboarding
+    const credential = await this.prisma.supplierCredential.findUnique({
+      where: { id: invitation.credentialId },
+      include: {
+        onboarding: true,
+      },
+    });
+
+    if (!credential || !credential.onboarding) {
+      throw new NotFoundException(
+        'Onboarding não encontrado. Inicie o processo primeiro.',
+      );
+    }
+
+    const onboarding = credential.onboarding;
+    const completedSteps = (onboarding.completedSteps as number[]) || [];
+
+    if (!completedSteps.includes(stepNumber)) {
+      completedSteps.push(stepNumber);
+      completedSteps.sort((a, b) => a - b);
+    }
+
+    // Calculate next step
+    const nextStep = Math.min(stepNumber + 1, 6);
+
+    await this.prisma.supplierOnboarding.update({
+      where: { id: onboarding.id },
+      data: {
+        currentStep: Math.max(onboarding.currentStep, nextStep),
+        completedSteps,
+        lastActivityAt: new Date(),
+      },
+    });
+
+    // Check if onboarding is complete (all steps done)
+    const allStepsComplete = [1, 2, 3, 4, 5, 6].every((step) =>
+      completedSteps.includes(step),
+    );
+
+    if (allStepsComplete) {
+      // Mark credential as CONTRACT_PENDING (next step after onboarding)
+      await this.prisma.supplierCredential.update({
+        where: { id: invitation.credentialId },
+        data: { status: SupplierCredentialStatus.CONTRACT_PENDING },
+      });
+
+      await this.prisma.credentialStatusHistory.create({
+        data: {
+          credentialId: invitation.credentialId,
+          fromStatus: SupplierCredentialStatus.ONBOARDING_STARTED,
+          toStatus: SupplierCredentialStatus.CONTRACT_PENDING,
+          performedById: 'SYSTEM',
+          reason: 'Onboarding concluído pelo fornecedor',
+        },
+      });
+
+      this.logger.log(`Onboarding ${onboarding.id} completed`);
+    }
+
+    return {
+      success: true,
+      stepNumber,
+      currentStep: Math.max(onboarding.currentStep, nextStep),
+      completedSteps,
+      isComplete: allStepsComplete,
+    };
   }
 
   // ==================== PRIVATE HELPERS ====================

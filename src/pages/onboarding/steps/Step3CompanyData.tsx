@@ -86,15 +86,13 @@ export function Step3CompanyData({ token, onComplete }: Step3CompanyDataProps) {
     setIsSubmitting(true);
 
     try {
-      // TODO: Integrar com API
-      // await onboardingService.updateCompanyData(token, formData);
-
-      // Simular delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Integrate with backend API
+      const { onboardingService } = await import('../../../services/onboarding.service');
+      await onboardingService.saveCompanyData(token, formData);
 
       onComplete();
     } catch (err: any) {
-      setError(err.message || 'Erro ao salvar dados da empresa');
+      setError(err.response?.data?.message || err.message || 'Erro ao salvar dados da empresa');
     } finally {
       setIsSubmitting(false);
     }

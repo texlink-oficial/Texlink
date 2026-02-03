@@ -89,15 +89,13 @@ export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps)
     setIsSubmitting(true);
 
     try {
-      // TODO: Integrar com API
-      // await onboardingService.updateCapabilities(token, formData);
-
-      // Simular delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Integrate with backend API
+      const { onboardingService } = await import('../../../services/onboarding.service');
+      await onboardingService.saveCapabilities(token, formData);
 
       onComplete();
     } catch (err: any) {
-      setError(err.message || 'Erro ao salvar capacidades produtivas');
+      setError(err.response?.data?.message || err.message || 'Erro ao salvar capacidades produtivas');
     } finally {
       setIsSubmitting(false);
     }

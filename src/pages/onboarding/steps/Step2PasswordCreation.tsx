@@ -63,15 +63,13 @@ export function Step2PasswordCreation({
     setIsSubmitting(true);
 
     try {
-      // TODO: Integrar com API para criar senha
-      // await authService.createPassword(token, password);
-
-      // Simular delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Integrate with backend API
+      const { onboardingService } = await import('../../../services/onboarding.service');
+      await onboardingService.createPassword(token, password);
 
       onComplete();
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar senha');
+      setError(err.response?.data?.message || err.message || 'Erro ao criar senha');
     } finally {
       setIsSubmitting(false);
     }

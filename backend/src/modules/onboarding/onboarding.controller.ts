@@ -21,6 +21,9 @@ import {
 } from '@nestjs/swagger';
 import { OnboardingService } from './onboarding.service';
 import { UploadDocumentDto } from './dto/upload-document.dto';
+import { CreatePasswordDto } from './dto/create-password.dto';
+import { CompanyDataDto } from './dto/company-data.dto';
+import { CapabilitiesDto } from './dto/capabilities.dto';
 
 /**
  * Controller público de Onboarding
@@ -248,5 +251,170 @@ export class OnboardingController {
     @Param('documentId') documentId: string,
   ) {
     return this.onboardingService.deleteDocument(token, documentId);
+  }
+
+  // ==================== STEP 2: PASSWORD CREATION ====================
+
+  /**
+   * Step 2: Criar senha do usuário (público)
+   */
+  @Post(':token/password')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Criar senha do usuário (Step 2)',
+    description:
+      'Cria a senha para o usuário do onboarding. ' +
+      'A senha deve ter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais.',
+  })
+  @ApiParam({
+    name: 'token',
+    description: 'Token único do convite',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Senha criada com sucesso',
+    schema: {
+      example: {
+        success: true,
+        message: 'Senha criada com sucesso',
+        userId: 'user-uuid',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Senha não atende aos requisitos',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Onboarding não encontrado',
+  })
+  async createPassword(
+    @Param('token') token: string,
+    @Body() dto: CreatePasswordDto,
+  ) {
+    return this.onboardingService.createPassword(token, dto.password);
+  }
+
+  // ==================== STEP 3: COMPANY DATA ====================
+
+  /**
+   * Step 3: Salvar dados da empresa (público)
+   */
+  @Post(':token/company-data')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Salvar dados da empresa (Step 3)',
+    description:
+      'Salva os dados de qualificação do negócio da facção. ' +
+      'Inclui interesse, faturamento desejado, maturidade de gestão, colaboradores e tempo de mercado.',
+  })
+  @ApiParam({
+    name: 'token',
+    description: 'Token único do convite',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dados salvos com sucesso',
+    schema: {
+      example: {
+        success: true,
+        message: 'Dados da empresa salvos com sucesso',
+        onboardingId: 'onb-uuid',
+        currentStep: 3,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados inválidos',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Onboarding não encontrado',
+  })
+  async saveCompanyData(
+    @Param('token') token: string,
+    @Body() dto: CompanyDataDto,
+  ) {
+    return this.onboardingService.saveCompanyData(token, dto);
+  }
+
+  // ==================== STEP 5: CAPABILITIES ====================
+
+  /**
+   * Step 5: Salvar capacidades produtivas (público)
+   */
+  @Post(':token/capabilities')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Salvar capacidades produtivas (Step 5)',
+    description:
+      'Salva as capacidades produtivas da facção. ' +
+      'Inclui tipos de produtos, especialidades, capacidade mensal e ocupação atual.',
+  })
+  @ApiParam({
+    name: 'token',
+    description: 'Token único do convite',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Capacidades salvas com sucesso',
+    schema: {
+      example: {
+        success: true,
+        message: 'Capacidades produtivas salvas com sucesso',
+        onboardingId: 'onb-uuid',
+        currentStep: 5,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados inválidos',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Onboarding não encontrado',
+  })
+  async saveCapabilities(
+    @Param('token') token: string,
+    @Body() dto: CapabilitiesDto,
+  ) {
+    return this.onboardingService.saveCapabilities(token, dto);
+  }
+
+  // ==================== UPDATE STEP PROGRESS ====================
+
+  /**
+   * Atualizar progresso do step (público)
+   */
+  @Post(':token/step/:stepNumber')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Atualizar progresso do step',
+    description: 'Marca um step como concluído e avança para o próximo',
+  })
+  @ApiParam({
+    name: 'token',
+    description: 'Token único do convite',
+  })
+  @ApiParam({
+    name: 'stepNumber',
+    description: 'Número do step (1-6)',
+    type: Number,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Step atualizado com sucesso',
+  })
+  async updateStep(
+    @Param('token') token: string,
+    @Param('stepNumber') stepNumber: string,
+  ) {
+    return this.onboardingService.updateStepProgress(
+      token,
+      parseInt(stepNumber, 10),
+    );
   }
 }
