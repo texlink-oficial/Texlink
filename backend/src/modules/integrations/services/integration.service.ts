@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InvitationType, RiskLevel } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
 
 // CNPJ Providers
 import {
@@ -10,8 +11,13 @@ import { BrasilApiProvider } from '../providers/cnpj/brasil-api.provider';
 import { ReceitaWsProvider } from '../providers/cnpj/receitaws.provider';
 
 // Credit Providers
-import { CreditAnalysisResult } from '../providers/credit/credit-provider.interface';
+import {
+  ICreditProvider,
+  CreditAnalysisResult,
+} from '../providers/credit/credit-provider.interface';
 import { MockCreditProvider } from '../providers/credit/mock-credit.provider';
+import { SerasaCreditProvider } from '../providers/credit/serasa.provider';
+import { SPCCreditProvider } from '../providers/credit/spc.provider';
 
 // Notification Providers
 import {
@@ -20,6 +26,12 @@ import {
 } from '../providers/notification/notification-provider.interface';
 import { SendGridProvider } from '../providers/notification/sendgrid.provider';
 import { TwilioWhatsappProvider } from '../providers/notification/twilio-whatsapp.provider';
+
+// Cache for credit analysis (in-memory, will use Redis if available)
+interface CreditCacheEntry {
+  result: CreditAnalysisResult;
+  expiresAt: Date;
+}
 
 /**
  * Serviço central de integrações
@@ -31,13 +43,21 @@ export class IntegrationService {
 
   // Providers ordenados por prioridade
   private readonly cnpjProviders: ICNPJProvider[];
+  private readonly creditProviders: ICreditProvider[];
+
+  // Credit analysis cache (30 days)
+  private readonly creditCache: Map<string, CreditCacheEntry> = new Map();
+  private readonly CREDIT_CACHE_TTL_DAYS = 30;
 
   constructor(
+    private readonly configService: ConfigService,
     // CNPJ Providers
     private readonly brasilApiProvider: BrasilApiProvider,
     private readonly receitaWsProvider: ReceitaWsProvider,
     // Credit Providers
     private readonly mockCreditProvider: MockCreditProvider,
+    private readonly serasaCreditProvider: SerasaCreditProvider,
+    private readonly spcCreditProvider: SPCCreditProvider,
     // Notification Providers
     private readonly sendGridProvider: SendGridProvider,
     private readonly twilioWhatsappProvider: TwilioWhatsappProvider,
@@ -46,18 +66,22 @@ export class IntegrationService {
     this.cnpjProviders = [this.brasilApiProvider, this.receitaWsProvider].sort(
       (a, b) => a.priority - b.priority,
     );
+
+    // Setup credit providers based on configuration
+    // Order: Serasa → SPC → Mock (fallback)
+    this.creditProviders = [
+      this.serasaCreditProvider,
+      this.spcCreditProvider,
+      this.mockCreditProvider,
+    ];
+
+    this.logger.log('Integration service initialized');
   }
 
   // ==================== CNPJ VALIDATION ====================
 
   /**
    * Valida um CNPJ usando os providers disponíveis (com fallback automático)
-   *
-   * - Ordena providers por prioridade
-   * - Tenta cada provider em sequência
-   * - Se provider não disponível, pula para próximo
-   * - Se CNPJ não encontrado, não tenta outros (resultado definitivo)
-   * - Se todos falharem, retorna erro genérico
    */
   async validateCNPJ(cnpj: string): Promise<CNPJValidationResult> {
     const cleanCnpj = cnpj.replace(/\D/g, '');
@@ -112,7 +136,6 @@ export class IntegrationService {
         }
 
         // Se CNPJ não foi encontrado (404), é um resultado definitivo
-        // Não adianta tentar outros providers
         if (result.error?.includes('não encontrado')) {
           this.logger.warn(`CNPJ não encontrado na base da Receita Federal`);
           return result;
@@ -126,7 +149,6 @@ export class IntegrationService {
         this.logger.error(
           `Erro inesperado no provider ${provider.name}: ${error}`,
         );
-        // Continua para o próximo provider
       }
     }
 
@@ -146,10 +168,16 @@ export class IntegrationService {
   /**
    * Analisa o crédito de uma empresa pelo CNPJ
    *
-   * NOTA: Atualmente retorna dados mockados para desenvolvimento.
-   * Em produção, integrar com Serasa, SPC, Boa Vista, etc.
+   * Flow:
+   * 1. Check cache (30 days)
+   * 2. Try configured provider (CREDIT_PROVIDER env)
+   * 3. Fallback: Serasa → SPC → Mock
+   * 4. Cache result
    */
-  async analyzeCredit(cnpj: string): Promise<CreditAnalysisResult | null> {
+  async analyzeCredit(
+    cnpj: string,
+    forceRefresh = false,
+  ): Promise<CreditAnalysisResult | null> {
     const cleanCnpj = cnpj.replace(/\D/g, '');
 
     if (cleanCnpj.length !== 14) {
@@ -157,21 +185,133 @@ export class IntegrationService {
       return null;
     }
 
-    // Verifica se o mock provider está disponível
-    const isAvailable = await this.mockCreditProvider.isAvailable();
-
-    if (isAvailable) {
-      this.logger.log(
-        `[MOCK] Analisando crédito do CNPJ - Dados são simulados para desenvolvimento`,
-      );
-      return this.mockCreditProvider.analyze(cleanCnpj);
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = this.getCachedCreditAnalysis(cleanCnpj);
+      if (cached) {
+        this.logger.log(
+          `Credit analysis for ${this.maskCnpj(cleanCnpj)} retrieved from cache`,
+        );
+        return cached;
+      }
     }
 
-    // Fallback para mock inline caso o provider não esteja disponível
-    this.logger.warn(
-      '[MOCK] Gerando resultado de crédito inline - Dados são simulados',
+    // Get configured provider preference
+    const preferredProvider = this.configService.get<string>(
+      'CREDIT_PROVIDER',
+      'mock',
     );
 
+    // Reorder providers based on preference
+    const orderedProviders = this.getOrderedCreditProviders(preferredProvider);
+
+    // Try each provider
+    for (const provider of orderedProviders) {
+      const isAvailable = await provider.isAvailable();
+
+      if (!isAvailable) {
+        this.logger.debug(`Credit provider ${provider.name} not available`);
+        continue;
+      }
+
+      this.logger.log(`Analyzing credit via ${provider.name}`);
+
+      try {
+        const result = await provider.analyze(cleanCnpj);
+
+        // If successful (no error), cache and return
+        if (!result.error) {
+          this.cacheCreditAnalysis(cleanCnpj, result);
+          return result;
+        }
+
+        this.logger.warn(
+          `Provider ${provider.name} returned error: ${result.error}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Error from credit provider ${provider.name}: ${error.message}`,
+        );
+      }
+    }
+
+    // All providers failed - return mock fallback
+    this.logger.warn(
+      `All credit providers failed, using inline mock for ${this.maskCnpj(cleanCnpj)}`,
+    );
+    return this.generateFallbackCreditResult(cleanCnpj);
+  }
+
+  /**
+   * Get credit providers ordered by preference
+   */
+  private getOrderedCreditProviders(
+    preferred: string,
+  ): ICreditProvider[] {
+    const providers = [...this.creditProviders];
+
+    // Move preferred provider to front
+    const preferredIndex = providers.findIndex(
+      (p) => p.name.toLowerCase() === preferred.toLowerCase(),
+    );
+
+    if (preferredIndex > 0) {
+      const [provider] = providers.splice(preferredIndex, 1);
+      providers.unshift(provider);
+    }
+
+    return providers;
+  }
+
+  /**
+   * Get cached credit analysis if still valid
+   */
+  private getCachedCreditAnalysis(
+    cnpj: string,
+  ): CreditAnalysisResult | null {
+    const cacheKey = `credit_analysis:${cnpj}`;
+    const cached = this.creditCache.get(cacheKey);
+
+    if (!cached) {
+      return null;
+    }
+
+    if (new Date() > cached.expiresAt) {
+      this.creditCache.delete(cacheKey);
+      return null;
+    }
+
+    return {
+      ...cached.result,
+      source: `${cached.result.source}_CACHED`,
+    };
+  }
+
+  /**
+   * Cache credit analysis result
+   */
+  private cacheCreditAnalysis(
+    cnpj: string,
+    result: CreditAnalysisResult,
+  ): void {
+    const cacheKey = `credit_analysis:${cnpj}`;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + this.CREDIT_CACHE_TTL_DAYS);
+
+    this.creditCache.set(cacheKey, {
+      result,
+      expiresAt,
+    });
+
+    this.logger.debug(
+      `Cached credit analysis for ${this.maskCnpj(cnpj)} until ${expiresAt.toISOString()}`,
+    );
+  }
+
+  /**
+   * Generate fallback credit result when all providers fail
+   */
+  private generateFallbackCreditResult(cnpj: string): CreditAnalysisResult {
     // Gera score aleatório entre 300 e 900
     const score = Math.floor(Math.random() * 601) + 300;
 
@@ -187,7 +327,6 @@ export class IntegrationService {
       riskLevel = RiskLevel.CRITICAL;
     }
 
-    // Determina se tem negativações (mais provável com score baixo)
     const hasNegatives = score < 500 || Math.random() < 0.2;
 
     return {
@@ -195,12 +334,12 @@ export class IntegrationService {
       riskLevel,
       hasNegatives,
       recommendations: this.generateCreditRecommendations(score, hasNegatives),
-      source: 'MOCK_INLINE',
+      source: 'FALLBACK_INLINE',
       timestamp: new Date(),
       rawResponse: {
         _mock: true,
         _message:
-          'Dados simulados para desenvolvimento. Em produção, integrar com bureau de crédito.',
+          'Dados simulados (fallback). Providers de crédito não disponíveis.',
       },
     };
   }
@@ -328,12 +467,16 @@ export class IntegrationService {
       brasilApiAvailable,
       receitaWsAvailable,
       mockCreditAvailable,
+      serasaAvailable,
+      spcAvailable,
       sendGridAvailable,
       twilioAvailable,
     ] = await Promise.all([
       this.brasilApiProvider.isAvailable(),
       this.receitaWsProvider.isAvailable(),
       this.mockCreditProvider.isAvailable(),
+      this.serasaCreditProvider.isAvailable(),
+      this.spcCreditProvider.isAvailable(),
       this.sendGridProvider.isAvailable(),
       this.twilioWhatsappProvider.isAvailable(),
     ]);
@@ -353,6 +496,16 @@ export class IntegrationService {
         name: this.mockCreditProvider.name,
         type: 'CREDIT',
         available: mockCreditAvailable,
+      },
+      serasa: {
+        name: this.serasaCreditProvider.name,
+        type: 'CREDIT',
+        available: serasaAvailable,
+      },
+      spc: {
+        name: this.spcCreditProvider.name,
+        type: 'CREDIT',
+        available: spcAvailable,
       },
       sendGrid: {
         name: this.sendGridProvider.name,
@@ -387,5 +540,13 @@ export class IntegrationService {
     const clean = phone.replace(/\D/g, '');
     if (clean.length < 8) return phone;
     return `+${clean.slice(0, 4)}****${clean.slice(-4)}`;
+  }
+
+  /**
+   * Mascara CNPJ para logs
+   */
+  private maskCnpj(cnpj: string): string {
+    if (cnpj.length !== 14) return cnpj;
+    return `${cnpj.slice(0, 5)}.***/****-**`;
   }
 }

@@ -8,6 +8,8 @@ import { ReceitaWsProvider } from './providers/cnpj/receitaws.provider';
 
 // Credit Providers
 import { MockCreditProvider } from './providers/credit/mock-credit.provider';
+import { SerasaCreditProvider } from './providers/credit/serasa.provider';
+import { SPCCreditProvider } from './providers/credit/spc.provider';
 
 // Notification Providers
 import { SendGridProvider } from './providers/notification/sendgrid.provider';
@@ -21,14 +23,16 @@ import { IntegrationService } from './services/integration.service';
  *
  * Gerencia todos os providers de:
  * - Validação de CNPJ (Brasil API, ReceitaWS)
- * - Análise de Crédito (Mock - futuro: Serasa, SPC, Boa Vista)
+ * - Análise de Crédito (Serasa, SPC, Mock)
  * - Notificações (SendGrid para email, Twilio para WhatsApp)
  *
  * Configurações via variáveis de ambiente:
  * - CNPJ: RECEITAWS_URL, RECEITAWS_API_KEY
  * - Email: SENDGRID_API_KEY, SENDGRID_FROM_EMAIL, SENDGRID_FROM_NAME
  * - WhatsApp: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM
- * - Crédito: SERASA_API_URL, SERASA_API_KEY, SERASA_API_SECRET (futuro)
+ * - Crédito: CREDIT_PROVIDER (mock|serasa|spc)
+ *   - Serasa: SERASA_API_URL, SERASA_CLIENT_ID, SERASA_CLIENT_SECRET
+ *   - SPC: SPC_API_URL, SPC_USERNAME, SPC_PASSWORD
  */
 @Global()
 @Module({
@@ -46,6 +50,8 @@ import { IntegrationService } from './services/integration.service';
 
     // Credit Providers
     MockCreditProvider,
+    SerasaCreditProvider,
+    SPCCreditProvider,
 
     // Notification Providers
     SendGridProvider,
@@ -62,6 +68,8 @@ import { IntegrationService } from './services/integration.service';
     BrasilApiProvider,
     ReceitaWsProvider,
     MockCreditProvider,
+    SerasaCreditProvider,
+    SPCCreditProvider,
     SendGridProvider,
     TwilioWhatsappProvider,
   ],
