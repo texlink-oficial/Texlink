@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { CustomThrottlerGuard } from './common/guards/throttler.guard';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
 import { join } from 'path';
@@ -120,6 +122,13 @@ if (process.env.STORAGE_TYPE !== 's3') {
     EducationalContentModule,
     SupportTicketsModule,
     SettingsModule,
+  ],
+  providers: [
+    // Global rate limiting guard
+    {
+      provide: APP_GUARD,
+      useClass: CustomThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

@@ -1,7 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { HealthService, HealthStatus } from './health.service';
+import { ThrottleSkip } from '../../common/decorators/throttle.decorator';
 
 @Controller('health')
+@ThrottleSkip() // Health checks should not be rate limited
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 

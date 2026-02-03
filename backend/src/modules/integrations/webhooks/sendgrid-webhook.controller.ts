@@ -14,6 +14,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { SupplierCredentialStatus } from '@prisma/client';
 import { SendGridSignatureService } from './sendgrid-signature.service';
+import { ThrottleWebhook } from '../../../common/decorators/throttle.decorator';
 
 interface SendGridEvent {
   email: string;
@@ -28,6 +29,7 @@ interface SendGridEvent {
 
 @ApiTags('Webhooks')
 @Controller('webhooks/sendgrid')
+@ThrottleWebhook() // 100 requests per minute - webhooks may send bursts
 export class SendGridWebhookController {
   private readonly logger = new Logger(SendGridWebhookController.name);
   private readonly processedEvents = new Set<string>();

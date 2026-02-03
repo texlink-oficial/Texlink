@@ -24,14 +24,20 @@ import { UploadDocumentDto } from './dto/upload-document.dto';
 import { CreatePasswordDto } from './dto/create-password.dto';
 import { CompanyDataDto } from './dto/company-data.dto';
 import { CapabilitiesDto } from './dto/capabilities.dto';
+import {
+  ThrottlePublic,
+  ThrottleSensitive,
+} from '../../common/decorators/throttle.decorator';
 
 /**
  * Controller público de Onboarding
  *
  * Endpoints sem autenticação para permitir acesso via token de convite
+ * Rate limiting aplicado para prevenir abuso de endpoints públicos
  */
 @ApiTags('Onboarding Público')
 @Controller('onboarding')
+@ThrottlePublic() // Default: 10 requests per minute for all endpoints
 export class OnboardingController {
   constructor(private readonly onboardingService: OnboardingService) {}
 
@@ -260,6 +266,7 @@ export class OnboardingController {
    */
   @Post(':token/password')
   @HttpCode(HttpStatus.CREATED)
+  @ThrottleSensitive() // 3 requests per minute - sensitive operation
   @ApiOperation({
     summary: 'Criar senha do usuário (Step 2)',
     description:
