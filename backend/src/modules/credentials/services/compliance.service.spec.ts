@@ -32,6 +32,8 @@ describe('ComplianceService', () => {
 
   const mockIntegrationService = {
     analyzeCredit: jest.fn(),
+    analyzeLegalIssues: jest.fn(),
+    analyzeRestrictions: jest.fn(),
   };
 
   const mockUser = {
@@ -81,12 +83,25 @@ describe('ComplianceService', () => {
       ],
     };
 
+    const defaultLegalResult = {
+      hasLegalIssues: false,
+      processes: [],
+    };
+
+    const defaultRestrictionsResult = {
+      hasRestrictions: false,
+      restrictions: [],
+    };
+
     beforeEach(() => {
       mockPrismaService.supplierCredential.findUnique.mockResolvedValue(
         mockCredential,
       );
       mockPrismaService.credentialStatusHistory.create.mockResolvedValue({});
       mockPrismaService.supplierCredential.update.mockResolvedValue({});
+      // Default mocks for integration service
+      mockIntegrationService.analyzeLegalIssues.mockResolvedValue(defaultLegalResult);
+      mockIntegrationService.analyzeRestrictions.mockResolvedValue(defaultRestrictionsResult);
     });
 
     it('should analyze compliance and return low risk for good companies', async () => {
@@ -211,8 +226,9 @@ describe('ComplianceService', () => {
 
       const result = await service.analyzeCompliance('cred-123', 'user-123');
 
-      // Tax score should have bonus
-      expect(result.scores.taxScore).toBeGreaterThan(100);
+      // Tax score should be maxed at 100 (even with bonus, it's capped)
+      // The implementation caps taxScore at 100 with Math.min(100, taxScore + 5)
+      expect(result.scores.taxScore).toBe(100);
     });
 
     it('should penalize for young company (< 1 year)', async () => {

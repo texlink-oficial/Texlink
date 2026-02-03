@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChatService } from './chat.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SanitizerService } from '../../common/services/sanitizer.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   NotFoundException,
   ForbiddenException,
@@ -13,6 +14,7 @@ describe('ChatService', () => {
   let service: ChatService;
   let prisma: PrismaService;
   let sanitizer: SanitizerService;
+  let eventEmitter: EventEmitter2;
 
   const mockPrisma = {
     order: {
@@ -27,6 +29,9 @@ describe('ChatService', () => {
       updateMany: jest.fn(),
       count: jest.fn(),
     },
+    user: {
+      findUnique: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
@@ -34,6 +39,10 @@ describe('ChatService', () => {
     sanitizeText: jest.fn((text) => text),
     sanitizeNumber: jest.fn((num) => Number(num)),
     sanitizeDate: jest.fn((date) => new Date(date)),
+  };
+
+  const mockEventEmitter = {
+    emit: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -48,12 +57,17 @@ describe('ChatService', () => {
           provide: SanitizerService,
           useValue: mockSanitizer,
         },
+        {
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
+        },
       ],
     }).compile();
 
     service = module.get<ChatService>(ChatService);
     prisma = module.get<PrismaService>(PrismaService);
     sanitizer = module.get<SanitizerService>(SanitizerService);
+    eventEmitter = module.get<EventEmitter2>(EventEmitter2);
   });
 
   afterEach(() => {
@@ -288,6 +302,10 @@ describe('ChatService', () => {
         id: 'msg-1',
         orderId: 'order-1',
         type: MessageType.PROPOSAL,
+        sender: {
+          id: 'user-2',
+          name: 'Proposal Sender',
+        },
         proposalData: {
           originalValues: {
             pricePerUnit: 100,
@@ -312,6 +330,7 @@ describe('ChatService', () => {
       };
 
       mockPrisma.message.findUnique.mockResolvedValue(mockProposalMessage);
+      mockPrisma.user.findUnique.mockResolvedValue({ name: 'Test User' });
       jest.spyOn(service, 'verifyOrderAccess').mockResolvedValue(undefined);
 
       // Mock transaction
@@ -377,6 +396,10 @@ describe('ChatService', () => {
         id: 'msg-1',
         orderId: 'order-1',
         type: MessageType.PROPOSAL,
+        sender: {
+          id: 'user-2',
+          name: 'Proposal Sender',
+        },
         proposalData: {
           status: ProposalStatus.PENDING,
         },
@@ -390,6 +413,7 @@ describe('ChatService', () => {
       };
 
       mockPrisma.message.findUnique.mockResolvedValue(mockProposalMessage);
+      mockPrisma.user.findUnique.mockResolvedValue({ name: 'Test User' });
       jest.spyOn(service, 'verifyOrderAccess').mockResolvedValue(undefined);
       mockPrisma.message.update.mockResolvedValue(mockUpdatedMessage);
 

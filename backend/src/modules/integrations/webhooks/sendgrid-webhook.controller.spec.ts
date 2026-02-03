@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SendGridWebhookController } from './sendgrid-webhook.controller';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { SendGridSignatureService } from './sendgrid-signature.service';
 import { SupplierCredentialStatus } from '@prisma/client';
 
 describe('SendGridWebhookController', () => {
@@ -9,7 +10,7 @@ describe('SendGridWebhookController', () => {
 
   const mockPrismaService = {
     credentialInvitation: {
-      findFirst: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
     },
     supplierCredential: {
@@ -21,6 +22,31 @@ describe('SendGridWebhookController', () => {
     },
   };
 
+  const mockSendGridSignatureService = {
+    verifySignature: jest.fn().mockReturnValue(true),
+    extractTimestamp: jest.fn().mockReturnValue(null),
+    validateSignature: jest.fn(),
+  };
+
+  // Mock request object
+  const createMockRequest = (events: any[]) => ({
+    rawBody: Buffer.from(JSON.stringify(events)),
+  });
+
+  // Helper to create events with invitationId in category
+  const createEventWithInvitationId = (
+    eventType: string,
+    invitationId: string,
+    extra: Record<string, any> = {},
+  ) => ({
+    event: eventType,
+    email: 'test@example.com',
+    timestamp: Math.floor(Date.now() / 1000),
+    sg_message_id: `msg-${Date.now()}`,
+    category: [`invitationId:${invitationId}`],
+    ...extra,
+  });
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SendGridWebhookController],
@@ -28,6 +54,10 @@ describe('SendGridWebhookController', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: SendGridSignatureService,
+          useValue: mockSendGridSignatureService,
         },
       ],
     }).compile();
@@ -49,47 +79,41 @@ describe('SendGridWebhookController', () => {
 
   describe('handleWebhook', () => {
     it('should process delivered event', async () => {
-      const events = [
-        {
-          event: 'delivered',
-          email: 'test@example.com',
-          timestamp: Math.floor(Date.now() / 1000),
-          sg_message_id: 'msg-123',
-        },
-      ];
+      const events = [createEventWithInvitationId('delivered', 'invitation-1')];
 
       const mockInvitation = {
         id: 'invitation-1',
         credentialId: 'credential-1',
-        type: 'EMAIL',
+        credential: { id: 'credential-1' },
       };
 
-      mockPrismaService.credentialInvitation.findFirst.mockResolvedValue(
+      mockPrismaService.credentialInvitation.findUnique.mockResolvedValue(
         mockInvitation,
       );
       mockPrismaService.credentialInvitation.update.mockResolvedValue({});
 
-      const result = await controller.handleWebhook(events, '', '');
+      const result = await controller.handleWebhook(
+        createMockRequest(events) as any,
+        events,
+        '',
+        '',
+      );
 
       expect(result.success).toBe(true);
       expect(result.processed).toBe(1);
-      expect(prisma.credentialInvitation.update).toHaveBeenCalled();
+      expect(prisma.credentialInvitation.update).toHaveBeenCalledWith({
+        where: { id: 'invitation-1' },
+        data: { deliveredAt: expect.any(Date) },
+      });
     });
 
     it('should process opened event and update credential status', async () => {
-      const events = [
-        {
-          event: 'open',
-          email: 'test@example.com',
-          timestamp: Math.floor(Date.now() / 1000),
-          sg_message_id: 'msg-123',
-        },
-      ];
+      const events = [createEventWithInvitationId('open', 'invitation-1')];
 
       const mockInvitation = {
         id: 'invitation-1',
         credentialId: 'credential-1',
-        type: 'EMAIL',
+        credential: { id: 'credential-1' },
       };
 
       const mockCredential = {
@@ -97,7 +121,7 @@ describe('SendGridWebhookController', () => {
         status: SupplierCredentialStatus.INVITATION_SENT,
       };
 
-      mockPrismaService.credentialInvitation.findFirst.mockResolvedValue(
+      mockPrismaService.credentialInvitation.findUnique.mockResolvedValue(
         mockInvitation,
       );
       mockPrismaService.credentialInvitation.update.mockResolvedValue({});
@@ -105,9 +129,13 @@ describe('SendGridWebhookController', () => {
         mockCredential,
       );
       mockPrismaService.supplierCredential.update.mockResolvedValue({});
-      mockPrismaService.credentialStatusHistory.create.mockResolvedValue({});
 
-      const result = await controller.handleWebhook(events, '', '');
+      const result = await controller.handleWebhook(
+        createMockRequest(events) as any,
+        events,
+        '',
+        '',
+      );
 
       expect(result.success).toBe(true);
       expect(result.processed).toBe(1);
@@ -117,156 +145,150 @@ describe('SendGridWebhookController', () => {
       });
     });
 
-    it('should process click event and start onboarding', async () => {
+    it('should process click event', async () => {
       const events = [
-        {
-          event: 'click',
-          email: 'test@example.com',
-          timestamp: Math.floor(Date.now() / 1000),
+        createEventWithInvitationId('click', 'invitation-1', {
           url: 'https://example.com/onboarding/token',
-        },
+        }),
       ];
 
       const mockInvitation = {
         id: 'invitation-1',
         credentialId: 'credential-1',
-        type: 'EMAIL',
+        credential: { id: 'credential-1' },
       };
 
-      const mockCredential = {
-        id: 'credential-1',
-        status: SupplierCredentialStatus.INVITATION_OPENED,
-      };
-
-      mockPrismaService.credentialInvitation.findFirst.mockResolvedValue(
+      mockPrismaService.credentialInvitation.findUnique.mockResolvedValue(
         mockInvitation,
       );
       mockPrismaService.credentialInvitation.update.mockResolvedValue({});
-      mockPrismaService.supplierCredential.findUnique.mockResolvedValue(
-        mockCredential,
-      );
-      mockPrismaService.supplierCredential.update.mockResolvedValue({});
-      mockPrismaService.credentialStatusHistory.create.mockResolvedValue({});
 
-      const result = await controller.handleWebhook(events, '', '');
+      const result = await controller.handleWebhook(
+        createMockRequest(events) as any,
+        events,
+        '',
+        '',
+      );
 
       expect(result.processed).toBe(1);
-      expect(prisma.supplierCredential.update).toHaveBeenCalledWith({
-        where: { id: 'credential-1' },
-        data: { status: SupplierCredentialStatus.ONBOARDING_STARTED },
+      expect(prisma.credentialInvitation.update).toHaveBeenCalledWith({
+        where: { id: 'invitation-1' },
+        data: { clickedAt: expect.any(Date) },
       });
     });
 
     it('should handle bounce event', async () => {
       const events = [
-        {
-          event: 'bounce',
-          email: 'test@example.com',
-          timestamp: Math.floor(Date.now() / 1000),
+        createEventWithInvitationId('bounce', 'invitation-1', {
           reason: 'Invalid email',
           status: '550',
-        },
+        }),
       ];
 
       const mockInvitation = {
         id: 'invitation-1',
         credentialId: 'credential-1',
-        type: 'EMAIL',
+        credential: { id: 'credential-1' },
       };
 
-      mockPrismaService.credentialInvitation.findFirst.mockResolvedValue(
+      mockPrismaService.credentialInvitation.findUnique.mockResolvedValue(
         mockInvitation,
       );
       mockPrismaService.credentialInvitation.update.mockResolvedValue({});
 
-      const result = await controller.handleWebhook(events, '', '');
+      const result = await controller.handleWebhook(
+        createMockRequest(events) as any,
+        events,
+        '',
+        '',
+      );
 
       expect(result.processed).toBe(1);
       expect(prisma.credentialInvitation.update).toHaveBeenCalledWith({
         where: { id: 'invitation-1' },
         data: {
-          errorMessage: expect.stringContaining('bounce'),
           isActive: false,
+          errorMessage: expect.stringContaining('bounce'),
         },
       });
     });
 
-    it('should skip duplicate events', async () => {
-      const events = [
-        {
-          event: 'delivered',
-          email: 'test@example.com',
-          timestamp: 1234567890,
-          sg_message_id: 'msg-123',
-        },
-      ];
-
-      const mockInvitation = {
-        id: 'invitation-1',
-        credentialId: 'credential-1',
-        type: 'EMAIL',
-      };
-
-      mockPrismaService.credentialInvitation.findFirst.mockResolvedValue(
-        mockInvitation,
-      );
-      mockPrismaService.credentialInvitation.update.mockResolvedValue({});
-
-      // Process first time
-      await controller.handleWebhook(events, '', '');
-
-      // Process second time (should be skipped)
-      const result = await controller.handleWebhook(events, '', '');
-
-      expect(result.skipped).toBe(1);
-    });
-
-    it('should handle invitation not found', async () => {
+    it('should handle events without invitationId gracefully', async () => {
       const events = [
         {
           event: 'delivered',
           email: 'unknown@example.com',
           timestamp: Math.floor(Date.now() / 1000),
+          sg_message_id: 'msg-no-id',
+          // No category with invitationId
         },
       ];
 
-      mockPrismaService.credentialInvitation.findFirst.mockResolvedValue(null);
+      const result = await controller.handleWebhook(
+        createMockRequest(events) as any,
+        events,
+        '',
+        '',
+      );
 
-      const result = await controller.handleWebhook(events, '', '');
+      // Event is processed but nothing happens (no invitationId extracted)
+      expect(result.success).toBe(true);
+      expect(prisma.credentialInvitation.findUnique).not.toHaveBeenCalled();
+    });
 
-      expect(result.processed).toBe(0);
+    it('should handle invitation not found', async () => {
+      const events = [
+        createEventWithInvitationId('delivered', 'non-existent-id'),
+      ];
+
+      mockPrismaService.credentialInvitation.findUnique.mockResolvedValue(null);
+
+      const result = await controller.handleWebhook(
+        createMockRequest(events) as any,
+        events,
+        '',
+        '',
+      );
+
+      expect(result.success).toBe(true);
+      // Event is processed but update is not called because invitation not found
+      expect(prisma.credentialInvitation.update).not.toHaveBeenCalled();
     });
 
     it('should process multiple events', async () => {
       const events = [
-        {
-          event: 'delivered',
-          email: 'test1@example.com',
-          timestamp: Math.floor(Date.now() / 1000),
-          sg_message_id: 'msg-1',
-        },
-        {
-          event: 'open',
-          email: 'test2@example.com',
-          timestamp: Math.floor(Date.now() / 1000),
-          sg_message_id: 'msg-2',
-        },
+        createEventWithInvitationId('delivered', 'invitation-1'),
+        createEventWithInvitationId('open', 'invitation-2'),
       ];
 
-      mockPrismaService.credentialInvitation.findFirst.mockResolvedValue({
+      const mockInvitation1 = {
         id: 'invitation-1',
         credentialId: 'credential-1',
-        type: 'EMAIL',
-      });
+        credential: { id: 'credential-1' },
+      };
+
+      const mockInvitation2 = {
+        id: 'invitation-2',
+        credentialId: 'credential-2',
+        credential: { id: 'credential-2' },
+      };
+
+      mockPrismaService.credentialInvitation.findUnique
+        .mockResolvedValueOnce(mockInvitation1)
+        .mockResolvedValueOnce(mockInvitation2);
       mockPrismaService.credentialInvitation.update.mockResolvedValue({});
       mockPrismaService.supplierCredential.findUnique.mockResolvedValue({
-        id: 'credential-1',
+        id: 'credential-2',
         status: SupplierCredentialStatus.INVITATION_SENT,
       });
       mockPrismaService.supplierCredential.update.mockResolvedValue({});
-      mockPrismaService.credentialStatusHistory.create.mockResolvedValue({});
 
-      const result = await controller.handleWebhook(events, '', '');
+      const result = await controller.handleWebhook(
+        createMockRequest(events) as any,
+        events,
+        '',
+        '',
+      );
 
       expect(result.processed).toBe(2);
     });

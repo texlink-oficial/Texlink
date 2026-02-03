@@ -26,6 +26,9 @@ describe('InvitationService', () => {
     credentialStatusHistory: {
       create: jest.fn(),
     },
+    credentialSettings: {
+      findUnique: jest.fn(),
+    },
   };
 
   const mockIntegrationService = {
@@ -355,6 +358,12 @@ describe('InvitationService', () => {
       type: InvitationType.EMAIL,
       attemptCount: 1,
       templateId: null,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    };
+
+    const mockCredentialSettings = {
+      maxInvitationAttempts: 3,
+      invitationExpiryDays: 7,
     };
 
     beforeEach(() => {
@@ -363,6 +372,9 @@ describe('InvitationService', () => {
       );
       mockPrismaService.credentialInvitation.findFirst.mockResolvedValue(
         mockLastInvitation,
+      );
+      mockPrismaService.credentialSettings.findUnique.mockResolvedValue(
+        mockCredentialSettings,
       );
       mockIntegrationService.sendEmail.mockResolvedValue({
         success: true,
@@ -396,7 +408,7 @@ describe('InvitationService', () => {
     it('should throw BadRequestException if max attempts reached', async () => {
       mockPrismaService.credentialInvitation.findFirst.mockResolvedValue({
         ...mockLastInvitation,
-        attemptCount: 5,
+        attemptCount: 3, // Equal to maxInvitationAttempts (3)
       });
 
       await expect(
