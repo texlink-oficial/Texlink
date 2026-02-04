@@ -61,6 +61,7 @@ const BrandPartnershipRequestsPage = React.lazy(() => import('./pages/brand/supp
 const BrandHelpCenter = React.lazy(() => import('./pages/brand/HelpCenterPage'));
 const BrandTicketDetail = React.lazy(() => import('./pages/brand/TicketDetailPage'));
 const BrandAnalyticsDashboard = React.lazy(() => import('./pages/brand/AnalyticsDashboardPage'));
+const RejectionAnalyticsPage = React.lazy(() => import('./pages/brand/reports/RejectionAnalyticsPage'));
 
 const AdminLayout = React.lazy(() => import('./components/admin/AdminLayout'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
@@ -207,6 +208,7 @@ const App: React.FC = () => {
                                                 <Route path="financeiro/historico" element={<BrandPaymentHistory />} />
                                                 {/* Relatórios e Analytics */}
                                                 <Route path="relatorios" element={<BrandReports />} />
+                                                <Route path="relatorios/rejeicoes" element={<RejectionAnalyticsPage />} />
                                                 <Route path="analytics" element={<BrandAnalyticsDashboard />} />
                                                 {/* Favoritos */}
                                                 <Route path="favoritos" element={<BrandFavorites />} />

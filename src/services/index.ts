@@ -17,3 +17,4 @@ export * from './settings.service';
 export * from './relationships.service';
 export * from './partnershipRequests.service';
 export * from './brandDashboard.service';
+export * from './rejectionReports.service';
