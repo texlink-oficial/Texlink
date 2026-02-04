@@ -271,6 +271,9 @@ enum SupportTicketCategory {
   PAGAMENTOS
   ACESSO
   TECNICO
+  FORNECEDORES
+  RELATORIOS
+  SUGESTAO
   OUTROS
 }
 
