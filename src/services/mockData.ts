@@ -4,6 +4,32 @@
  */
 
 // =============================================================================
+// HELPER: CREATE MOCK USER
+// =============================================================================
+
+export const createMockUser = (data: { email: string; name: string; role: 'BRAND' | 'SUPPLIER' | 'ADMIN' }) => ({
+    id: `mock-${Date.now()}`,
+    email: data.email,
+    name: data.name,
+    role: data.role,
+    isActive: true,
+    emailVerified: true,
+    createdAt: new Date().toISOString(),
+    companyUsers: data.role === 'ADMIN' ? [] : [{
+        id: `company-user-${Date.now()}`,
+        role: 'OWNER',
+        companyRole: 'ADMIN',
+        isCompanyAdmin: true,
+        company: {
+            id: `company-${Date.now()}`,
+            tradeName: `${data.name}'s Company`,
+            type: data.role,
+            status: 'PENDING_ONBOARDING'
+        }
+    }]
+});
+
+// =============================================================================
 // USERS
 // =============================================================================
 

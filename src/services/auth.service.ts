@@ -1,6 +1,6 @@
 import api from './api';
 import { MOCK_MODE, simulateDelay } from './mockMode';
-import { MOCK_USERS } from './mockData';
+import { MOCK_USERS, createMockUser } from './mockData';
 
 export interface LoginDto {
     email: string;
@@ -76,14 +76,29 @@ const mockGetProfile = async (): Promise<User> => {
     }
 
     const parsed = JSON.parse(storedUser);
+
+    // First try to find in predefined demo users
     const demoUser = Object.values(MOCK_USERS).find(u => u.email === parsed.email);
 
-    if (!demoUser) {
-        throw new Error('Usuário não encontrado');
+    if (demoUser) {
+        const { password, ...userWithoutPassword } = demoUser;
+        return userWithoutPassword as User;
     }
 
-    const { password, ...userWithoutPassword } = demoUser;
-    return userWithoutPassword as User;
+    // If not found, this is a dynamically created mock user (from registration)
+    // Return the stored user data directly
+    if (parsed.id && parsed.id.startsWith('mock-')) {
+        return {
+            id: parsed.id,
+            email: parsed.email,
+            name: parsed.name,
+            role: parsed.role,
+            isActive: parsed.isActive ?? true,
+            companyUsers: parsed.companyUsers
+        } as User;
+    }
+
+    throw new Error('Usuário não encontrado');
 };
 
 export const authService = {
@@ -104,9 +119,30 @@ export const authService = {
 
     async register(data: RegisterDto): Promise<AuthResponse> {
         if (MOCK_MODE) {
-            await simulateDelay(500);
-            // In demo mode, just show a message
-            throw new Error('Modo Demo: Cadastro desabilitado. Use os usuários demo para testar.');
+            await simulateDelay(800);
+
+            // Create mock user based on registration data
+            const mockUser = createMockUser({
+                email: data.email,
+                name: data.name,
+                role: data.role
+            });
+
+            const mockToken = `mock-token-${data.role.toLowerCase()}-${Date.now()}`;
+
+            // Store in localStorage (same as login flow)
+            localStorage.setItem('token', mockToken);
+            localStorage.setItem('user', JSON.stringify(mockUser));
+
+            return {
+                user: {
+                    id: mockUser.id,
+                    email: mockUser.email,
+                    name: mockUser.name,
+                    role: mockUser.role
+                },
+                accessToken: mockToken
+            };
         }
 
         const response = await api.post<AuthResponse>('/auth/register', data);
