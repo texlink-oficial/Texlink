@@ -5,8 +5,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
     ArrowLeft, Package, Calendar, DollarSign, User,
     CheckCircle, XCircle, Send, MessageSquare, Clock,
-    ChevronRight, Loader2, FileText
+    ChevronRight, Loader2, FileText, Lock
 } from 'lucide-react';
+import { ProtectedContent } from '../../components/common/ProtectedContent';
 
 const OrderDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -125,6 +126,7 @@ const OrderDetailsPage: React.FC = () => {
 
     const canAccept = order.status === 'LANCADO_PELA_MARCA';
     const canAdvance = ['ACEITO_PELA_FACCAO', 'EM_PRODUCAO', 'PRONTO'].includes(order.status);
+    const isProtected = order._techSheetProtected ?? false;
 
     return (
         <div className="min-h-screen bg-brand-950">
@@ -175,10 +177,23 @@ const OrderDetailsPage: React.FC = () => {
                                         <p className="text-white">{order.productCategory || '-'}</p>
                                     </div>
                                 </div>
-                                {order.description && (
-                                    <div>
-                                        <p className="text-sm text-brand-400">Descrição</p>
-                                        <p className="text-white">{order.description}</p>
+                                {(order.description || isProtected) && (
+                                    <ProtectedContent isProtected={isProtected}>
+                                        <div>
+                                            <p className="text-sm text-brand-400">Descrição</p>
+                                            <p className="text-white">{order.description || 'Descrição detalhada do produto'}</p>
+                                        </div>
+                                    </ProtectedContent>
+                                )}
+
+                                {/* Banner de proteção ativa */}
+                                {isProtected && (
+                                    <div className="flex items-center gap-3 p-3 bg-amber-900/30 border border-amber-800/50 rounded-xl">
+                                        <Lock className="w-5 h-5 text-amber-400" />
+                                        <div>
+                                            <p className="text-sm font-medium text-amber-300">Informações protegidas</p>
+                                            <p className="text-xs text-amber-400/80">A ficha técnica e detalhes serão liberados após aceitar o pedido</p>
+                                        </div>
                                     </div>
                                 )}
                             </div>

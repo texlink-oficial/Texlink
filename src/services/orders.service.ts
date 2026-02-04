@@ -51,6 +51,9 @@ export interface Order {
     deliveryDeadline: string;
     paymentTerms?: string;
     materialsProvided: boolean;
+    // Proteção de ficha técnica
+    protectTechnicalSheet?: boolean;
+    _techSheetProtected?: boolean; // Flag do backend indicando proteção ativa
     // Métricas de revisão
     totalReviewCount?: number;
     approvalCount?: number;
@@ -166,13 +169,14 @@ export interface CreateOrderDto {
     paymentTerms?: string;
     materialsProvided?: boolean;
     observations?: string;
+    protectTechnicalSheet?: boolean;
     assignmentType: 'DIRECT' | 'BIDDING';
     supplierId?: string;
     targetSupplierIds?: string[];
 }
 
 // In-memory storage for mock mode (allows "creating" orders in demo)
-let mockOrdersState = [...MOCK_ORDERS];
+let mockOrdersState: Order[] = [...MOCK_ORDERS] as Order[];
 
 export const ordersService = {
     async create(data: CreateOrderDto): Promise<Order> {
@@ -185,6 +189,8 @@ export const ordersService = {
                 supplierId: data.supplierId || undefined,
                 status: 'LANCADO_PELA_MARCA',
                 assignmentType: data.assignmentType,
+                revisionNumber: 0,
+                origin: 'ORIGINAL',
                 productType: data.productType,
                 productCategory: data.productCategory,
                 productName: data.productName,
@@ -197,6 +203,7 @@ export const ordersService = {
                 deliveryDeadline: data.deliveryDeadline,
                 paymentTerms: data.paymentTerms,
                 materialsProvided: data.materialsProvided || false,
+                protectTechnicalSheet: data.protectTechnicalSheet || false,
                 createdAt: new Date().toISOString(),
                 brand: { id: 'company-brand-001', tradeName: 'Fashion Style Ltda', avgRating: 4.5 },
                 supplier: data.supplierId ? { id: data.supplierId, tradeName: 'Fornecedor Demo', avgRating: 4.5 } : undefined,
@@ -363,7 +370,7 @@ export const ordersService = {
                 brandId: parentOrder?.brandId || '',
                 supplierId: parentOrder?.supplierId,
                 status: 'AGUARDANDO_RETRABALHO',
-                assignmentType: parentOrder?.assignmentType || 'DIRECT',
+                assignmentType: (parentOrder?.assignmentType || 'DIRECT') as 'DIRECT' | 'BIDDING' | 'HYBRID',
                 parentOrderId,
                 revisionNumber: 1,
                 origin: 'REWORK',

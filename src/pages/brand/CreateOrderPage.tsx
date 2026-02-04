@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
-import { ordersService, suppliersService, uploadService, favoritesService } from '../../services';
+import { ordersService, suppliersService, uploadService, favoritesService, settingsService } from '../../services';
 import { ProductTemplate } from '../../services/favorites.service';
 import {
     ArrowLeft, Package, DollarSign, Calendar,
-    Send, Loader2, Factory, FileText, Upload, X, Image, CheckCircle, AlertCircle, Star, Film, Copy, Info, Bookmark
+    Send, Loader2, Factory, FileText, Upload, X, Image, CheckCircle, AlertCircle, Star, Film, Copy, Info, Bookmark, Lock
 } from 'lucide-react';
 import { ProductTemplateSelector, PaymentTermsSelector, FavoriteSupplierBadge, SaveAsTemplateModal } from '../../components/favorites';
 
@@ -62,6 +62,7 @@ const CreateOrderPage: React.FC = () => {
         paymentTerms: '',
         materialsProvided: false,
         observations: '',
+        protectTechnicalSheet: false,
         assignmentType: 'DIRECT' as 'DIRECT' | 'BIDDING' | 'HYBRID',
         supplierId: preselectedSupplierId || '',
         targetSupplierIds: [] as string[],
@@ -90,7 +91,17 @@ const CreateOrderPage: React.FC = () => {
     useEffect(() => {
         loadSuppliers();
         loadFavoriteSuppliers();
+        loadOrderDefaults();
     }, []);
+
+    const loadOrderDefaults = async () => {
+        try {
+            const defaults = await settingsService.getOrderDefaults();
+            setFormData(prev => ({ ...prev, protectTechnicalSheet: defaults.defaultProtectTechnicalSheet }));
+        } catch (error) {
+            console.error('Error loading order defaults:', error);
+        }
+    };
 
     const loadFavoriteSuppliers = async () => {
         try {
@@ -142,6 +153,7 @@ const CreateOrderPage: React.FC = () => {
                 pricePerUnit: Number(formData.pricePerUnit),
                 op: formData.op || undefined,
                 artigo: formData.artigo || undefined,
+                protectTechnicalSheet: formData.protectTechnicalSheet,
                 supplierId: formData.assignmentType === 'DIRECT' ? formData.supplierId : undefined,
                 targetSupplierIds: (formData.assignmentType === 'BIDDING' || formData.assignmentType === 'HYBRID') ? formData.targetSupplierIds : undefined,
             });
@@ -474,6 +486,25 @@ const CreateOrderPage: React.FC = () => {
                         <span className="text-gray-700 dark:text-gray-300 font-medium">
                             Materiais (tecidos/aviamentos) serão fornecidos pela marca
                         </span>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-xl border border-gray-200 dark:border-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900/50 transition-colors">
+                        <input
+                            type="checkbox"
+                            name="protectTechnicalSheet"
+                            checked={formData.protectTechnicalSheet}
+                            onChange={handleChange}
+                            className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-500 focus:ring-brand-500 focus:ring-offset-white dark:focus:ring-offset-gray-900"
+                        />
+                        <div className="flex-1">
+                            <span className="text-gray-700 dark:text-gray-300 font-medium">
+                                Proteger ficha técnica até aceite
+                            </span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                A facção só verá detalhes técnicos após aceitar o pedido
+                            </p>
+                        </div>
+                        <Lock className="w-4 h-4 text-gray-400" />
                     </label>
                 </Section>
 

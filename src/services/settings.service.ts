@@ -210,6 +210,25 @@ export const settingsService = {
         return response.data;
     },
 
+    // ==================== ORDER DEFAULTS ====================
+
+    async getOrderDefaults(): Promise<{ defaultProtectTechnicalSheet: boolean }> {
+        if (MOCK_MODE) {
+            await simulateDelay(300);
+            return { defaultProtectTechnicalSheet: false };
+        }
+        const response = await api.get<{ defaultProtectTechnicalSheet: boolean }>('/credential-settings/order-defaults');
+        return response.data;
+    },
+
+    async updateOrderDefaults(data: { defaultProtectTechnicalSheet?: boolean }): Promise<void> {
+        if (MOCK_MODE) {
+            await simulateDelay(300);
+            return;
+        }
+        await api.patch('/credential-settings/order-defaults', data);
+    },
+
     // ==================== SUGGESTIONS ====================
 
     async getSuggestions(): Promise<Suggestion[]> {
