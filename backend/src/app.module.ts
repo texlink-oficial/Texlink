@@ -39,6 +39,7 @@ import { SupportTicketsModule } from './modules/support-tickets/support-tickets.
 import { SettingsModule } from './modules/settings/settings.module';
 import { PortalModule } from './modules/portal/portal.module';
 import { BrandDashboardModule } from './modules/brand-dashboard/brand-dashboard.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import configuration from './config/configuration';
 import { BullConfigService, QUEUE_NAMES } from './config/bull.config';
 
@@ -128,6 +129,7 @@ if (process.env.STORAGE_TYPE !== 's3') {
     SettingsModule,
     PortalModule,
     BrandDashboardModule,
+    ReportsModule,
   ],
   providers: [
     // Global rate limiting guard
