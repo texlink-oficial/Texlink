@@ -8,11 +8,13 @@ import { OrderCard } from '../../components/kanban/OrderCard';
 import { OrderDetailModal } from '../../components/kanban/OrderDetailModal';
 import { StatsOverview } from '../../components/kanban/StatsOverview';
 import { OrderListView } from '../../components/kanban/OrderListView';
+import { OrderFiltersDropdown } from '../../components/kanban/OrderFiltersDropdown';
 import { Filter, LayoutGrid, List, Loader2, Plus, Search } from 'lucide-react';
 
 // Status mapping from API to Kanban UI (Brand perspective)
 const STATUS_MAP: Record<ApiOrderStatus, OrderStatus> = {
     'LANCADO_PELA_MARCA': OrderStatus.NEW,
+    'EM_NEGOCIACAO': OrderStatus.NEGOTIATING,
     'ACEITO_PELA_FACCAO': OrderStatus.ACCEPTED,
     'EM_PREPARACAO_SAIDA_MARCA': OrderStatus.PREPARING_BRAND,
     'EM_TRANSITO_PARA_FACCAO': OrderStatus.TRANSIT_TO_SUPPLIER,
@@ -20,6 +22,10 @@ const STATUS_MAP: Record<ApiOrderStatus, OrderStatus> = {
     'EM_PRODUCAO': OrderStatus.PRODUCTION,
     'PRONTO': OrderStatus.READY_SEND,
     'EM_TRANSITO_PARA_MARCA': OrderStatus.TRANSIT_TO_BRAND,
+    'EM_REVISAO': OrderStatus.IN_REVIEW,
+    'PARCIALMENTE_APROVADO': OrderStatus.PARTIALLY_APPROVED,
+    'REPROVADO': OrderStatus.DISAPPROVED,
+    'AGUARDANDO_RETRABALHO': OrderStatus.AWAITING_REWORK,
     'FINALIZADO': OrderStatus.FINALIZED,
     'RECUSADO_PELA_FACCAO': OrderStatus.REJECTED,
     'DISPONIVEL_PARA_OUTRAS': OrderStatus.NEW,
@@ -27,6 +33,7 @@ const STATUS_MAP: Record<ApiOrderStatus, OrderStatus> = {
 
 const STATUS_COLUMNS = [
     { id: OrderStatus.NEW, label: '▪ Aguardando Facção' },
+    { id: OrderStatus.NEGOTIATING, label: '▪ Em Negociação' },
     { id: OrderStatus.ACCEPTED, label: '▪ Aceito' },
     { id: OrderStatus.PREPARING_BRAND, label: '▪ Preparando Envio' },
     { id: OrderStatus.TRANSIT_TO_SUPPLIER, label: '▪ Trânsito → Facção' },
@@ -34,6 +41,10 @@ const STATUS_COLUMNS = [
     { id: OrderStatus.PRODUCTION, label: '▪ Em Produção' },
     { id: OrderStatus.READY_SEND, label: '▪ Pronto / Envio' },
     { id: OrderStatus.TRANSIT_TO_BRAND, label: '▪ Trânsito → Marca' },
+    { id: OrderStatus.IN_REVIEW, label: '▪ Em Revisão' },
+    { id: OrderStatus.PARTIALLY_APPROVED, label: '▪ Parc. Aprovado' },
+    { id: OrderStatus.DISAPPROVED, label: '▪ Reprovado' },
+    { id: OrderStatus.AWAITING_REWORK, label: '▪ Aguard. Retrabalho' },
     { id: OrderStatus.FINALIZED, label: '▪ Finalizados' },
 ];
 
@@ -83,6 +94,9 @@ const BrandKanbanDashboard: React.FC = () => {
     const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+    const [statusFilter, setStatusFilter] = useState<OrderStatus[]>([]);
+    const [partnerFilter, setPartnerFilter] = useState('');
+    const [productTypeFilter, setProductTypeFilter] = useState('');
     const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
     const filterMenuRef = useRef<HTMLDivElement>(null);
 
@@ -158,9 +172,32 @@ const BrandKanbanDashboard: React.FC = () => {
                     matchesDate = orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
                 }
             }
-            return matchesSearch && matchesDate;
+
+            const matchesStatus = statusFilter.length === 0 || statusFilter.includes(order.status);
+            const matchesPartner = partnerFilter === '' || order.brand.id === partnerFilter;
+            const matchesProductType = productTypeFilter === '' || order.type === productTypeFilter;
+
+            return matchesSearch && matchesDate && matchesStatus && matchesPartner && matchesProductType;
         });
-    }, [orders, searchQuery, dateFilter]);
+    }, [orders, searchQuery, dateFilter, statusFilter, partnerFilter, productTypeFilter]);
+
+    // Extract unique partners and product types for filters
+    const partners = useMemo(() => {
+        const uniquePartners = new Map<string, string>();
+        orders.forEach(o => uniquePartners.set(o.brand.id, o.brand.name));
+        return Array.from(uniquePartners.entries()).map(([id, name]) => ({ id, name }));
+    }, [orders]);
+
+    const productTypes = useMemo(() => {
+        return [...new Set(orders.map(o => o.type))];
+    }, [orders]);
+
+    const clearFilters = () => {
+        setDateFilter('all');
+        setStatusFilter([]);
+        setPartnerFilter('');
+        setProductTypeFilter('');
+    };
 
     const ordersByStatus = useMemo(() => {
         const grouped: Record<string, Order[]> = {};
@@ -189,7 +226,11 @@ const BrandKanbanDashboard: React.FC = () => {
         }));
     };
 
-    const activeFiltersCount = (dateFilter !== 'all' ? 1 : 0) + (searchQuery ? 1 : 0);
+    const activeFiltersCount =
+        (dateFilter !== 'all' ? 1 : 0) +
+        (statusFilter.length > 0 ? 1 : 0) +
+        (partnerFilter !== '' ? 1 : 0) +
+        (productTypeFilter !== '' ? 1 : 0);
 
     // Stats for brand
     const stats = {
@@ -242,6 +283,22 @@ const BrandKanbanDashboard: React.FC = () => {
                                     <Filter className="h-4 w-4" /> Filtros
                                     {activeFiltersCount > 0 && <span className="ml-1 bg-brand-600 text-white text-[10px] px-1.5 rounded-full">{activeFiltersCount}</span>}
                                 </button>
+                                <OrderFiltersDropdown
+                                    isOpen={isFilterMenuOpen}
+                                    dateFilter={dateFilter}
+                                    statusFilter={statusFilter}
+                                    partnerFilter={partnerFilter}
+                                    productTypeFilter={productTypeFilter}
+                                    partners={partners}
+                                    productTypes={productTypes}
+                                    onDateFilterChange={setDateFilter}
+                                    onStatusFilterChange={setStatusFilter}
+                                    onPartnerFilterChange={setPartnerFilter}
+                                    onProductTypeFilterChange={setProductTypeFilter}
+                                    onClearFilters={clearFilters}
+                                    statusLabels={STATUS_COLUMNS}
+                                    partnerLabel="Facção"
+                                />
                             </div>
                             <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block"><strong>{filteredOrders.length}</strong> pedidos</span>
                         </div>
