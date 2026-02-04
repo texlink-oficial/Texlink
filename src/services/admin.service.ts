@@ -102,12 +102,16 @@ const convertPendingApprovals = (): PendingApproval[] =>
 
 export const adminService = {
     async getDashboard(): Promise<AdminDashboard> {
+        console.log('[adminService.getDashboard] MOCK_MODE:', MOCK_MODE);
         if (MOCK_MODE) {
+            console.log('[adminService.getDashboard] Returning MOCK data');
             await simulateDelay(500);
             return generateMockAdminDashboard();
         }
 
+        console.log('[adminService.getDashboard] Fetching from API...');
         const response = await api.get<AdminDashboard>('/admin/dashboard');
+        console.log('[adminService.getDashboard] API response:', response.data);
         return response.data;
     },
 
@@ -201,7 +205,9 @@ export const adminService = {
     },
 
     async getRevenueHistory(months = 6): Promise<RevenueHistoryItem[]> {
+        console.log('[adminService.getRevenueHistory] MOCK_MODE:', MOCK_MODE);
         if (MOCK_MODE) {
+            console.log('[adminService.getRevenueHistory] Returning MOCK data');
             await simulateDelay(300);
             const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
             return monthNames.map((month, i) => ({
@@ -214,11 +220,14 @@ export const adminService = {
         }
 
         try {
+            console.log('[adminService.getRevenueHistory] Fetching from API...');
             const response = await api.get<RevenueHistoryItem[]>('/admin/dashboard/revenue-history', {
                 params: { months },
             });
+            console.log('[adminService.getRevenueHistory] API response:', response.data);
             return response.data;
-        } catch {
+        } catch (error) {
+            console.error('[adminService.getRevenueHistory] API error:', error);
             return [];
         }
     },

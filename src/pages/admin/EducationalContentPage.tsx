@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
-    ArrowLeft, GraduationCap, Plus, Pencil, Trash2, Eye, EyeOff,
+    GraduationCap, Plus, Pencil, Trash2, Eye, EyeOff,
     Save, X, Loader2, GripVertical, ExternalLink, Video, FileText,
     Image, BookOpen, Clock
 } from 'lucide-react';

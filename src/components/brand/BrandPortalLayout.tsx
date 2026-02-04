@@ -4,7 +4,7 @@ import { BrandPortalSidebar } from './BrandPortalSidebar';
 
 export const BrandPortalLayout: React.FC = () => {
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+        <div className="h-screen overflow-hidden bg-gray-50 dark:bg-gray-900 flex">
             {/* Sidebar */}
             <BrandPortalSidebar />
 

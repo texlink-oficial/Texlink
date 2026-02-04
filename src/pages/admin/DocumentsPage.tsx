@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
-    ArrowLeft, FileText, CheckCircle, AlertTriangle, XCircle, Clock,
+    FileText, CheckCircle, AlertTriangle, XCircle, Clock,
     Filter, Search, Factory, Download, Eye, X, RefreshCw, FolderOpen
 } from 'lucide-react';
 import { adminDocumentsService, AdminDocument, AdminDocumentStats } from '../../services/adminDocuments.service';

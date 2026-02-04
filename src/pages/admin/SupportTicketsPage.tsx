@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
-    ArrowLeft, HelpCircle, Search, MessageSquare, Clock,
+    HelpCircle, Search, Clock,
     Package, CreditCard, Key, Wrench, MoreHorizontal,
     ChevronRight, RefreshCw, AlertCircle, User, Send,
-    X, CheckCircle, Users
+    X
 } from 'lucide-react';
-import { supportTicketsService, SendMessageDto, UpdateTicketDto } from '../../services/supportTickets.service';
+import { supportTicketsService, UpdateTicketDto } from '../../services/supportTickets.service';
 import type {
     SupportTicket,
     SupportTicketMessage,
@@ -30,18 +30,18 @@ const CATEGORY_ICONS: Record<SupportTicketCategory, React.ElementType> = {
 };
 
 const STATUS_COLORS: Record<SupportTicketStatus, { bg: string; text: string; dot: string }> = {
-    ABERTO: { bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-400' },
-    EM_ANDAMENTO: { bg: 'bg-yellow-500/10', text: 'text-yellow-400', dot: 'bg-yellow-400' },
-    AGUARDANDO_RESPOSTA: { bg: 'bg-purple-500/10', text: 'text-purple-400', dot: 'bg-purple-400' },
-    RESOLVIDO: { bg: 'bg-green-500/10', text: 'text-green-400', dot: 'bg-green-400' },
-    FECHADO: { bg: 'bg-gray-500/10', text: 'text-gray-400', dot: 'bg-gray-400' },
+    ABERTO: { bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400', dot: 'bg-sky-500' },
+    EM_ANDAMENTO: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500' },
+    AGUARDANDO_RESPOSTA: { bg: 'bg-violet-500/10', text: 'text-violet-600 dark:text-violet-400', dot: 'bg-violet-500' },
+    RESOLVIDO: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
+    FECHADO: { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', dot: 'bg-slate-500' },
 };
 
 const PRIORITY_COLORS: Record<SupportTicketPriority, { bg: string; text: string }> = {
-    BAIXA: { bg: 'bg-gray-500/10', text: 'text-gray-400' },
-    MEDIA: { bg: 'bg-blue-500/10', text: 'text-blue-400' },
-    ALTA: { bg: 'bg-orange-500/10', text: 'text-orange-400' },
-    URGENTE: { bg: 'bg-red-500/10', text: 'text-red-400' },
+    BAIXA: { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400' },
+    MEDIA: { bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400' },
+    ALTA: { bg: 'bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400' },
+    URGENTE: { bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400' },
 };
 
 const SupportTicketsPage: React.FC = () => {
@@ -97,49 +97,31 @@ const SupportTicketsPage: React.FC = () => {
         return date.toLocaleDateString('pt-BR');
     };
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-brand-950 flex items-center justify-center">
-                <RefreshCw className="w-8 h-8 text-brand-400 animate-spin" />
-            </div>
-        );
-    }
-
     return (
-        <div className="min-h-screen bg-brand-950">
-            {/* Header */}
-            <header className="bg-brand-900/50 border-b border-brand-800">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                    <div className="flex items-center gap-4">
-                        <Link to="/admin" className="text-brand-400 hover:text-white transition-colors">
-                            <ArrowLeft className="w-5 h-5" />
-                        </Link>
-                        <div className="p-2 bg-brand-500/20 rounded-xl">
-                            <HelpCircle className="w-6 h-6 text-brand-400" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-white">Chamados de Suporte</h1>
-                            <p className="text-sm text-brand-400">Gerenciar Central de Ajuda</p>
-                        </div>
+        <div className="animate-fade-in">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                {/* Header Section */}
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-display">Chamados de Suporte</h1>
+                        <p className="text-gray-500 dark:text-gray-400 font-medium">Gerencie o atendimento e resolução de dúvidas da rede</p>
                     </div>
                 </div>
-            </header>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Stats */}
+                {/* Stats Grid */}
                 {stats && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <StatCard
                             title="Abertos"
                             value={stats.abertos}
                             icon={AlertCircle}
-                            color="blue"
+                            color="sky"
                         />
                         <StatCard
                             title="Em Andamento"
                             value={stats.emAndamento}
                             icon={Clock}
-                            color="yellow"
+                            color="amber"
                         />
                         <StatCard
                             title="Urgentes"
@@ -151,88 +133,90 @@ const SupportTicketsPage: React.FC = () => {
                             title="Tempo Médio"
                             value={`${stats.tempoMedioResposta}h`}
                             icon={Clock}
-                            color="purple"
+                            color="violet"
                         />
                     </div>
                 )}
 
-                {/* Filters */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                {/* Filters Row */}
+                <div className="flex flex-col lg:flex-row gap-4">
                     {/* Search */}
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-brand-500" />
+                    <div className="relative group flex-1">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-sky-500 transition-colors pointer-events-none" />
                         <input
                             type="text"
                             placeholder="Buscar por título, número ou empresa..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 bg-brand-900/50 border border-brand-800 rounded-xl text-white placeholder-brand-500 focus:outline-none focus:border-brand-500"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 shadow-sm transition-all placeholder:text-gray-400 font-medium"
                         />
                     </div>
 
-                    {/* Status Filter */}
-                    <select
-                        value={selectedStatus}
-                        onChange={(e) => setSelectedStatus(e.target.value as SupportTicketStatus | '')}
-                        className="px-4 py-3 bg-brand-900/50 border border-brand-800 rounded-xl text-white focus:outline-none focus:border-brand-500"
-                    >
-                        <option value="">Todos os Status</option>
-                        {Object.entries(TICKET_STATUS_LABELS).map(([key, label]) => (
-                            <option key={key} value={key}>{label}</option>
-                        ))}
-                    </select>
+                    <div className="flex flex-wrap gap-4 items-center">
+                        <div className="relative group w-48">
+                            <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-sky-500 transition-colors pointer-events-none" />
+                            <select
+                                value={selectedStatus}
+                                onChange={(e) => setSelectedStatus(e.target.value as SupportTicketStatus | '')}
+                                className="w-full pl-10 pr-8 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl text-gray-700 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500/50 shadow-sm transition-all font-medium"
+                            >
+                                <option value="">Todos os Status</option>
+                                {Object.entries(TICKET_STATUS_LABELS).map(([key, label]) => (
+                                    <option key={key} value={key}>{label}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                    {/* Priority Filter */}
-                    <select
-                        value={selectedPriority}
-                        onChange={(e) => setSelectedPriority(e.target.value as SupportTicketPriority | '')}
-                        className="px-4 py-3 bg-brand-900/50 border border-brand-800 rounded-xl text-white focus:outline-none focus:border-brand-500"
-                    >
-                        <option value="">Todas as Prioridades</option>
-                        {Object.entries(TICKET_PRIORITY_LABELS).map(([key, label]) => (
-                            <option key={key} value={key}>{label}</option>
-                        ))}
-                    </select>
+                        <div className="relative group w-48">
+                            <AlertCircle className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-sky-500 transition-colors pointer-events-none" />
+                            <select
+                                value={selectedPriority}
+                                onChange={(e) => setSelectedPriority(e.target.value as SupportTicketPriority | '')}
+                                className="w-full pl-10 pr-8 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl text-gray-700 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500/50 shadow-sm transition-all font-medium"
+                            >
+                                <option value="">Todas Prioridades</option>
+                                {Object.entries(TICKET_PRIORITY_LABELS).map(([key, label]) => (
+                                    <option key={key} value={key}>{label}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Tickets Table */}
-                <div className="bg-brand-900/50 border border-brand-800 rounded-2xl overflow-hidden">
-                    {filteredTickets.length === 0 ? (
-                        <div className="text-center py-12">
-                            <HelpCircle className="w-12 h-12 text-brand-600 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-white mb-2">
-                                Nenhum chamado encontrado
-                            </h3>
-                            <p className="text-brand-400">
-                                Tente ajustar os filtros de busca.
+                {/* Table Content */}
+                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-2xl overflow-hidden shadow-sm">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-24 gap-4">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-sky-500/20 blur-xl rounded-full animate-pulse" />
+                                <RefreshCw className="w-10 h-10 text-sky-500 animate-spin relative" />
+                            </div>
+                            <p className="text-gray-500 dark:text-gray-400 font-medium tracking-tight">Sincronizando chamados...</p>
+                        </div>
+                    ) : filteredTickets.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-24 text-center px-6">
+                            <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-6 shadow-xl shadow-black/5">
+                                <HelpCircle className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 font-display">Nenhum chamado encontrado</h3>
+                            <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto mb-8 font-medium">
+                                Ajuste os filtros ou verifique se há novas solicitações de suporte.
                             </p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-brand-800/50">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-brand-400 uppercase tracking-wider">
-                                            Chamado
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-brand-400 uppercase tracking-wider">
-                                            Empresa
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-brand-400 uppercase tracking-wider">
-                                            Status
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-brand-400 uppercase tracking-wider">
-                                            Prioridade
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-brand-400 uppercase tracking-wider">
-                                            Data
-                                        </th>
-                                        <th className="px-6 py-4 text-right text-xs font-semibold text-brand-400 uppercase tracking-wider">
-                                            Ações
-                                        </th>
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="bg-gray-50 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/[0.06]">
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Chamado</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Empresa</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Status</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-center">Prioridade</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-right">Data</th>
+                                        <th className="px-6 py-4 text-right"></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-brand-800">
+                                <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
                                     {filteredTickets.map((ticket) => {
                                         const CategoryIcon = CATEGORY_ICONS[ticket.category];
                                         const statusColors = STATUS_COLORS[ticket.status];
@@ -241,56 +225,48 @@ const SupportTicketsPage: React.FC = () => {
                                         return (
                                             <tr
                                                 key={ticket.id}
-                                                className="hover:bg-brand-800/30 transition-colors cursor-pointer"
+                                                className="hover:bg-gray-50 dark:hover:bg-white/[0.01] transition-colors group cursor-pointer"
                                                 onClick={() => setSelectedTicket(ticket)}
                                             >
-                                                <td className="px-6 py-4">
+                                                <td className="px-6 py-5">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="p-2 bg-brand-800 rounded-lg">
-                                                            <CategoryIcon className="w-4 h-4 text-brand-400" />
+                                                        <div className="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center border border-gray-100 dark:border-white/[0.08] shadow-sm group-hover:scale-110 transition-transform">
+                                                            <CategoryIcon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                                                         </div>
-                                                        <div>
-                                                            <p className="text-white font-medium truncate max-w-xs">
+                                                        <div className="min-w-0">
+                                                            <p className="font-bold text-gray-900 dark:text-white group-hover:text-sky-500 transition-colors font-display truncate max-w-[240px]">
                                                                 {ticket.title}
                                                             </p>
-                                                            <p className="text-xs text-brand-500 font-mono">
+                                                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest font-mono mt-0.5">
                                                                 #{ticket.displayId}
                                                             </p>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className="text-brand-300">
+                                                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                                         {ticket.company?.tradeName || '-'}
-                                                    </span>
+                                                    </p>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${statusColors.bg} ${statusColors.text}`}>
-                                                        <span className={`w-1.5 h-1.5 rounded-full ${statusColors.dot}`} />
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 ${statusColors.bg} ${statusColors.text} rounded-lg text-[10px] font-bold uppercase tracking-wider`}>
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${statusColors.dot} animate-pulse`} />
                                                         {TICKET_STATUS_LABELS[ticket.status]}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${priorityColors.bg} ${priorityColors.text}`}>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className={`inline-flex px-2.5 py-1 ${priorityColors.bg} ${priorityColors.text} rounded-lg text-[10px] font-bold uppercase tracking-wider border border-current/10`}>
                                                         {TICKET_PRIORITY_LABELS[ticket.priority]}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2 text-sm text-brand-400">
-                                                        <Clock className="w-4 h-4" />
-                                                        {formatDate(ticket.createdAt)}
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex flex-col items-end gap-0.5">
+                                                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{formatDate(ticket.createdAt)}</span>
+                                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">Última atualização</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSelectedTicket(ticket);
-                                                        }}
-                                                        className="text-brand-400 hover:text-white transition-colors"
-                                                    >
-                                                        <ChevronRight className="w-5 h-5" />
-                                                    </button>
+                                                    <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-sky-500 group-hover:translate-x-1 transition-all" />
                                                 </td>
                                             </tr>
                                         );
@@ -322,25 +298,28 @@ interface StatCardProps {
     title: string;
     value: number | string;
     icon: React.ElementType;
-    color: 'blue' | 'yellow' | 'red' | 'purple' | 'green';
+    color: 'sky' | 'amber' | 'red' | 'violet';
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color }) => {
-    const colors = {
-        blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400',
-        yellow: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30 text-yellow-400',
-        red: 'from-red-500/20 to-red-600/10 border-red-500/30 text-red-400',
-        purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-400',
-        green: 'from-green-500/20 to-green-600/10 border-green-500/30 text-green-400',
+    const colorMap = {
+        sky: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/10 shadow-sky-500/5',
+        amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/10 shadow-amber-500/5',
+        red: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/10 shadow-red-500/5',
+        violet: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/10 shadow-violet-500/5',
     };
 
     return (
-        <div className={`bg-gradient-to-br ${colors[color]} rounded-2xl border p-4`}>
-            <div className="flex items-center justify-between mb-2">
-                <Icon className="w-5 h-5" />
+        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-2xl p-4 shadow-sm group hover:shadow-md transition-all">
+            <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 ${colorMap[color]} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    <Icon className="w-5 h-5" />
+                </div>
+                <div>
+                    <h4 className="text-2xl font-bold text-gray-900 dark:text-white font-display leading-none mb-1">{value}</h4>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{title}</p>
+                </div>
             </div>
-            <p className="text-sm text-brand-300">{title}</p>
-            <p className="text-2xl font-bold text-white">{value}</p>
         </div>
     );
 };
@@ -423,65 +402,54 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticket, onClose, 
     const CategoryIcon = CATEGORY_ICONS[ticket.category];
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-brand-900 border border-brand-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-200 dark:border-white/[0.06] w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-brand-800">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-brand-800 rounded-lg">
-                            <CategoryIcon className="w-5 h-5 text-brand-400" />
+                <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-white/[0.06]">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-sky-500/10 rounded-2xl flex items-center justify-center border border-sky-500/10 shadow-lg shadow-sky-500/5">
+                            <CategoryIcon className="w-6 h-6 text-sky-500" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h2 className="text-lg font-bold text-white">{ticket.title}</h2>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white font-display leading-tight">{ticket.title}</h2>
+                                <span className="px-2 py-0.5 bg-gray-100 dark:bg-slate-800 text-[10px] font-bold text-gray-500 uppercase tracking-widest font-mono rounded border border-gray-200 dark:border-white/[0.06]">
+                                    #{ticket.displayId}
+                                </span>
                             </div>
-                            <p className="text-sm text-brand-500 font-mono">#{ticket.displayId}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium tracking-tight">
+                                {ticket.company?.tradeName || 'Empresa não identificada'} • {TICKET_CATEGORY_LABELS[ticket.category]}
+                            </p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-brand-800 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
-                        <X className="w-5 h-5 text-brand-400" />
+                        <X className="w-6 h-6" />
                     </button>
                 </div>
 
-                {/* Info Bar */}
-                <div className="px-6 py-4 bg-brand-800/30 border-b border-brand-800 flex flex-wrap gap-4 items-center">
+                {/* Sub-header Controls */}
+                <div className="px-6 py-3 bg-gray-50 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/[0.06] flex flex-wrap gap-6 items-center">
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-brand-400">Empresa:</span>
-                        <span className="text-sm text-white">{ticket.company?.tradeName || '-'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-brand-400">Criado por:</span>
-                        <span className="text-sm text-white">{ticket.createdBy?.name || '-'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-brand-400">Data:</span>
-                        <span className="text-sm text-white">{formatDate(ticket.createdAt)}</span>
-                    </div>
-                </div>
-
-                {/* Controls */}
-                <div className="px-6 py-4 border-b border-brand-800 flex flex-wrap gap-4 items-center">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-brand-400">Status:</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status:</span>
                         <select
                             value={newStatus}
                             onChange={(e) => setNewStatus(e.target.value as SupportTicketStatus)}
-                            className="px-3 py-1.5 bg-brand-800/50 border border-brand-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+                            className="bg-transparent text-sm font-bold text-gray-900 dark:text-white focus:outline-none cursor-pointer hover:text-sky-500 transition-colors"
                         >
                             {Object.entries(TICKET_STATUS_LABELS).map(([key, label]) => (
                                 <option key={key} value={key}>{label}</option>
                             ))}
                         </select>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-brand-400">Prioridade:</span>
+                    <div className="flex items-center gap-2 border-l border-gray-200 dark:border-white/[0.08] pl-6">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Prioridade:</span>
                         <select
                             value={newPriority}
                             onChange={(e) => setNewPriority(e.target.value as SupportTicketPriority)}
-                            className="px-3 py-1.5 bg-brand-800/50 border border-brand-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+                            className="bg-transparent text-sm font-bold text-gray-900 dark:text-white focus:outline-none cursor-pointer hover:text-sky-500 transition-colors"
                         >
                             {Object.entries(TICKET_PRIORITY_LABELS).map(([key, label]) => (
                                 <option key={key} value={key}>{label}</option>
@@ -491,97 +459,128 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticket, onClose, 
                     {(newStatus !== ticket.status || newPriority !== ticket.priority) && (
                         <button
                             onClick={handleUpdateTicket}
-                            className="px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm rounded-lg transition-colors"
+                            className="ml-auto flex items-center gap-1.5 px-4 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all shadow-lg shadow-sky-500/20 active:scale-95"
                         >
-                            Salvar Alterações
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            Aplicar Alterações
                         </button>
                     )}
                 </div>
 
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {/* Initial Description */}
-                    <div className="bg-brand-800/30 rounded-xl p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <User className="w-4 h-4 text-brand-400" />
-                            <span className="text-sm font-medium text-brand-300">
-                                {ticket.createdBy?.name || 'Usuário'}
-                            </span>
-                            <span className="text-xs text-brand-500">{formatDate(ticket.createdAt)}</span>
+                {/* Messages View */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-950/20 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-white/[0.06]">
+                    {/* Initial Ticket Creation */}
+                    <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 bg-sky-500 text-white rounded-full flex items-center justify-center font-bold text-xs shadow-lg shadow-sky-500/20">
+                            {ticket.createdBy?.name?.[0]?.toUpperCase() || 'U'}
                         </div>
-                        <p className="text-white whitespace-pre-wrap">{ticket.description}</p>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm font-bold text-gray-900 dark:text-white">{ticket.createdBy?.name || 'Solicitante'}</span>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{formatDate(ticket.createdAt)}</span>
+                            </div>
+                            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-2xl p-4 shadow-sm inline-block max-w-2xl">
+                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
+                            </div>
+                        </div>
                     </div>
 
                     {isLoading ? (
-                        <div className="flex justify-center py-4">
-                            <RefreshCw className="w-6 h-6 text-brand-400 animate-spin" />
+                        <div className="flex justify-center py-12">
+                            <RefreshCw className="w-6 h-6 text-sky-500 animate-spin" />
                         </div>
                     ) : (
-                        messages.map((message) => (
-                            <div
-                                key={message.id}
-                                className={`rounded-xl p-4 ${
-                                    message.isInternal
-                                        ? 'bg-yellow-500/10 border border-yellow-500/30'
-                                        : message.isFromSupport
-                                        ? 'bg-brand-500/10 border border-brand-500/30'
-                                        : 'bg-brand-800/30'
-                                }`}
-                            >
-                                <div className="flex items-center gap-2 mb-2">
-                                    {message.isFromSupport ? (
-                                        <HelpCircle className="w-4 h-4 text-brand-400" />
-                                    ) : (
-                                        <User className="w-4 h-4 text-brand-400" />
-                                    )}
-                                    <span className="text-sm font-medium text-brand-300">
-                                        {message.sender?.name || 'Usuário'}
-                                        {message.isFromSupport && ' (Suporte)'}
-                                    </span>
-                                    {message.isInternal && (
-                                        <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">
-                                            Nota Interna
-                                        </span>
-                                    )}
-                                    <span className="text-xs text-brand-500">{formatDate(message.createdAt)}</span>
+                        messages.map((message) => {
+                            const isSupport = message.isFromSupport;
+                            return (
+                                <div
+                                    key={message.id}
+                                    className={`flex items-start gap-4 ${isSupport ? 'flex-row-reverse' : ''}`}
+                                >
+                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-lg ${isSupport
+                                        ? 'bg-violet-500 text-white shadow-violet-500/20'
+                                        : 'bg-gray-200 dark:bg-slate-800 text-gray-500 dark:text-gray-400'
+                                        }`}>
+                                        {message.sender?.name?.[0]?.toUpperCase() || (isSupport ? 'S' : 'U')}
+                                    </div>
+                                    <div className={`flex-1 min-w-0 max-w-[80%] ${isSupport ? 'items-end flex flex-col' : ''}`}>
+                                        <div className={`flex items-center gap-2 mb-1 ${isSupport ? 'flex-row-reverse' : ''}`}>
+                                            <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                                {message.sender?.name || (isSupport ? 'Suporte Texlink' : 'Solicitante')}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{formatDate(message.createdAt)}</span>
+                                            {message.isInternal && (
+                                                <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase tracking-widest rounded border border-amber-500/20">
+                                                    Nota Interna
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className={`rounded-2xl p-4 shadow-sm border ${message.isInternal
+                                            ? 'bg-amber-500/5 border-amber-500/20'
+                                            : isSupport
+                                                ? 'bg-sky-500 dark:bg-sky-600 border-sky-400/20 dark:border-sky-500/20 text-white rounded-tr-none'
+                                                : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-white/[0.06] text-gray-700 dark:text-gray-300 rounded-tl-none'
+                                            }`}>
+                                            <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <p className="text-white whitespace-pre-wrap">{message.content}</p>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
 
-                {/* Reply Area */}
+                {/* Reply Section */}
                 {ticket.status !== 'FECHADO' && (
-                    <div className="p-6 border-t border-brand-800">
-                        <div className="flex items-center gap-2 mb-3">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={isInternal}
-                                    onChange={(e) => setIsInternal(e.target.checked)}
-                                    className="w-4 h-4 rounded border-brand-600 bg-brand-800 text-brand-500 focus:ring-brand-500"
-                                />
-                                <span className="text-sm text-brand-400">Nota interna (não visível para o usuário)</span>
+                    <div className="p-6 border-t border-gray-100 dark:border-white/[0.06] bg-white dark:bg-slate-900">
+                        <div className="flex items-center justify-between mb-4">
+                            <label className="flex items-center gap-2.5 cursor-pointer group">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        checked={isInternal}
+                                        onChange={(e) => setIsInternal(e.target.checked)}
+                                        className="peer sr-only"
+                                    />
+                                    <div className="w-8 h-4.5 bg-gray-200 dark:bg-slate-800 rounded-full transition-colors group-hover:bg-gray-300 dark:group-hover:bg-slate-700 peer-checked:bg-amber-500" />
+                                    <div className="absolute left-0.5 top-0.5 w-3.5 h-3.5 bg-white rounded-full transition-transform peer-checked:translate-x-3.5" />
+                                </div>
+                                <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Modo Nota Interna</span>
                             </label>
+
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                Respondendo como <span className="text-sky-500">Suporte Central</span>
+                            </p>
                         </div>
-                        <div className="flex gap-3">
-                            <textarea
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                placeholder={isInternal ? "Escreva uma nota interna..." : "Escreva sua resposta..."}
-                                rows={3}
-                                className="flex-1 px-4 py-3 bg-brand-800/50 border border-brand-700 rounded-xl text-white placeholder-brand-500 focus:outline-none focus:border-brand-500 resize-none"
-                            />
+
+                        <div className="flex gap-4">
+                            <div className="flex-1 relative">
+                                <textarea
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    placeholder={isInternal ? "Escreva uma observação técnica confidencial..." : "Escreva sua resposta para o usuário..."}
+                                    rows={3}
+                                    className={`w-full px-4 py-3 border rounded-2xl text-sm transition-all focus:outline-none focus:ring-4 resize-none ${isInternal
+                                        ? 'bg-amber-500/5 border-amber-500/20 focus:ring-amber-500/10 focus:border-amber-500/50'
+                                        : 'bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-white/[0.06] focus:ring-sky-500/10 focus:border-sky-500/50 text-gray-900 dark:text-white'
+                                        }`}
+                                />
+                            </div>
                             <button
                                 onClick={handleSendMessage}
                                 disabled={!newMessage.trim() || isSending}
-                                className="px-4 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-700 disabled:cursor-not-allowed text-white rounded-xl transition-colors self-end"
+                                className={`flex flex-col items-center justify-center gap-1.5 w-20 rounded-2xl transition-all disabled:opacity-40 disabled:grayscale group shadow-xl active:scale-95 ${isInternal
+                                    ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20'
+                                    : 'bg-sky-500 hover:bg-sky-600 text-white shadow-sky-500/20'
+                                    }`}
                             >
                                 {isSending ? (
                                     <RefreshCw className="w-5 h-5 animate-spin" />
                                 ) : (
-                                    <Send className="w-5 h-5" />
+                                    <>
+                                        <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                        <span className="text-[9px] font-black uppercase tracking-tighter">{isInternal ? 'Nota' : 'Enviar'}</span>
+                                    </>
                                 )}
                             </button>
                         </div>

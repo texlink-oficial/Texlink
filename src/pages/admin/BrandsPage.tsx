@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { adminService } from '../../services';
 import {
-    ArrowLeft, Building2, Search, Filter, Package,
+    Building2, Search, Filter, Package,
     CheckCircle, Clock, XCircle, Loader2, ChevronRight,
     Mail, Phone, MapPin
 } from 'lucide-react';

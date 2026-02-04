@@ -25,4 +25,6 @@ export const simulateDelay = (ms: number = 500) =>
 // Log mock mode status in development
 if (import.meta.env.DEV) {
     console.log(`🎭 Mock Mode: ${MOCK_MODE ? 'ENABLED' : 'DISABLED'}`);
+    console.log(`   VITE_MOCK_MODE: "${import.meta.env.VITE_MOCK_MODE}"`);
+    console.log(`   VITE_API_URL: "${import.meta.env.VITE_API_URL}"`);
 }
