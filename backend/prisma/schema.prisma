@@ -106,6 +106,7 @@ enum DocumentType {
 
 enum OrderStatus {
   LANCADO_PELA_MARCA
+  EM_NEGOCIACAO // Em negociação entre marca e facção
   ACEITO_PELA_FACCAO
   EM_PREPARACAO_SAIDA_MARCA
   EM_TRANSITO_PARA_FACCAO

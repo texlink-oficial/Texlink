@@ -8,11 +8,13 @@ import { OrderDetailModal } from '../../components/kanban/OrderDetailModal';
 import { StatsOverview } from '../../components/kanban/StatsOverview';
 import { OrderListView } from '../../components/kanban/OrderListView';
 import { RatingModal } from '../../components/ratings/RatingModal';
+import { OrderFiltersDropdown } from '../../components/kanban/OrderFiltersDropdown';
 import { Filter, LayoutGrid, List, Loader2, Search } from 'lucide-react';
 
 // Status mapping from API to Kanban UI
 const STATUS_MAP: Record<ApiOrderStatus, OrderStatus> = {
     'LANCADO_PELA_MARCA': OrderStatus.NEW,
+    'EM_NEGOCIACAO': OrderStatus.NEGOTIATING,
     'ACEITO_PELA_FACCAO': OrderStatus.ACCEPTED,
     'EM_PREPARACAO_SAIDA_MARCA': OrderStatus.PREPARING_BRAND,
     'EM_TRANSITO_PARA_FACCAO': OrderStatus.TRANSIT_TO_SUPPLIER,
@@ -20,6 +22,10 @@ const STATUS_MAP: Record<ApiOrderStatus, OrderStatus> = {
     'EM_PRODUCAO': OrderStatus.PRODUCTION,
     'PRONTO': OrderStatus.READY_SEND,
     'EM_TRANSITO_PARA_MARCA': OrderStatus.TRANSIT_TO_BRAND,
+    'EM_REVISAO': OrderStatus.IN_REVIEW,
+    'PARCIALMENTE_APROVADO': OrderStatus.PARTIALLY_APPROVED,
+    'REPROVADO': OrderStatus.DISAPPROVED,
+    'AGUARDANDO_RETRABALHO': OrderStatus.AWAITING_REWORK,
     'FINALIZADO': OrderStatus.FINALIZED,
     'RECUSADO_PELA_FACCAO': OrderStatus.REJECTED,
     'DISPONIVEL_PARA_OUTRAS': OrderStatus.NEW,
@@ -27,6 +33,7 @@ const STATUS_MAP: Record<ApiOrderStatus, OrderStatus> = {
 
 const REVERSE_STATUS_MAP: Record<OrderStatus, ApiOrderStatus> = {
     [OrderStatus.NEW]: 'LANCADO_PELA_MARCA',
+    [OrderStatus.NEGOTIATING]: 'EM_NEGOCIACAO',
     [OrderStatus.ACCEPTED]: 'ACEITO_PELA_FACCAO',
     [OrderStatus.PREPARING_BRAND]: 'EM_PREPARACAO_SAIDA_MARCA',
     [OrderStatus.TRANSIT_TO_SUPPLIER]: 'EM_TRANSITO_PARA_FACCAO',
@@ -34,12 +41,17 @@ const REVERSE_STATUS_MAP: Record<OrderStatus, ApiOrderStatus> = {
     [OrderStatus.PRODUCTION]: 'EM_PRODUCAO',
     [OrderStatus.READY_SEND]: 'PRONTO',
     [OrderStatus.TRANSIT_TO_BRAND]: 'EM_TRANSITO_PARA_MARCA',
+    [OrderStatus.IN_REVIEW]: 'EM_REVISAO',
+    [OrderStatus.PARTIALLY_APPROVED]: 'PARCIALMENTE_APROVADO',
+    [OrderStatus.DISAPPROVED]: 'REPROVADO',
+    [OrderStatus.AWAITING_REWORK]: 'AGUARDANDO_RETRABALHO',
     [OrderStatus.FINALIZED]: 'FINALIZADO',
     [OrderStatus.REJECTED]: 'RECUSADO_PELA_FACCAO',
 };
 
 const STATUS_COLUMNS = [
     { id: OrderStatus.NEW, label: '▪ Novos Pedidos' },
+    { id: OrderStatus.NEGOTIATING, label: '▪ Em Negociação' },
     { id: OrderStatus.ACCEPTED, label: '▪ Aceitos' },
     { id: OrderStatus.PREPARING_BRAND, label: '▪ Preparação (Marca)' },
     { id: OrderStatus.TRANSIT_TO_SUPPLIER, label: '▪ Trânsito → Facção' },
@@ -47,6 +59,10 @@ const STATUS_COLUMNS = [
     { id: OrderStatus.PRODUCTION, label: '▪ Em Produção' },
     { id: OrderStatus.READY_SEND, label: '▪ Pronto / Envio' },
     { id: OrderStatus.TRANSIT_TO_BRAND, label: '▪ Trânsito → Marca' },
+    { id: OrderStatus.IN_REVIEW, label: '▪ Em Revisão' },
+    { id: OrderStatus.PARTIALLY_APPROVED, label: '▪ Parc. Aprovado' },
+    { id: OrderStatus.DISAPPROVED, label: '▪ Reprovado' },
+    { id: OrderStatus.AWAITING_REWORK, label: '▪ Aguard. Retrabalho' },
     { id: OrderStatus.FINALIZED, label: '▪ Finalizados' },
 ];
 
@@ -97,6 +113,9 @@ const SupplierKanbanDashboard: React.FC = () => {
     const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+    const [statusFilter, setStatusFilter] = useState<OrderStatus[]>([]);
+    const [partnerFilter, setPartnerFilter] = useState('');
+    const [productTypeFilter, setProductTypeFilter] = useState('');
     const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
     const [pendingRating, setPendingRating] = useState<PendingRating | null>(null);
     const [showRatingModal, setShowRatingModal] = useState(false);
@@ -185,9 +204,32 @@ const SupplierKanbanDashboard: React.FC = () => {
                     matchesDate = orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
                 }
             }
-            return matchesSearch && matchesDate;
+
+            const matchesStatus = statusFilter.length === 0 || statusFilter.includes(order.status);
+            const matchesPartner = partnerFilter === '' || order.brand.id === partnerFilter;
+            const matchesProductType = productTypeFilter === '' || order.type === productTypeFilter;
+
+            return matchesSearch && matchesDate && matchesStatus && matchesPartner && matchesProductType;
         });
-    }, [orders, searchQuery, dateFilter]);
+    }, [orders, searchQuery, dateFilter, statusFilter, partnerFilter, productTypeFilter]);
+
+    // Extract unique partners and product types for filters
+    const partners = useMemo(() => {
+        const uniquePartners = new Map<string, string>();
+        orders.forEach(o => uniquePartners.set(o.brand.id, o.brand.name));
+        return Array.from(uniquePartners.entries()).map(([id, name]) => ({ id, name }));
+    }, [orders]);
+
+    const productTypes = useMemo(() => {
+        return [...new Set(orders.map(o => o.type))];
+    }, [orders]);
+
+    const clearFilters = () => {
+        setDateFilter('all');
+        setStatusFilter([]);
+        setPartnerFilter('');
+        setProductTypeFilter('');
+    };
 
     const ordersByStatus = useMemo(() => {
         const grouped: Record<string, Order[]> = {};
@@ -246,7 +288,11 @@ const SupplierKanbanDashboard: React.FC = () => {
         }
     };
 
-    const activeFiltersCount = (dateFilter !== 'all' ? 1 : 0) + (searchQuery ? 1 : 0);
+    const activeFiltersCount =
+        (dateFilter !== 'all' ? 1 : 0) +
+        (statusFilter.length > 0 ? 1 : 0) +
+        (partnerFilter !== '' ? 1 : 0) +
+        (productTypeFilter !== '' ? 1 : 0);
 
     // Build profile for header
     const headerProfile = supplierProfile ? {
@@ -289,6 +335,22 @@ const SupplierKanbanDashboard: React.FC = () => {
                                     <Filter className="h-4 w-4" /> Filtros
                                     {activeFiltersCount > 0 && <span className="ml-1 bg-brand-600 text-white text-[10px] px-1.5 rounded-full">{activeFiltersCount}</span>}
                                 </button>
+                                <OrderFiltersDropdown
+                                    isOpen={isFilterMenuOpen}
+                                    dateFilter={dateFilter}
+                                    statusFilter={statusFilter}
+                                    partnerFilter={partnerFilter}
+                                    productTypeFilter={productTypeFilter}
+                                    partners={partners}
+                                    productTypes={productTypes}
+                                    onDateFilterChange={setDateFilter}
+                                    onStatusFilterChange={setStatusFilter}
+                                    onPartnerFilterChange={setPartnerFilter}
+                                    onProductTypeFilterChange={setProductTypeFilter}
+                                    onClearFilters={clearFilters}
+                                    statusLabels={STATUS_COLUMNS}
+                                    partnerLabel="Marca"
+                                />
                             </div>
                             <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block"><strong>{filteredOrders.length}</strong> pedidos</span>
                         </div>
