@@ -27,6 +27,7 @@ import { CredentialSettingsModule } from './modules/credential-settings/credenti
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
 import { RelationshipsModule } from './modules/relationships/relationships.module';
+import { PartnershipRequestsModule } from './modules/partnership-requests/partnership-requests.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { WebhooksModule } from './modules/integrations/webhooks/webhooks.module';
 import { HealthModule } from './modules/health/health.module';
@@ -37,6 +38,7 @@ import { EducationalContentModule } from './modules/educational-content/educatio
 import { SupportTicketsModule } from './modules/support-tickets/support-tickets.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { PortalModule } from './modules/portal/portal.module';
+import { BrandDashboardModule } from './modules/brand-dashboard/brand-dashboard.module';
 import configuration from './config/configuration';
 import { BullConfigService, QUEUE_NAMES } from './config/bull.config';
 
@@ -116,6 +118,7 @@ if (process.env.STORAGE_TYPE !== 's3') {
     OnboardingModule,
     ContractsModule,
     RelationshipsModule,
+    PartnershipRequestsModule,
     NotificationsModule,
     WebhooksModule,
     SupplierDocumentsModule,
@@ -124,6 +127,7 @@ if (process.env.STORAGE_TYPE !== 's3') {
     SupportTicketsModule,
     SettingsModule,
     PortalModule,
+    BrandDashboardModule,
   ],
   providers: [
     // Global rate limiting guard

@@ -56,8 +56,10 @@ const NewCredentialPage = React.lazy(() => import('./pages/brand/credentials/New
 const CredentialDetailsPage = React.lazy(() => import('./pages/brand/credentials/CredentialDetailsPage'));
 const AddSupplierPage = React.lazy(() => import('./pages/brand/suppliers/AddSupplierPage'));
 const RelationshipDetailsPage = React.lazy(() => import('./pages/brand/suppliers/RelationshipDetailsPage'));
+const BrandPartnershipRequestsPage = React.lazy(() => import('./pages/brand/suppliers/PartnershipRequestsPage'));
 const BrandHelpCenter = React.lazy(() => import('./pages/brand/HelpCenterPage'));
 const BrandTicketDetail = React.lazy(() => import('./pages/brand/TicketDetailPage'));
+const BrandAnalyticsDashboard = React.lazy(() => import('./pages/brand/AnalyticsDashboardPage'));
 
 const AdminLayout = React.lazy(() => import('./components/admin/AdminLayout'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
@@ -85,6 +87,7 @@ const DepositDetailPage = React.lazy(() => import('./pages/portal/financial/Depo
 const PayoutFrequencyPage = React.lazy(() => import('./pages/portal/financial/PayoutFrequencyPage'));
 const AdvancePage = React.lazy(() => import('./pages/portal/financial/AdvancePage'));
 const SupplierBrandsPage = React.lazy(() => import('./pages/portal/BrandsPage'));
+const SupplierPartnershipRequestsPage = React.lazy(() => import('./pages/supplier/PartnershipRequestsPage'));
 
 // Onboarding pages
 const OnboardingLayout = React.lazy(() => import('./components/onboarding/OnboardingLayout'));
@@ -146,6 +149,8 @@ const App: React.FC = () => {
                                                 <Route path="capacidade" element={<SupplierCapacity />} />
                                                 {/* Marcas (V3 N:M Relationships) */}
                                                 <Route path="marcas" element={<SupplierBrandsPage />} />
+                                                {/* Solicitações de Parceria */}
+                                                <Route path="solicitacoes" element={<SupplierPartnershipRequestsPage />} />
                                                 {/* Documentos */}
                                                 <Route path="documentos" element={<SupplierDocuments />} />
                                                 {/* Parceiros */}
@@ -190,6 +195,7 @@ const App: React.FC = () => {
                                                 <Route path="faccoes/:id" element={<BrandSupplierProfile />} />
                                                 {/* Fornecedores (V3 N:M Relationships) */}
                                                 <Route path="fornecedores" element={<BrandSuppliersPage />} />
+                                                <Route path="fornecedores/solicitacoes" element={<BrandPartnershipRequestsPage />} />
                                                 <Route path="fornecedores/adicionar" element={<AddSupplierPage />} />
                                                 <Route path="fornecedores/:id" element={<RelationshipDetailsPage />} />
                                                 {/* Mensagens */}
@@ -197,8 +203,9 @@ const App: React.FC = () => {
                                                 {/* Financeiro */}
                                                 <Route path="financeiro/pagamentos" element={<BrandPayments />} />
                                                 <Route path="financeiro/historico" element={<BrandPaymentHistory />} />
-                                                {/* Relatórios */}
+                                                {/* Relatórios e Analytics */}
                                                 <Route path="relatorios" element={<BrandReports />} />
+                                                <Route path="analytics" element={<BrandAnalyticsDashboard />} />
                                                 {/* Favoritos */}
                                                 <Route path="favoritos" element={<BrandFavorites />} />
                                                 {/* Credenciamento */}

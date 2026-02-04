@@ -26,7 +26,8 @@ import {
     LayoutDashboard,
     History,
     CreditCard,
-    Briefcase
+    Briefcase,
+    TrendingUp
 } from 'lucide-react';
 
 interface NavItem {
@@ -69,6 +70,7 @@ const navGroups: NavGroup[] = [
                 icon: <Factory className="h-5 w-5" />,
                 children: [
                     { label: 'Minhas Facções', path: '/brand/fornecedores' },
+                    { label: 'Solicitações', path: '/brand/fornecedores/solicitacoes' },
                     { label: 'Buscar Novas', path: '/brand/faccoes' },
                     { label: 'Meus Parceiros', path: '/brand/faccoes/parceiros' },
                     { label: 'Credenciar', path: '/brand/fornecedores/adicionar' },
@@ -86,6 +88,12 @@ const navGroups: NavGroup[] = [
         id: 'gestao',
         label: 'Gestão & Inteligência',
         items: [
+            {
+                id: 'analytics',
+                label: 'Analytics',
+                icon: <TrendingUp className="h-5 w-5" />,
+                path: '/brand/analytics',
+            },
             {
                 id: 'relatorios',
                 label: 'Relatórios',
