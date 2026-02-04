@@ -1,17 +1,25 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Param,
   Body,
   Query,
   UseGuards,
+  Req,
+  ParseUUIDPipe,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { SuppliersService } from './suppliers.service';
+import { ConsentService } from './services/consent.service';
+import type { RevokeConsentDto } from './services/consent.service';
 import {
   OnboardingPhase2Dto,
   OnboardingPhase3Dto,
   SupplierFilterDto,
+  InviteSupplierDto,
+  ResendInvitationDto,
 } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -19,22 +27,47 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole } from '@prisma/client';
 
+interface AuthUser {
+  id: string;
+  companyId: string;
+}
+
 @Controller('suppliers')
-@UseGuards(JwtAuthGuard)
 export class SuppliersController {
-  constructor(private readonly suppliersService: SuppliersService) {}
+  constructor(
+    private readonly suppliersService: SuppliersService,
+    private readonly consentService: ConsentService,
+  ) { }
+
+  // ========== PUBLIC ENDPOINTS ==========
+
+  /**
+   * Get invitation details by token (no auth required)
+   */
+  @Get('invitation/:token')
+  async getInvitationByToken(@Param('token') token: string) {
+    return this.suppliersService.getInvitationByToken(token);
+  }
+
+  /**
+   * Accept an invitation (no auth required)
+   */
+  @Post('accept-invite/:token')
+  async acceptInvitation(@Param('token') token: string) {
+    return this.suppliersService.acceptInvitation(token);
+  }
 
   // ========== SUPPLIER ENDPOINTS ==========
 
   @Get('profile')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPPLIER)
   async getMyProfile(@CurrentUser('id') userId: string) {
     return this.suppliersService.getMyProfile(userId);
   }
 
   @Patch('onboarding/phase2')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPPLIER)
   async updatePhase2(
     @CurrentUser('id') userId: string,
@@ -44,7 +77,7 @@ export class SuppliersController {
   }
 
   @Patch('onboarding/phase3')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPPLIER)
   async updatePhase3(
     @CurrentUser('id') userId: string,
@@ -54,21 +87,21 @@ export class SuppliersController {
   }
 
   @Patch('onboarding/complete')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPPLIER)
   async completeOnboarding(@CurrentUser('id') userId: string) {
     return this.suppliersService.completeOnboarding(userId);
   }
 
   @Get('dashboard')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPPLIER)
   async getDashboard(@CurrentUser('id') userId: string) {
     return this.suppliersService.getDashboard(userId);
   }
 
   @Get('reports')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPPLIER)
   async getReports(
     @CurrentUser('id') userId: string,
@@ -83,25 +116,122 @@ export class SuppliersController {
   }
 
   @Get('opportunities')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPPLIER)
   async getOpportunities(@CurrentUser('id') userId: string) {
     return this.suppliersService.getOpportunities(userId);
   }
 
-  // ========== BRAND/ADMIN ENDPOINTS ==========
+  // ========== BRAND INVITATION ENDPOINTS ==========
+
+  /**
+   * Validate CNPJ via Brasil API
+   */
+  @Get('validate-cnpj/:cnpj')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.BRAND, UserRole.ADMIN)
+  async validateCnpj(@Param('cnpj') cnpj: string) {
+    return this.suppliersService.validateCnpj(cnpj);
+  }
+
+  /**
+   * Invite a new supplier
+   */
+  @Post('invite')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.BRAND)
+  async inviteSupplier(
+    @Body() dto: InviteSupplierDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.suppliersService.inviteSupplier(dto, user);
+  }
+
+  /**
+   * List all invitations for current brand
+   */
+  @Get('invitations')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.BRAND)
+  async getInvitations(@CurrentUser() user: AuthUser) {
+    return this.suppliersService.getInvitations(user.companyId);
+  }
+
+  /**
+   * Resend an invitation
+   */
+  @Post('invitations/:id/resend')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.BRAND)
+  async resendInvitation(
+    @Param('id') id: string,
+    @Body() dto: ResendInvitationDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.suppliersService.resendInvitation(id, user, dto);
+  }
+
+  // ========== BRAND/ADMIN SEARCH ENDPOINTS ==========
 
   @Get()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.BRAND, UserRole.ADMIN)
   async search(@Query() filters: SupplierFilterDto) {
     return this.suppliersService.search(filters);
   }
 
   @Get(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.BRAND, UserRole.ADMIN)
   async getById(@Param('id') id: string) {
     return this.suppliersService.getById(id);
+  }
+
+  // ========== CONSENT ENDPOINTS (Supplier only) ==========
+
+  /**
+   * Revoke document sharing consent for a relationship
+   * This also terminates the relationship per LGPD requirements
+   */
+  @Post('relationships/:id/revoke-consent')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPPLIER)
+  async revokeConsent(
+    @Param('id', ParseUUIDPipe) relationshipId: string,
+    @Body() dto: RevokeConsentDto,
+    @CurrentUser('id') userId: string,
+    @Req() req: Request,
+  ) {
+    const clientIp = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.ip || 'unknown';
+    return this.consentService.revokeConsent(relationshipId, userId, dto, clientIp);
+  }
+
+  /**
+   * Get consent status for a relationship
+   */
+  @Get('relationships/:id/consent')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPPLIER, UserRole.BRAND)
+  async getConsentStatus(
+    @Param('id', ParseUUIDPipe) relationshipId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.consentService.getConsentStatus(relationshipId, userId);
+  }
+
+  /**
+   * Update document sharing consent (grant consent without terminating relationship)
+   */
+  @Patch('relationships/:id/consent')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPPLIER)
+  async updateConsent(
+    @Param('id', ParseUUIDPipe) relationshipId: string,
+    @Body('consent') consent: boolean,
+    @CurrentUser('id') userId: string,
+    @Req() req: Request,
+  ) {
+    const clientIp = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.ip || 'unknown';
+    return this.consentService.updateConsent(relationshipId, userId, consent, clientIp);
   }
 }

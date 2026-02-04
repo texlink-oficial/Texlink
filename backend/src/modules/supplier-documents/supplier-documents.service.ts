@@ -504,11 +504,85 @@ export class SupplierDocumentsService {
     return companyUser.companyId;
   }
 
-  // Get supplier documents for a brand (with active relationship verification)
-  async getSupplierDocumentsForBrand(supplierId: string, userId: string) {
+  // Get supplier documents for a brand (with active relationship and consent verification)
+  async getSupplierDocumentsForBrand(
+    supplierId: string,
+    userId: string,
+    type?: SupplierDocumentType,
+    status?: SupplierDocumentStatus,
+  ) {
     const brandId = await this.getBrandCompanyId(userId);
 
-    // Verify there is an ACTIVE relationship between the brand and supplier
+    // Verify there is an ACTIVE relationship with document sharing consent
+    const relationship = await this.prisma.supplierBrandRelationship.findFirst({
+      where: {
+        brandId,
+        supplierId,
+        status: RelationshipStatus.ACTIVE,
+        documentSharingConsent: true,
+      },
+    });
+
+    if (!relationship) {
+      // Check if relationship exists but without consent
+      const relationshipWithoutConsent = await this.prisma.supplierBrandRelationship.findFirst({
+        where: {
+          brandId,
+          supplierId,
+          status: RelationshipStatus.ACTIVE,
+        },
+      });
+
+      if (relationshipWithoutConsent) {
+        throw new ForbiddenException(
+          'O fornecedor não autorizou o compartilhamento de documentos com sua marca',
+        );
+      }
+
+      throw new ForbiddenException(
+        'Você não possui um relacionamento ativo com este fornecedor',
+      );
+    }
+
+    // Build where clause with optional filters
+    const whereClause: any = { companyId: supplierId };
+    if (type) {
+      whereClause.type = type;
+    }
+
+    // Get documents for the supplier
+    const documents = await this.prisma.supplierDocument.findMany({
+      where: whereClause,
+      include: {
+        uploadedBy: { select: { id: true, name: true } },
+      },
+      orderBy: [{ type: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    // Recalculate status for accuracy and filter if status param provided
+    const processedDocs = documents.map((doc) => {
+      let calculatedStatus = doc.status;
+      if (doc.expiresAt && doc.fileUrl) {
+        calculatedStatus = this.calculateStatus(doc.expiresAt);
+      } else if (!doc.fileUrl) {
+        calculatedStatus = SupplierDocumentStatus.PENDING;
+      }
+      return { ...doc, status: calculatedStatus };
+    });
+
+    // Filter by status if provided
+    if (status) {
+      return processedDocs.filter((doc) => doc.status === status);
+    }
+
+    return processedDocs;
+  }
+
+  // Get document summary for brand viewing supplier documents
+  async getSupplierDocumentsSummaryForBrand(supplierId: string, userId: string) {
+    const brandId = await this.getBrandCompanyId(userId);
+
+    // Verify there is an ACTIVE relationship
     const relationship = await this.prisma.supplierBrandRelationship.findFirst({
       where: {
         brandId,
@@ -519,29 +593,119 @@ export class SupplierDocumentsService {
 
     if (!relationship) {
       throw new ForbiddenException(
-        'You do not have an active relationship with this supplier',
+        'Você não possui um relacionamento ativo com este fornecedor',
       );
     }
 
-    // Get documents for the supplier
+    // Check consent status
+    if (!relationship.documentSharingConsent) {
+      return {
+        hasConsent: false,
+        consentedAt: null,
+        total: 0,
+        valid: 0,
+        expiringSoon: 0,
+        expired: 0,
+        pending: 0,
+        compliancePercentage: 0,
+        message: 'O fornecedor não autorizou o compartilhamento de documentos',
+      };
+    }
+
     const documents = await this.prisma.supplierDocument.findMany({
       where: { companyId: supplierId },
-      include: {
-        uploadedBy: { select: { id: true, name: true } },
-      },
-      orderBy: [{ type: 'asc' }, { createdAt: 'desc' }],
     });
 
-    // Recalculate status for accuracy
-    return documents.map((doc) => {
-      if (doc.expiresAt && doc.fileUrl) {
-        const newStatus = this.calculateStatus(doc.expiresAt);
-        return { ...doc, status: newStatus };
-      }
+    // Calculate counts
+    let valid = 0;
+    let expiringSoon = 0;
+    let expired = 0;
+    let pending = 0;
+
+    documents.forEach((doc) => {
       if (!doc.fileUrl) {
-        return { ...doc, status: SupplierDocumentStatus.PENDING };
+        pending++;
+      } else if (doc.expiresAt) {
+        const status = this.calculateStatus(doc.expiresAt);
+        switch (status) {
+          case SupplierDocumentStatus.VALID:
+            valid++;
+            break;
+          case SupplierDocumentStatus.EXPIRING_SOON:
+            expiringSoon++;
+            break;
+          case SupplierDocumentStatus.EXPIRED:
+            expired++;
+            break;
+        }
+      } else {
+        valid++;
       }
-      return doc;
     });
+
+    const total = documents.length;
+    const compliantDocs = valid + expiringSoon;
+    const compliancePercentage = total > 0 ? Math.round((compliantDocs / total) * 100) : 0;
+
+    return {
+      hasConsent: true,
+      consentedAt: relationship.documentSharingConsentAt,
+      total,
+      valid,
+      expiringSoon,
+      expired,
+      pending,
+      compliancePercentage,
+    };
+  }
+
+  // Get download URL for a specific document (brand access)
+  async getDocumentDownloadUrlForBrand(
+    supplierId: string,
+    documentId: string,
+    userId: string,
+  ) {
+    const brandId = await this.getBrandCompanyId(userId);
+
+    // Verify there is an ACTIVE relationship with consent
+    const relationship = await this.prisma.supplierBrandRelationship.findFirst({
+      where: {
+        brandId,
+        supplierId,
+        status: RelationshipStatus.ACTIVE,
+        documentSharingConsent: true,
+      },
+    });
+
+    if (!relationship) {
+      throw new ForbiddenException(
+        'Você não tem permissão para acessar os documentos deste fornecedor',
+      );
+    }
+
+    // Get the document
+    const document = await this.prisma.supplierDocument.findFirst({
+      where: {
+        id: documentId,
+        companyId: supplierId,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Documento não encontrado');
+    }
+
+    if (!document.fileUrl) {
+      throw new BadRequestException('Este documento ainda não possui arquivo anexado');
+    }
+
+    // For local storage, return the URL directly
+    // For S3, this would generate a signed URL
+    return {
+      url: document.fileUrl,
+      fileName: document.fileName,
+      mimeType: document.mimeType,
+      expiresIn: 3600, // URL expiration in seconds (for signed URLs)
+    };
   }
 }

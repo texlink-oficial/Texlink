@@ -144,16 +144,52 @@ export class SupplierDocumentsController {
     return this.supplierDocumentsService.remove(id, userId);
   }
 
-  // Get supplier documents for a brand (requires active relationship)
+  // ========== BRAND ENDPOINTS (requires relationship + consent) ==========
+
+  // Get supplier documents for a brand (requires active relationship and consent)
   @Get('brand/suppliers/:supplierId')
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND)
   async getSupplierDocumentsForBrand(
     @Param('supplierId') supplierId: string,
     @CurrentUser('id') userId: string,
+    @Query('type') type?: SupplierDocumentType,
+    @Query('status') status?: SupplierDocumentStatus,
   ) {
     return this.supplierDocumentsService.getSupplierDocumentsForBrand(
       supplierId,
+      userId,
+      type,
+      status,
+    );
+  }
+
+  // Get document summary for a supplier (brand view)
+  @Get('brand/suppliers/:supplierId/summary')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.BRAND)
+  async getSupplierDocumentsSummaryForBrand(
+    @Param('supplierId') supplierId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.supplierDocumentsService.getSupplierDocumentsSummaryForBrand(
+      supplierId,
+      userId,
+    );
+  }
+
+  // Get download URL for a supplier document (brand view)
+  @Get('brand/suppliers/:supplierId/documents/:documentId/download')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.BRAND)
+  async getDocumentDownloadUrlForBrand(
+    @Param('supplierId') supplierId: string,
+    @Param('documentId') documentId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.supplierDocumentsService.getDocumentDownloadUrlForBrand(
+      supplierId,
+      documentId,
       userId,
     );
   }
