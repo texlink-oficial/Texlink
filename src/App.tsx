@@ -17,6 +17,7 @@ const ServerErrorPage = React.lazy(() => import('./pages/errors/ServerErrorPage'
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 const AcceptInvitePage = React.lazy(() => import('./pages/auth/AcceptInvitePage'));
+const AcceptInvitationPage = React.lazy(() => import('./pages/public/AcceptInvitationPage'));
 
 // Settings pages
 const TeamPage = React.lazy(() => import('./pages/settings/TeamPage'));
@@ -125,6 +126,7 @@ const App: React.FC = () => {
                                             <Route path="/login" element={<LoginPage />} />
                                             <Route path="/register" element={<RegisterPage />} />
                                             <Route path="/convite/:token" element={<AcceptInvitePage />} />
+                                            <Route path="/aceitar-convite/:token" element={<AcceptInvitationPage />} />
 
                                             {/* Onboarding routes (protected, supplier only) */}
                                             <Route path="/onboarding" element={<ProtectedRoute allowedRoles={['SUPPLIER']}><OnboardingLayout /></ProtectedRoute>}>
