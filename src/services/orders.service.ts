@@ -4,6 +4,7 @@ import { MOCK_ORDERS } from './mockData';
 
 export type OrderStatus =
     | 'LANCADO_PELA_MARCA'
+    | 'EM_NEGOCIACAO'
     | 'ACEITO_PELA_FACCAO'
     | 'EM_PREPARACAO_SAIDA_MARCA'
     | 'EM_TRANSITO_PARA_FACCAO'
