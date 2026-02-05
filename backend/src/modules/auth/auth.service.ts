@@ -103,9 +103,24 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    // Find user
+    // Find user with company information
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
+      include: {
+        companyUsers: {
+          include: {
+            company: {
+              select: {
+                id: true,
+                tradeName: true,
+                legalName: true,
+                type: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -129,12 +144,24 @@ export class AuthService {
     // Generate token
     const token = this.generateToken(user.id, user.email, user.role);
 
+    // Get company ID based on role
+    const companyUser = user.companyUsers?.[0];
+    const companyId = companyUser?.company?.id;
+    const companyName = companyUser?.company?.tradeName || companyUser?.company?.legalName;
+    const companyType = companyUser?.company?.type;
+
     return {
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
+        companyId,
+        companyName,
+        companyType,
+        // Convenience aliases for frontend
+        ...(companyType === 'SUPPLIER' && { supplierId: companyId }),
+        ...(companyType === 'BRAND' && { brandId: companyId }),
       },
       accessToken: token,
     };
