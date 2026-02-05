@@ -31,6 +31,7 @@ export class SendGridSignatureService {
 
   /**
    * Valida a assinatura do webhook SendGrid
+   * SECURITY: When validation is enabled, always requires headers
    */
   validateSignature(
     payload: string,
@@ -42,8 +43,15 @@ export class SendGridSignatureService {
       return true;
     }
 
+    // SECURITY FIX: When validation is enabled, require headers to be present
+    // This prevents attackers from bypassing validation by omitting headers
     if (!signature || !timestamp) {
-      throw new UnauthorizedException('Missing signature or timestamp header');
+      this.logger.warn(
+        'Webhook received without signature headers while validation is enabled',
+      );
+      throw new UnauthorizedException(
+        'Headers de assinatura ausentes - validação obrigatória',
+      );
     }
 
     // Verifica se o timestamp é recente (máximo 10 minutos)

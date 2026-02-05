@@ -54,17 +54,20 @@ export class SendGridWebhookController {
   ) {
     this.logger.log(`Recebidos ${events.length} eventos do SendGrid`);
 
-    // Valida a assinatura do webhook
-    if (signatureHeader && timestamp) {
-      const rawBody = req.rawBody?.toString() || JSON.stringify(events);
-      const signature = this.signatureService.extractSignature(signatureHeader);
-      const ts =
-        this.signatureService.extractTimestamp(signatureHeader) || timestamp;
+    // SECURITY FIX: Always call validation - the service decides whether to reject
+    const rawBody = req.rawBody?.toString() || JSON.stringify(events);
+    const signature = signatureHeader
+      ? this.signatureService.extractSignature(signatureHeader)
+      : null;
+    const ts = signatureHeader
+      ? this.signatureService.extractTimestamp(signatureHeader) || timestamp
+      : timestamp;
 
-      if (signature && ts) {
-        this.signatureService.validateSignature(rawBody, signature, ts);
-      }
-    }
+    this.signatureService.validateSignature(
+      rawBody,
+      signature || '',
+      ts || '',
+    );
 
     const results = await Promise.allSettled(
       events.map((event) => this.processEvent(event)),
