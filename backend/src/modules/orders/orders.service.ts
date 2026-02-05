@@ -293,10 +293,20 @@ export class OrdersService {
     return orders;
   }
 
-  // Get order by ID
-  async getById(id: string, userId: string) {
+  /**
+   * Verifies if the user has access to the order (belongs to brand or supplier)
+   * @throws ForbiddenException if user doesn't have access
+   */
+  private async verifyOrderAccess(
+    orderId: string,
+    userId: string,
+  ): Promise<{
+    order: any;
+    companyUser: any;
+    role: 'BRAND' | 'SUPPLIER';
+  }> {
     const order = await this.prisma.order.findUnique({
-      where: { id },
+      where: { id: orderId },
       include: {
         brand: true,
         supplier: true,
@@ -317,16 +327,77 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    // Financial Privacy Masking for Supplier
-    const companyUser = await this.prisma.companyUser.findFirst({
-      where: { userId, companyId: order.supplierId || undefined },
+    // Check if user belongs to the brand
+    const brandUser = await this.prisma.companyUser.findFirst({
+      where: { userId, companyId: order.brandId },
       include: { company: true },
     });
 
-    const isSupplier =
-      companyUser && companyUser.company.type === CompanyType.SUPPLIER;
+    if (brandUser) {
+      return { order, companyUser: brandUser, role: 'BRAND' };
+    }
 
-    if (isSupplier) {
+    // Check if user belongs to the supplier
+    if (order.supplierId) {
+      const supplierUser = await this.prisma.companyUser.findFirst({
+        where: { userId, companyId: order.supplierId },
+        include: { company: true },
+      });
+
+      if (supplierUser) {
+        return { order, companyUser: supplierUser, role: 'SUPPLIER' };
+      }
+    }
+
+    // Check if user is a target supplier (for BIDDING/HYBRID orders before assignment)
+    const targetSupplierMatch = order.targetSuppliers?.find(
+      (ts: any) => ts.supplier,
+    );
+    if (targetSupplierMatch) {
+      const targetSupplierUser = await this.prisma.companyUser.findFirst({
+        where: {
+          userId,
+          companyId: {
+            in: order.targetSuppliers.map((ts: any) => ts.supplierId),
+          },
+        },
+        include: { company: true },
+      });
+
+      if (targetSupplierUser) {
+        return { order, companyUser: targetSupplierUser, role: 'SUPPLIER' };
+      }
+    }
+
+    // Check if this is a HYBRID order available to all suppliers
+    if (
+      order.assignmentType === OrderAssignmentType.HYBRID &&
+      !order.supplierId &&
+      order.status === OrderStatus.LANCADO_PELA_MARCA
+    ) {
+      const anySupplierUser = await this.prisma.companyUser.findFirst({
+        where: {
+          userId,
+          company: { type: CompanyType.SUPPLIER },
+        },
+        include: { company: true },
+      });
+
+      if (anySupplierUser) {
+        return { order, companyUser: anySupplierUser, role: 'SUPPLIER' };
+      }
+    }
+
+    throw new ForbiddenException('Você não tem acesso a este pedido');
+  }
+
+  // Get order by ID
+  async getById(id: string, userId: string) {
+    // SECURITY FIX: Verify user has access to this order
+    const { order, role } = await this.verifyOrderAccess(id, userId);
+
+    // Financial Privacy Masking for Supplier
+    if (role === 'SUPPLIER') {
       let result = {
         ...order,
         totalValue: order.netValue || order.totalValue,
