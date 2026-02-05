@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ordersService, chatService, Order, Message } from '../../services';
+import { ordersService, chatService, Order, Message, TransitionResponse } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
 import {
     ArrowLeft, Package, Calendar, DollarSign, User,
-    CheckCircle, XCircle, Send, MessageSquare, Clock,
-    ChevronRight, Loader2, FileText, Lock
+    CheckCircle, XCircle, Send, MessageSquare,
+    Loader2, FileText, Lock
 } from 'lucide-react';
 import { ProtectedContent } from '../../components/common/ProtectedContent';
+import { OrderTimeline, StatusActionBar } from '../../components/orders';
 
 const OrderDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -21,6 +22,7 @@ const OrderDetailsPage: React.FC = () => {
     const [showChat, setShowChat] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
+    const [transitionData, setTransitionData] = useState<TransitionResponse | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -39,6 +41,12 @@ const OrderDetailsPage: React.FC = () => {
         try {
             const data = await ordersService.getById(id!);
             setOrder(data);
+            try {
+                const transitions = await ordersService.getAvailableTransitions(id!);
+                setTransitionData(transitions);
+            } catch {
+                // ok
+            }
         } catch (error) {
             console.error('Error loading order:', error);
         } finally {
@@ -88,26 +96,6 @@ const OrderDetailsPage: React.FC = () => {
         }
     };
 
-    const handleAdvanceStatus = async () => {
-        if (!order) return;
-
-        const statusFlow: Record<string, string> = {
-            ACEITO_PELA_FACCAO: 'EM_PRODUCAO',
-            EM_PRODUCAO: 'PRONTO',
-            PRONTO: 'FINALIZADO',
-        };
-
-        const nextStatus = statusFlow[order.status];
-        if (nextStatus) {
-            try {
-                await ordersService.updateStatus(id!, nextStatus as any);
-                await loadOrder();
-            } catch (error) {
-                console.error('Error updating status:', error);
-            }
-        }
-    };
-
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -125,8 +113,8 @@ const OrderDetailsPage: React.FC = () => {
     }
 
     const canAccept = order.status === 'LANCADO_PELA_MARCA';
-    const canAdvance = ['ACEITO_PELA_FACCAO', 'EM_PRODUCAO', 'PRONTO'].includes(order.status);
     const isProtected = order._techSheetProtected ?? false;
+    const waitingLabel = transitionData && !transitionData.canAdvance ? transitionData.waitingLabel : '';
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -159,6 +147,9 @@ const OrderDetailsPage: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
+                        {/* Timeline */}
+                        <OrderTimeline order={order} waitingLabel={waitingLabel} />
+
                         {/* Product Info */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Produto</h2>
@@ -186,7 +177,6 @@ const OrderDetailsPage: React.FC = () => {
                                     </ProtectedContent>
                                 )}
 
-                                {/* Banner de proteção ativa */}
                                 {isProtected && (
                                     <div className="flex items-center gap-3 p-3 bg-amber-900/30 border border-amber-800/50 rounded-xl">
                                         <Lock className="w-5 h-5 text-amber-400" />
@@ -220,44 +210,36 @@ const OrderDetailsPage: React.FC = () => {
                                 <div>
                                     <p className="text-gray-900 dark:text-white font-medium">{order.brand?.tradeName}</p>
                                     {order.brand?.avgRating && (
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">⭐ {Number(order.brand.avgRating).toFixed(1)}</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            <span className="text-amber-400">&#9733;</span> {Number(order.brand.avgRating).toFixed(1)}
+                                        </p>
                                     )}
                                 </div>
                             </div>
                         </div>
 
                         {/* Action Buttons */}
-                        {(canAccept || canAdvance) && (
+                        {canAccept && (
                             <div className="flex gap-4">
-                                {canAccept && (
-                                    <>
-                                        <button
-                                            onClick={handleAccept}
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-500 text-white font-medium rounded-xl transition-colors"
-                                        >
-                                            <CheckCircle className="w-5 h-5" />
-                                            Aceitar Pedido
-                                        </button>
-                                        <button
-                                            onClick={() => setShowRejectModal(true)}
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium rounded-xl border border-red-600/30 transition-colors"
-                                        >
-                                            <XCircle className="w-5 h-5" />
-                                            Recusar
-                                        </button>
-                                    </>
-                                )}
-
-                                {canAdvance && (
-                                    <button
-                                        onClick={handleAdvanceStatus}
-                                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl transition-colors"
-                                    >
-                                        <ChevronRight className="w-5 h-5" />
-                                        Avançar Status
-                                    </button>
-                                )}
+                                <button
+                                    onClick={handleAccept}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-500 text-white font-medium rounded-xl transition-colors"
+                                >
+                                    <CheckCircle className="w-5 h-5" />
+                                    Aceitar Pedido
+                                </button>
+                                <button
+                                    onClick={() => setShowRejectModal(true)}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium rounded-xl border border-red-600/30 transition-colors"
+                                >
+                                    <XCircle className="w-5 h-5" />
+                                    Recusar
+                                </button>
                             </div>
+                        )}
+
+                        {!canAccept && (
+                            <StatusActionBar order={order} onStatusUpdated={loadOrder} />
                         )}
                     </div>
 
@@ -360,10 +342,17 @@ const OrderDetailsPage: React.FC = () => {
 // Helper components
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     const statusConfig: Record<string, { label: string; color: string }> = {
-        LANCADO_PELA_MARCA: { label: 'Aguardando', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+        LANCADO_PELA_MARCA: { label: 'Novo Pedido', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
         ACEITO_PELA_FACCAO: { label: 'Aceito', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+        EM_PREPARACAO_SAIDA_MARCA: { label: 'Marca Preparando', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
+        EM_TRANSITO_PARA_FACCAO: { label: 'Insumos em Trânsito', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' },
+        EM_PREPARACAO_ENTRADA_FACCAO: { label: 'Insumos Recebidos', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
         EM_PRODUCAO: { label: 'Em Produção', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-        PRONTO: { label: 'Pronto', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' },
+        PRONTO: { label: 'Pronto', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+        EM_TRANSITO_PARA_MARCA: { label: 'Em Trânsito → Marca', color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' },
+        EM_REVISAO: { label: 'Em Revisão', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+        PARCIALMENTE_APROVADO: { label: 'Parcialmente Aprovado', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+        REPROVADO: { label: 'Reprovado', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
         FINALIZADO: { label: 'Finalizado', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
     };
 

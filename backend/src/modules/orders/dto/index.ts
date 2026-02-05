@@ -7,3 +7,7 @@ export {
   CreateChildOrderDto,
   UpdateSecondQualityItemDto,
 } from './review.dto';
+export type {
+  AvailableTransition,
+  TransitionResponse,
+} from './order-transitions.dto';

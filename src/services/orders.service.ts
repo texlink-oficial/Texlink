@@ -66,6 +66,7 @@ export interface Order {
     attachments?: Attachment[];
     childOrders?: OrderChild[];
     reviews?: OrderReview[];
+    statusHistory?: StatusHistoryEntry[];
     targetSuppliers?: { status: string }[];
     _count?: { messages: number; childOrders?: number };
 }
@@ -154,6 +155,32 @@ export interface Attachment {
     name: string;
     url: string;
     mimeType: string;
+}
+
+export interface AvailableTransition {
+    nextStatus: OrderStatus;
+    label: string;
+    description: string;
+    requiresConfirmation: boolean;
+    requiresNotes: boolean;
+    requiresReview: boolean;
+}
+
+export interface TransitionResponse {
+    canAdvance: boolean;
+    waitingFor: 'BRAND' | 'SUPPLIER' | null;
+    waitingLabel: string;
+    transitions: AvailableTransition[];
+}
+
+export interface StatusHistoryEntry {
+    id: string;
+    previousStatus?: OrderStatus;
+    newStatus: OrderStatus;
+    changedById: string;
+    changedBy?: { name: string };
+    notes?: string;
+    createdAt: string;
 }
 
 export interface CreateOrderDto {
@@ -427,6 +454,37 @@ export const ordersService = {
         }
         const params = companyId ? { companyId } : undefined;
         const response = await api.get<ReviewStats>('/orders/stats/reviews', { params });
+        return response.data;
+    },
+
+    async getAvailableTransitions(orderId: string): Promise<TransitionResponse> {
+        if (MOCK_MODE) {
+            await simulateDelay(200);
+            return {
+                canAdvance: true,
+                waitingFor: null,
+                waitingLabel: '',
+                transitions: [],
+            };
+        }
+
+        const response = await api.get<TransitionResponse>(`/orders/${orderId}/transitions`);
+        return response.data;
+    },
+
+    async advanceStatus(orderId: string, nextStatus: OrderStatus, notes?: string): Promise<Order> {
+        if (MOCK_MODE) {
+            await simulateDelay(600);
+            const orderIndex = mockOrdersState.findIndex(o => o.id === orderId);
+            if (orderIndex === -1) throw new Error('Pedido não encontrado');
+            mockOrdersState[orderIndex] = {
+                ...mockOrdersState[orderIndex],
+                status: nextStatus,
+            };
+            return mockOrdersState[orderIndex] as Order;
+        }
+
+        const response = await api.patch<Order>(`/orders/${orderId}/status`, { status: nextStatus, notes });
         return response.data;
     },
 

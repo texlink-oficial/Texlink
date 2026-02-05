@@ -78,6 +78,14 @@ export class OrdersController {
 
   // ========== COMMON ENDPOINTS ==========
 
+  @Get(':id/transitions')
+  async getTransitions(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.ordersService.getAvailableTransitions(id, userId);
+  }
+
   @Get(':id')
   async getById(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.ordersService.getById(id, userId);

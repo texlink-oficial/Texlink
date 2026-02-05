@@ -12,6 +12,8 @@ import {
   UpdateOrderStatusDto,
   CreateReviewDto,
   CreateChildOrderDto,
+  TransitionResponse,
+  AvailableTransition,
 } from './dto';
 import {
   OrderStatus,
@@ -43,6 +45,163 @@ export class OrdersService {
     OrderStatus.EM_NEGOCIACAO,
     OrderStatus.DISPONIVEL_PARA_OUTRAS,
   ];
+
+  // Mapa de transições válidas por status, papel e flag materialsProvided
+  private readonly STATUS_TRANSITIONS: Record<
+    string,
+    {
+      nextStatus: OrderStatus;
+      allowedRoles: ('BRAND' | 'SUPPLIER')[];
+      requiresMaterials?: boolean; // undefined = qualquer, true = só com insumos, false = só sem insumos
+      label: string;
+      description: string;
+      requiresConfirmation: boolean;
+      requiresNotes: boolean;
+      requiresReview: boolean;
+    }[]
+  > = {
+    [OrderStatus.LANCADO_PELA_MARCA]: [
+      {
+        nextStatus: OrderStatus.ACEITO_PELA_FACCAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Aceitar Pedido',
+        description: 'Aceitar este pedido e iniciar o fluxo de produção',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.ACEITO_PELA_FACCAO]: [
+      {
+        nextStatus: OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
+        allowedRoles: ['BRAND'],
+        requiresMaterials: true,
+        label: 'Preparar Insumos',
+        description: 'Iniciar preparação dos insumos para envio à facção',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.EM_PRODUCAO,
+        allowedRoles: ['SUPPLIER'],
+        requiresMaterials: false,
+        label: 'Iniciar Produção',
+        description: 'Iniciar produção sem aguardar insumos da marca',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.EM_PREPARACAO_SAIDA_MARCA]: [
+      {
+        nextStatus: OrderStatus.EM_TRANSITO_PARA_FACCAO,
+        allowedRoles: ['BRAND'],
+        label: 'Despachar Insumos',
+        description: 'Confirmar que os insumos foram despachados para a facção',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.EM_TRANSITO_PARA_FACCAO]: [
+      {
+        nextStatus: OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Confirmar Recebimento',
+        description: 'Confirmar que os insumos foram recebidos na facção',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO]: [
+      {
+        nextStatus: OrderStatus.EM_PRODUCAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Iniciar Produção',
+        description: 'Iniciar a produção após conferência dos insumos',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.EM_PRODUCAO]: [
+      {
+        nextStatus: OrderStatus.PRONTO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Produção Concluída',
+        description: 'Marcar a produção como concluída e pronta para envio',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.PRONTO]: [
+      {
+        nextStatus: OrderStatus.EM_TRANSITO_PARA_MARCA,
+        allowedRoles: ['BRAND', 'SUPPLIER'],
+        label: 'Marcar Despacho',
+        description: 'Confirmar que o pedido foi despachado para a marca',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.EM_TRANSITO_PARA_MARCA]: [
+      {
+        nextStatus: OrderStatus.EM_REVISAO,
+        allowedRoles: ['BRAND'],
+        label: 'Confirmar Recebimento',
+        description: 'Confirmar que o pedido foi recebido e iniciar revisão de qualidade',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.EM_REVISAO]: [
+      {
+        nextStatus: OrderStatus.FINALIZADO,
+        allowedRoles: ['BRAND'],
+        label: 'Aprovar Totalmente',
+        description: 'Aprovar 100% do pedido e finalizar',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: true,
+      },
+      {
+        nextStatus: OrderStatus.PARCIALMENTE_APROVADO,
+        allowedRoles: ['BRAND'],
+        label: 'Aprovação Parcial',
+        description: 'Aprovar parcialmente com itens rejeitados ou segunda qualidade',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: true,
+      },
+      {
+        nextStatus: OrderStatus.REPROVADO,
+        allowedRoles: ['BRAND'],
+        label: 'Reprovar',
+        description: 'Reprovar o pedido por problemas de qualidade',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: true,
+      },
+    ],
+  };
+
+  // Mapa de "quem estamos aguardando" por status
+  private readonly WAITING_FOR_MAP: Record<string, { waitingFor: 'BRAND' | 'SUPPLIER'; label: string }> = {
+    [OrderStatus.LANCADO_PELA_MARCA]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção aceitar o pedido' },
+    [OrderStatus.ACEITO_PELA_FACCAO]: { waitingFor: 'BRAND', label: 'Aguardando a Marca preparar insumos' },
+    [OrderStatus.EM_PREPARACAO_SAIDA_MARCA]: { waitingFor: 'BRAND', label: 'Marca preparando insumos para envio' },
+    [OrderStatus.EM_TRANSITO_PARA_FACCAO]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção confirmar recebimento' },
+    [OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO]: { waitingFor: 'SUPPLIER', label: 'Facção conferindo insumos recebidos' },
+    [OrderStatus.EM_PRODUCAO]: { waitingFor: 'SUPPLIER', label: 'Facção em produção' },
+    [OrderStatus.PRONTO]: { waitingFor: 'BRAND', label: 'Pronto para despacho' },
+    [OrderStatus.EM_TRANSITO_PARA_MARCA]: { waitingFor: 'BRAND', label: 'Aguardando a Marca confirmar recebimento' },
+    [OrderStatus.EM_REVISAO]: { waitingFor: 'BRAND', label: 'Marca revisando qualidade' },
+  };
 
   constructor(
     private prisma: PrismaService,
@@ -615,18 +774,90 @@ export class OrdersService {
     return order;
   }
 
-  // Update order status (general status progression)
+  // Get available transitions for a user on an order
+  async getAvailableTransitions(
+    orderId: string,
+    userId: string,
+  ): Promise<TransitionResponse> {
+    const { order, role } = await this.verifyOrderAccess(orderId, userId);
+
+    const currentStatus = order.status as string;
+    const transitions = this.STATUS_TRANSITIONS[currentStatus] || [];
+
+    // Filter transitions based on user role and materialsProvided
+    const available: AvailableTransition[] = transitions
+      .filter((t) => {
+        if (!t.allowedRoles.includes(role)) return false;
+        if (t.requiresMaterials === true && !order.materialsProvided)
+          return false;
+        if (t.requiresMaterials === false && order.materialsProvided)
+          return false;
+        return true;
+      })
+      .map((t) => ({
+        nextStatus: t.nextStatus,
+        label: t.label,
+        description: t.description,
+        requiresConfirmation: t.requiresConfirmation,
+        requiresNotes: t.requiresNotes,
+        requiresReview: t.requiresReview,
+      }));
+
+    // Determine waiting state
+    const waitingInfo = this.WAITING_FOR_MAP[currentStatus];
+    const isMyTurn = available.length > 0;
+
+    // For ACEITO_PELA_FACCAO with materialsProvided=false, supplier side is the one who acts
+    let waitingFor: 'BRAND' | 'SUPPLIER' | null = null;
+    let waitingLabel = '';
+    if (!isMyTurn && waitingInfo) {
+      waitingFor = waitingInfo.waitingFor;
+      waitingLabel = waitingInfo.label;
+    }
+
+    return {
+      canAdvance: isMyTurn,
+      waitingFor,
+      waitingLabel,
+      transitions: available,
+    };
+  }
+
+  // Update order status (general status progression) with transition validation
   async updateStatus(
     orderId: string,
     userId: string,
     dto: UpdateOrderStatusDto,
   ) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
+    const { order, role } = await this.verifyOrderAccess(orderId, userId);
+
+    // Validate transition
+    const currentStatus = order.status as string;
+    const allowedTransitions = this.STATUS_TRANSITIONS[currentStatus] || [];
+
+    const matchingTransition = allowedTransitions.find((t) => {
+      if (t.nextStatus !== dto.status) return false;
+      if (!t.allowedRoles.includes(role)) return false;
+      if (t.requiresMaterials === true && !order.materialsProvided)
+        return false;
+      if (t.requiresMaterials === false && order.materialsProvided)
+        return false;
+      return true;
     });
 
-    if (!order) {
-      throw new NotFoundException('Order not found');
+    if (!matchingTransition) {
+      // Check if the transition exists but user doesn't have permission
+      const transitionExists = allowedTransitions.some(
+        (t) => t.nextStatus === dto.status,
+      );
+      if (transitionExists) {
+        throw new ForbiddenException(
+          `Você não tem permissão para avançar de ${currentStatus} para ${dto.status}`,
+        );
+      }
+      throw new BadRequestException(
+        `Transição inválida: ${currentStatus} → ${dto.status}`,
+      );
     }
 
     const changedBy = await this.prisma.user.findUnique({

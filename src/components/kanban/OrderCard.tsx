@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Order, OrderStatus } from '../../types';
-import { Clock, AlertCircle, CheckCircle2, ChevronRight, Package, MapPin, Calendar, DollarSign, GripVertical, Scissors, Circle, Layers, Check, X, Paperclip, FileText, Tag } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, ChevronRight, Package, MapPin, Calendar, DollarSign, GripVertical, Scissors, Circle, Layers, Check, X, Paperclip, FileText, Tag, ArrowRight } from 'lucide-react';
 
 interface OrderCardProps {
     order: Order;
@@ -11,6 +11,7 @@ interface OrderCardProps {
     onAccept?: (orderId: string) => Promise<void>;
     onReject?: (orderId: string) => Promise<void>;
     isSupplierView?: boolean;
+    isMyTurn?: boolean;
 }
 
 export const OrderCard: React.FC<OrderCardProps> = ({
@@ -20,7 +21,8 @@ export const OrderCard: React.FC<OrderCardProps> = ({
     onDragStart,
     onAccept,
     onReject,
-    isSupplierView = true
+    isSupplierView = true,
+    isMyTurn,
 }) => {
     const [showTooltip, setShowTooltip] = useState(false);
     const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
@@ -194,6 +196,27 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 {isNewOrder && (
                     <div className="absolute -top-2.5 -right-2.5 gradient-brand text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-card z-10 border-2 border-white dark:border-gray-900 animate-scale-in">
                         NOVO
+                    </div>
+                )}
+
+                {/* "Sua vez" / "Aguardando" badge */}
+                {!isNewOrder && !isFinalized && isMyTurn !== undefined && (
+                    <div className={`absolute -top-2 -right-2 text-[10px] font-bold px-2 py-0.5 rounded-full z-10 border-2 border-white dark:border-gray-900 flex items-center gap-1 ${
+                        isMyTurn
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                    }`}>
+                        {isMyTurn ? (
+                            <>
+                                <ArrowRight className="h-3 w-3" />
+                                Sua vez
+                            </>
+                        ) : (
+                            <>
+                                <Clock className="h-3 w-3" />
+                                Aguardando
+                            </>
+                        )}
                     </div>
                 )}
 
