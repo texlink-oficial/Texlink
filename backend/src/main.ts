@@ -55,7 +55,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   const port = configService.get<number>('port') || 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(
     `TEXLINK API running on port ${port} in ${process.env.NODE_ENV || 'development'} mode`,
   );
