@@ -65,6 +65,11 @@ const RejectionAnalyticsPage = React.lazy(() => import('./pages/brand/reports/Re
 const CapacityUtilizationPage = React.lazy(() => import('./pages/brand/reports/CapacityUtilizationPage'));
 const BrandCodeOfConductPage = React.lazy(() => import('./pages/brand/documents/CodeOfConductPage'));
 const BrandCodeOfConductReportPage = React.lazy(() => import('./pages/brand/documents/CodeOfConductReportPage'));
+const BrandContractsListPage = React.lazy(() => import('./pages/brand/contracts/ContractsListPage'));
+const BrandContractDetailsPage = React.lazy(() => import('./pages/brand/contracts/ContractDetailsPage'));
+const BrandCreateContractPage = React.lazy(() => import('./pages/brand/contracts/CreateContractPage'));
+const SupplierContractsListPage = React.lazy(() => import('./pages/supplier/contracts/ContractsListPage'));
+const SupplierContractDetailsPage = React.lazy(() => import('./pages/supplier/contracts/ContractDetailsPage'));
 
 const AdminLayout = React.lazy(() => import('./components/admin/AdminLayout'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
@@ -159,6 +164,9 @@ const App: React.FC = () => {
                                                 <Route path="solicitacoes" element={<SupplierPartnershipRequestsPage />} />
                                                 {/* Documentos */}
                                                 <Route path="documentos" element={<SupplierDocuments />} />
+                                                {/* Contratos */}
+                                                <Route path="contratos" element={<SupplierContractsListPage />} />
+                                                <Route path="contratos/:id" element={<SupplierContractDetailsPage />} />
                                                 {/* Parceiros */}
                                                 <Route path="parceiros" element={<SupplierPartners />} />
                                                 {/* Texlink Educa */}
@@ -226,6 +234,10 @@ const App: React.FC = () => {
                                                 {/* Documentos */}
                                                 <Route path="documentos/codigo-conduta" element={<BrandCodeOfConductPage />} />
                                                 <Route path="documentos/codigo-conduta/relatorio" element={<BrandCodeOfConductReportPage />} />
+                                                {/* Contratos */}
+                                                <Route path="contratos" element={<BrandContractsListPage />} />
+                                                <Route path="contratos/novo" element={<BrandCreateContractPage />} />
+                                                <Route path="contratos/:id" element={<BrandContractDetailsPage />} />
                                                 {/* Configurações */}
                                                 <Route path="equipe" element={<TeamPage />} />
                                                 <Route path="notificacoes" element={<NotificationsPage />} />

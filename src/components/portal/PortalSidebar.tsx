@@ -26,6 +26,7 @@ import {
   HelpCircle,
   Star,
   Activity,
+  FileSignature,
 } from 'lucide-react';
 import { suppliersService, SupplierDashboard } from '../../services';
 import { brandDocumentsService } from '../../services/brandDocuments.service';
@@ -115,6 +116,12 @@ const navGroups: NavGroup[] = [
         label: 'Documentos',
         icon: <FolderOpen className="h-5 w-5" />,
         path: '/portal/documentos',
+      },
+      {
+        id: 'contratos',
+        label: 'Contratos',
+        icon: <FileSignature className="h-5 w-5" />,
+        path: '/portal/contratos',
       },
       {
         id: 'relatorios',

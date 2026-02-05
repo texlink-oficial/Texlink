@@ -28,7 +28,8 @@ import {
     CreditCard,
     Briefcase,
     TrendingUp,
-    FileText
+    FileText,
+    FileSignature
 } from 'lucide-react';
 
 interface NavItem {
@@ -123,6 +124,15 @@ const navGroups: NavGroup[] = [
                 icon: <FileText className="h-5 w-5" />,
                 children: [
                     { label: 'Código de Conduta', path: '/brand/documentos/codigo-conduta' },
+                ],
+            },
+            {
+                id: 'contratos',
+                label: 'Contratos',
+                icon: <FileSignature className="h-5 w-5" />,
+                children: [
+                    { label: 'Gerenciar', path: '/brand/contratos' },
+                    { label: 'Novo Contrato', path: '/brand/contratos/novo' },
                 ],
             },
         ],
