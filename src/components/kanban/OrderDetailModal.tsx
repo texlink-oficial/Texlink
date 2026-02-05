@@ -11,12 +11,9 @@ interface OrderDetailModalProps {
     onTimelineStepToggle?: (id: string, stepName: string) => void;
 }
 
-type ConfirmActionType = 'accept' | 'reject' | 'negotiate' | 'advance' | 'receipt' | null;
-
 export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onStatusChange, onTimelineStepToggle }) => {
     const navigate = useNavigate();
     const [isChatOpen, setIsChatOpen] = useState(false);
-    const [confirmAction, setConfirmAction] = useState<ConfirmActionType>(null);
 
     const handleDuplicateOrder = () => {
         // Prepare order data for duplication (excluding fields that should not be copied)
@@ -40,81 +37,127 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
 
     if (!order) return null;
 
-    // This function now just executes the logic after confirmation
+    // Detect user role from localStorage
+    const storedUser = localStorage.getItem('user');
+    const userRole: 'BRAND' | 'SUPPLIER' = storedUser
+        ? (JSON.parse(storedUser).role === 'SUPPLIER' ? 'SUPPLIER' : 'BRAND')
+        : 'BRAND';
+
+    // Transition map: what actions each role can take per status
+    type ActionDef = { targetStatus: OrderStatus; label: string; icon: string; color: string; confirmTitle: string; confirmMsg: string; requiresMaterials?: boolean };
+    const ROLE_ACTIONS: Record<string, Record<string, ActionDef[]>> = {
+        BRAND: {
+            [OrderStatus.NEW]: [], // Brand waits for supplier to accept
+            [OrderStatus.ACCEPTED]: [
+                { targetStatus: OrderStatus.PREPARING_BRAND, label: 'Preparar Insumos', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Preparar Insumos?', confirmMsg: 'Confirma que vai iniciar a preparação dos insumos para envio à facção?', requiresMaterials: true },
+            ],
+            [OrderStatus.PREPARING_BRAND]: [
+                { targetStatus: OrderStatus.TRANSIT_TO_SUPPLIER, label: 'Despachar Insumos', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Despachar Insumos?', confirmMsg: 'Confirma que os insumos foram despachados para a facção?' },
+            ],
+            [OrderStatus.TRANSIT_TO_SUPPLIER]: [], // Brand waits for supplier
+            [OrderStatus.RECEIVED_SUPPLIER]: [], // Brand waits for supplier
+            [OrderStatus.PRODUCTION]: [], // Brand waits for supplier
+            [OrderStatus.READY_SEND]: [
+                { targetStatus: OrderStatus.TRANSIT_TO_BRAND, label: 'Marcar Despacho', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Marcar Despacho?', confirmMsg: 'Confirma que o pedido foi despachado para a marca?' },
+            ],
+            [OrderStatus.TRANSIT_TO_BRAND]: [
+                { targetStatus: OrderStatus.IN_REVIEW, label: 'Confirmar Recebimento', icon: 'receipt', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Confirmar Recebimento?', confirmMsg: 'Confirma que o pedido foi recebido e deseja iniciar a revisão de qualidade?' },
+            ],
+            [OrderStatus.IN_REVIEW]: [
+                { targetStatus: OrderStatus.FINALIZED, label: 'Aprovar Totalmente', icon: 'advance', color: 'bg-green-600 hover:bg-green-700', confirmTitle: 'Aprovar Pedido?', confirmMsg: 'Confirma a aprovação total do pedido? O pedido será finalizado.' },
+            ],
+        },
+        SUPPLIER: {
+            [OrderStatus.NEW]: [
+                { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar Pedido', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Pedido?', confirmMsg: 'O pedido entrará em fase de Produção. Certifique-se de que tem capacidade para atender o prazo.' },
+            ],
+            [OrderStatus.ACCEPTED]: [
+                { targetStatus: OrderStatus.PRODUCTION, label: 'Iniciar Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Iniciar Produção?', confirmMsg: 'Confirma que vai iniciar a produção sem aguardar insumos da marca?', requiresMaterials: false },
+            ],
+            [OrderStatus.TRANSIT_TO_SUPPLIER]: [
+                { targetStatus: OrderStatus.RECEIVED_SUPPLIER, label: 'Confirmar Recebimento', icon: 'receipt', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Confirmar Recebimento?', confirmMsg: 'Confirma que os insumos foram recebidos na facção?' },
+            ],
+            [OrderStatus.RECEIVED_SUPPLIER]: [
+                { targetStatus: OrderStatus.PRODUCTION, label: 'Iniciar Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Iniciar Produção?', confirmMsg: 'Confirma que vai iniciar a produção após conferência dos insumos?' },
+            ],
+            [OrderStatus.PRODUCTION]: [
+                { targetStatus: OrderStatus.READY_SEND, label: 'Produção Concluída', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Produção Concluída?', confirmMsg: 'Confirma que a produção está concluída e pronta para envio?' },
+            ],
+            [OrderStatus.READY_SEND]: [
+                { targetStatus: OrderStatus.TRANSIT_TO_BRAND, label: 'Marcar Despacho', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Marcar Despacho?', confirmMsg: 'Confirma que o pedido foi despachado para a marca?' },
+            ],
+        },
+    };
+
+    // Filter actions by materialsProvided
+    const currentActions = (ROLE_ACTIONS[userRole]?.[order.status] || []).filter(a => {
+        if (a.requiresMaterials === true && !order.materialsProvided) return false;
+        if (a.requiresMaterials === false && order.materialsProvided) return false;
+        return true;
+    });
+
+    // Waiting messages when no actions available
+    const WAITING_MESSAGES: Record<string, Record<string, string>> = {
+        BRAND: {
+            [OrderStatus.NEW]: 'Aguardando a Facção aceitar o pedido',
+            [OrderStatus.ACCEPTED]: 'Aguardando a Facção iniciar produção',
+            [OrderStatus.TRANSIT_TO_SUPPLIER]: 'Aguardando a Facção confirmar recebimento',
+            [OrderStatus.RECEIVED_SUPPLIER]: 'Facção conferindo insumos recebidos',
+            [OrderStatus.PRODUCTION]: 'Facção em produção',
+        },
+        SUPPLIER: {
+            [OrderStatus.PREPARING_BRAND]: 'Marca preparando insumos para envio',
+            [OrderStatus.ACCEPTED]: 'Aguardando a Marca preparar insumos',
+            [OrderStatus.TRANSIT_TO_BRAND]: 'Aguardando a Marca confirmar recebimento',
+            [OrderStatus.IN_REVIEW]: 'Marca revisando qualidade',
+        },
+    };
+
+    const waitingMessage = currentActions.length === 0 ? (WAITING_MESSAGES[userRole]?.[order.status] || null) : null;
+    const isTerminal = [OrderStatus.FINALIZED, OrderStatus.PARTIALLY_APPROVED, OrderStatus.DISAPPROVED, OrderStatus.REJECTED].includes(order.status);
+
+    // State for selected action for confirmation
+    const [pendingAction, setPendingAction] = useState<ActionDef | null>(null);
+
+    // Supplier-specific reject action
+    const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+
     const executeAction = () => {
-        if (!confirmAction) return;
-
-        if (confirmAction === 'accept') {
-            onStatusChange(order.id, OrderStatus.PRODUCTION);
+        if (pendingAction) {
+            onStatusChange(order.id, pendingAction.targetStatus);
+            setPendingAction(null);
+            onClose();
+            return;
         }
-        else if (confirmAction === 'negotiate') {
-            onStatusChange(order.id, OrderStatus.ACCEPTED);
-        }
-        else if (confirmAction === 'reject') {
+        if (showRejectConfirm) {
             onStatusChange(order.id, OrderStatus.REJECTED);
+            setShowRejectConfirm(false);
+            onClose();
+            return;
         }
-        else if (confirmAction === 'advance') {
-            if (order.status === OrderStatus.PRODUCTION) {
-                onStatusChange(order.id, OrderStatus.READY_SEND);
-            } else if (order.status === OrderStatus.READY_SEND) {
-                onStatusChange(order.id, OrderStatus.FINALIZED);
-            }
-        }
-        else if (confirmAction === 'receipt') {
-            if (onTimelineStepToggle) {
-                onTimelineStepToggle(order.id, 'Recebimento na Facção');
-            }
-            // Ensure status is production if it was waiting
-            if (order.status === OrderStatus.TRANSIT_TO_SUPPLIER) {
-                onStatusChange(order.id, OrderStatus.PRODUCTION);
-            }
-        }
-
-        setConfirmAction(null);
-        onClose();
     };
 
     const getConfirmationDetails = () => {
-        switch (confirmAction) {
-            case 'accept':
-                return {
-                    title: 'Aceitar Pedido?',
-                    message: 'O pedido entrará em fase de Produção. Certifique-se de que tem capacidade para atender o prazo.',
-                    confirmBtn: 'Sim, Aceitar',
-                    color: 'bg-brand-600 hover:bg-brand-700'
-                };
-            case 'negotiate':
-                return {
-                    title: 'Negociar Condições?',
-                    message: 'O status mudará para "Em Negociação". A marca será notificada que você deseja ajustar prazos ou valores.',
-                    confirmBtn: 'Confirmar Negociação',
-                    color: 'bg-blue-600 hover:bg-blue-700'
-                };
-            case 'reject':
-                return {
-                    title: 'Recusar Pedido?',
-                    message: 'Tem certeza? O pedido será recusado e arquivado. Essa ação sinaliza à marca que você não poderá atendê-lo.',
-                    confirmBtn: 'Sim, Recusar',
-                    color: 'bg-red-600 hover:bg-red-700'
-                };
-            case 'advance':
-                return {
-                    title: 'Avançar Etapa?',
-                    message: 'Confirma que a etapa atual foi concluída e o pedido está pronto para o próximo passo?',
-                    confirmBtn: 'Sim, Avançar',
-                    color: 'bg-brand-600 hover:bg-brand-700'
-                };
-            case 'receipt':
-                return {
-                    title: 'Confirmar Recebimento?',
-                    message: 'Confirma que recebeu todos os insumos e materiais necessários para iniciar?',
-                    confirmBtn: 'Sim, Recebi',
-                    color: 'bg-indigo-600 hover:bg-indigo-700'
-                };
-            default:
-                return { title: '', message: '', confirmBtn: '', color: '' };
+        if (pendingAction) {
+            return {
+                title: pendingAction.confirmTitle,
+                message: pendingAction.confirmMsg,
+                confirmBtn: 'Confirmar',
+                color: pendingAction.color,
+            };
         }
+        if (showRejectConfirm) {
+            return {
+                title: 'Recusar Pedido?',
+                message: 'Tem certeza? O pedido será recusado e arquivado.',
+                confirmBtn: 'Sim, Recusar',
+                color: 'bg-red-600 hover:bg-red-700',
+            };
+        }
+        return { title: '', message: '', confirmBtn: '', color: '' };
     };
+
+    const isConfirmOpen = pendingAction !== null || showRejectConfirm;
 
     const isReceived = order.timeline.find(t => t.step === 'Recebimento na Facção')?.completed;
 
@@ -368,64 +411,48 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                     </div>
 
                                     <div className="space-y-3">
-                                        {order.status === OrderStatus.NEW ? (
+                                        {/* Terminal states */}
+                                        {isTerminal ? (
+                                            <div className={`w-full py-4 border text-sm font-medium rounded-lg text-center ${
+                                                order.status === OrderStatus.FINALIZED
+                                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-900/50 text-green-600 dark:text-green-400'
+                                                    : order.status === OrderStatus.REJECTED
+                                                    ? 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400'
+                                                    : 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-900/50 text-amber-600 dark:text-amber-400'
+                                            }`}>
+                                                <div className="flex flex-col items-center gap-1">
+                                                    {order.status === OrderStatus.FINALIZED ? <CheckCircle className="h-6 w-6 mb-1" /> : <X className="h-6 w-6 mb-1" />}
+                                                    <span>{order.status === OrderStatus.FINALIZED ? 'Pedido Finalizado' : order.status === OrderStatus.REJECTED ? 'Pedido Recusado' : order.status === OrderStatus.PARTIALLY_APPROVED ? 'Parcialmente Aprovado' : 'Reprovado'}</span>
+                                                </div>
+                                            </div>
+                                        ) : currentActions.length > 0 ? (
                                             <>
-                                                <button
-                                                    onClick={() => setConfirmAction('accept')}
-                                                    className="w-full flex justify-center items-center gap-2 px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all transform active:scale-95 mb-3">
-                                                    <CheckCircle className="h-4 w-4" /> Aceitar Pedido
-                                                </button>
-                                                <div className="flex gap-3">
+                                                {/* Action buttons */}
+                                                {currentActions.map((action) => (
                                                     <button
-                                                        onClick={() => setConfirmAction('negotiate')}
-                                                        className="flex-1 flex justify-center items-center gap-2 px-3 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800 text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-lg transition-colors">
-                                                        <MessageCircle className="h-4 w-4" /> Negociar
+                                                        key={action.targetStatus}
+                                                        onClick={() => setPendingAction(action)}
+                                                        className={`w-full flex justify-center items-center gap-2 px-4 py-3 text-white text-sm font-bold rounded-lg shadow-sm transition-all transform active:scale-95 ${action.color}`}
+                                                    >
+                                                        {action.icon === 'receipt' ? <PackageCheck className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                                        {action.label}
                                                     </button>
+                                                ))}
+                                                {/* Supplier reject option for NEW orders */}
+                                                {userRole === 'SUPPLIER' && order.status === OrderStatus.NEW && (
                                                     <button
-                                                        onClick={() => setConfirmAction('reject')}
-                                                        className="flex-1 flex justify-center items-center gap-2 px-3 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800 text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-lg transition-colors">
+                                                        onClick={() => setShowRejectConfirm(true)}
+                                                        className="w-full flex justify-center items-center gap-2 px-3 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800 text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-lg transition-colors"
+                                                    >
                                                         <X className="h-4 w-4" /> Recusar
                                                     </button>
-                                                </div>
-                                            </>
-                                        ) : order.status === OrderStatus.TRANSIT_TO_SUPPLIER || order.status === OrderStatus.PREPARING_BRAND ? (
-                                            <>
-                                                <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-amber-800 dark:text-amber-400 text-sm mb-1">
-                                                    <div className="flex items-center gap-2 font-bold mb-1">
-                                                        <AlertOctagon className="h-4 w-4" /> Status: Aguardando
-                                                    </div>
-                                                    <p>{order.waitingReason}</p>
-                                                </div>
-                                                <button
-                                                    onClick={() => setConfirmAction('receipt')}
-                                                    className="w-full flex justify-center items-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-sm mt-2 transition-colors"
-                                                >
-                                                    <PackageCheck className="h-4 w-4" /> Confirmar Recebimento
-                                                </button>
-                                            </>
-                                        ) : order.status === OrderStatus.PRODUCTION ? (
-                                            <>
-                                                {!isReceived && (
-                                                    <button
-                                                        onClick={() => setConfirmAction('receipt')}
-                                                        className="w-full flex justify-center items-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-sm mb-2"
-                                                    >
-                                                        <PackageCheck className="h-4 w-4" /> Confirmar Recebimento
-                                                    </button>
-                                                )}
-                                                {isReceived && (
-                                                    <button
-                                                        onClick={() => setConfirmAction('advance')}
-                                                        className="w-full flex justify-center items-center gap-2 px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-lg shadow-sm">
-                                                        Marcar como Pronto <ChevronRight className="h-4 w-4" />
-                                                    </button>
                                                 )}
                                             </>
-                                        ) : order.status === OrderStatus.REJECTED ? (
-                                            <div className="w-full py-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm font-medium rounded-lg text-center">
-                                                <div className="flex flex-col items-center gap-1">
-                                                    <X className="h-6 w-6 mb-1" />
-                                                    <span>Pedido Recusado</span>
+                                        ) : waitingMessage ? (
+                                            <div className="w-full py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-sm font-medium rounded-lg text-center">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <Clock className="h-4 w-4" />
+                                                    {waitingMessage}
                                                 </div>
                                             </div>
                                         ) : (
@@ -482,13 +509,13 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             </div>
 
             {/* Confirmation Modal Overlay */}
-            {confirmAction && (
+            {isConfirmOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setConfirmAction(null)}></div>
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setPendingAction(null); setShowRejectConfirm(false); }}></div>
                     <div className="relative bg-white dark:bg-gray-800 w-full max-w-sm rounded-xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700 transform scale-100 transition-all">
                         <div className="flex flex-col items-center text-center">
-                            <div className={`h-12 w-12 rounded-full flex items-center justify-center mb-4 ${confirmAction === 'reject' ? 'bg-red-50 dark:bg-red-900/30 text-red-600' : 'bg-brand-50 dark:bg-brand-900/30 text-brand-600'}`}>
-                                {confirmAction === 'reject' ? <X className="h-6 w-6" /> : <AlertTriangle className="h-6 w-6" />}
+                            <div className={`h-12 w-12 rounded-full flex items-center justify-center mb-4 ${showRejectConfirm ? 'bg-red-50 dark:bg-red-900/30 text-red-600' : 'bg-brand-50 dark:bg-brand-900/30 text-brand-600'}`}>
+                                {showRejectConfirm ? <X className="h-6 w-6" /> : <AlertTriangle className="h-6 w-6" />}
                             </div>
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
                                 {getConfirmationDetails().title}
@@ -498,7 +525,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                             </p>
                             <div className="flex gap-3 w-full">
                                 <button
-                                    onClick={() => setConfirmAction(null)}
+                                    onClick={() => { setPendingAction(null); setShowRejectConfirm(false); }}
                                     className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-lg transition-colors"
                                 >
                                     Cancelar
