@@ -804,15 +804,27 @@ export class OrdersService {
       }));
 
     // Determine waiting state
-    const waitingInfo = this.WAITING_FOR_MAP[currentStatus];
     const isMyTurn = available.length > 0;
 
-    // For ACEITO_PELA_FACCAO with materialsProvided=false, supplier side is the one who acts
     let waitingFor: 'BRAND' | 'SUPPLIER' | null = null;
     let waitingLabel = '';
-    if (!isMyTurn && waitingInfo) {
-      waitingFor = waitingInfo.waitingFor;
-      waitingLabel = waitingInfo.label;
+    if (!isMyTurn) {
+      // Dynamic waiting for ACEITO_PELA_FACCAO based on materialsProvided
+      if (currentStatus === OrderStatus.ACEITO_PELA_FACCAO) {
+        if (order.materialsProvided) {
+          waitingFor = 'BRAND';
+          waitingLabel = 'Aguardando a Marca preparar insumos';
+        } else {
+          waitingFor = 'SUPPLIER';
+          waitingLabel = 'Aguardando a Facção iniciar produção';
+        }
+      } else {
+        const waitingInfo = this.WAITING_FOR_MAP[currentStatus];
+        if (waitingInfo) {
+          waitingFor = waitingInfo.waitingFor;
+          waitingLabel = waitingInfo.label;
+        }
+      }
     }
 
     return {

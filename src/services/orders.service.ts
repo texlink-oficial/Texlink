@@ -460,12 +460,111 @@ export const ordersService = {
     async getAvailableTransitions(orderId: string): Promise<TransitionResponse> {
         if (MOCK_MODE) {
             await simulateDelay(200);
-            return {
-                canAdvance: true,
-                waitingFor: null,
-                waitingLabel: '',
-                transitions: [],
+            const order = mockOrdersState.find(o => o.id === orderId);
+            if (!order) return { canAdvance: false, waitingFor: null, waitingLabel: '', transitions: [] };
+
+            // Detect current user role from localStorage
+            const storedUser = localStorage.getItem('user');
+            const userRole: 'BRAND' | 'SUPPLIER' = storedUser
+                ? (JSON.parse(storedUser).role === 'SUPPLIER' ? 'SUPPLIER' : 'BRAND')
+                : 'BRAND';
+
+            // Transition map mirroring the backend
+            const STATUS_TRANSITIONS: Record<string, {
+                nextStatus: OrderStatus;
+                allowedRoles: ('BRAND' | 'SUPPLIER')[];
+                requiresMaterials?: boolean;
+                label: string;
+                description: string;
+                requiresConfirmation: boolean;
+                requiresNotes: boolean;
+                requiresReview: boolean;
+            }[]> = {
+                LANCADO_PELA_MARCA: [
+                    { nextStatus: 'ACEITO_PELA_FACCAO', allowedRoles: ['SUPPLIER'], label: 'Aceitar Pedido', description: 'Aceitar este pedido e iniciar o fluxo de produção', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
+                ],
+                ACEITO_PELA_FACCAO: [
+                    { nextStatus: 'EM_PREPARACAO_SAIDA_MARCA', allowedRoles: ['BRAND'], requiresMaterials: true, label: 'Preparar Insumos', description: 'Iniciar preparação dos insumos para envio à facção', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
+                    { nextStatus: 'EM_PRODUCAO', allowedRoles: ['SUPPLIER'], requiresMaterials: false, label: 'Iniciar Produção', description: 'Iniciar produção sem aguardar insumos da marca', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
+                ],
+                EM_PREPARACAO_SAIDA_MARCA: [
+                    { nextStatus: 'EM_TRANSITO_PARA_FACCAO', allowedRoles: ['BRAND'], label: 'Despachar Insumos', description: 'Confirmar que os insumos foram despachados para a facção', requiresConfirmation: true, requiresNotes: true, requiresReview: false },
+                ],
+                EM_TRANSITO_PARA_FACCAO: [
+                    { nextStatus: 'EM_PREPARACAO_ENTRADA_FACCAO', allowedRoles: ['SUPPLIER'], label: 'Confirmar Recebimento', description: 'Confirmar que os insumos foram recebidos na facção', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
+                ],
+                EM_PREPARACAO_ENTRADA_FACCAO: [
+                    { nextStatus: 'EM_PRODUCAO', allowedRoles: ['SUPPLIER'], label: 'Iniciar Produção', description: 'Iniciar a produção após conferência dos insumos', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
+                ],
+                EM_PRODUCAO: [
+                    { nextStatus: 'PRONTO', allowedRoles: ['SUPPLIER'], label: 'Produção Concluída', description: 'Marcar a produção como concluída e pronta para envio', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
+                ],
+                PRONTO: [
+                    { nextStatus: 'EM_TRANSITO_PARA_MARCA', allowedRoles: ['BRAND', 'SUPPLIER'], label: 'Marcar Despacho', description: 'Confirmar que o pedido foi despachado para a marca', requiresConfirmation: true, requiresNotes: true, requiresReview: false },
+                ],
+                EM_TRANSITO_PARA_MARCA: [
+                    { nextStatus: 'EM_REVISAO', allowedRoles: ['BRAND'], label: 'Confirmar Recebimento', description: 'Confirmar que o pedido foi recebido e iniciar revisão de qualidade', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
+                ],
+                EM_REVISAO: [
+                    { nextStatus: 'FINALIZADO', allowedRoles: ['BRAND'], label: 'Aprovar Totalmente', description: 'Aprovar 100% do pedido e finalizar', requiresConfirmation: true, requiresNotes: false, requiresReview: true },
+                    { nextStatus: 'PARCIALMENTE_APROVADO', allowedRoles: ['BRAND'], label: 'Aprovação Parcial', description: 'Aprovar parcialmente com itens rejeitados ou segunda qualidade', requiresConfirmation: true, requiresNotes: true, requiresReview: true },
+                    { nextStatus: 'REPROVADO', allowedRoles: ['BRAND'], label: 'Reprovar', description: 'Reprovar o pedido por problemas de qualidade', requiresConfirmation: true, requiresNotes: true, requiresReview: true },
+                ],
             };
+
+            // Waiting for map
+            const WAITING_FOR_MAP: Record<string, { waitingFor: 'BRAND' | 'SUPPLIER'; label: string }> = {
+                LANCADO_PELA_MARCA: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção aceitar o pedido' },
+                EM_PREPARACAO_SAIDA_MARCA: { waitingFor: 'BRAND', label: 'Marca preparando insumos para envio' },
+                EM_TRANSITO_PARA_FACCAO: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção confirmar recebimento' },
+                EM_PREPARACAO_ENTRADA_FACCAO: { waitingFor: 'SUPPLIER', label: 'Facção conferindo insumos recebidos' },
+                EM_PRODUCAO: { waitingFor: 'SUPPLIER', label: 'Facção em produção' },
+                PRONTO: { waitingFor: 'BRAND', label: 'Pronto para despacho' },
+                EM_TRANSITO_PARA_MARCA: { waitingFor: 'BRAND', label: 'Aguardando a Marca confirmar recebimento' },
+                EM_REVISAO: { waitingFor: 'BRAND', label: 'Marca revisando qualidade' },
+            };
+
+            const allTransitions = STATUS_TRANSITIONS[order.status] || [];
+            const available: AvailableTransition[] = allTransitions
+                .filter(t => {
+                    if (!t.allowedRoles.includes(userRole)) return false;
+                    if (t.requiresMaterials === true && !order.materialsProvided) return false;
+                    if (t.requiresMaterials === false && order.materialsProvided) return false;
+                    return true;
+                })
+                .map(t => ({
+                    nextStatus: t.nextStatus,
+                    label: t.label,
+                    description: t.description,
+                    requiresConfirmation: t.requiresConfirmation,
+                    requiresNotes: t.requiresNotes,
+                    requiresReview: t.requiresReview,
+                }));
+
+            const isMyTurn = available.length > 0;
+
+            // Dynamic waiting for ACEITO_PELA_FACCAO based on materialsProvided
+            let waitingFor: 'BRAND' | 'SUPPLIER' | null = null;
+            let waitingLabel = '';
+            if (!isMyTurn) {
+                if (order.status === 'ACEITO_PELA_FACCAO') {
+                    if (order.materialsProvided) {
+                        waitingFor = 'BRAND';
+                        waitingLabel = 'Aguardando a Marca preparar insumos';
+                    } else {
+                        waitingFor = 'SUPPLIER';
+                        waitingLabel = 'Aguardando a Facção iniciar produção';
+                    }
+                } else {
+                    const waitingInfo = WAITING_FOR_MAP[order.status];
+                    if (waitingInfo) {
+                        waitingFor = waitingInfo.waitingFor;
+                        waitingLabel = waitingInfo.label;
+                    }
+                }
+            }
+
+            return { canAdvance: isMyTurn, waitingFor, waitingLabel, transitions: available };
         }
 
         const response = await api.get<TransitionResponse>(`/orders/${orderId}/transitions`);
