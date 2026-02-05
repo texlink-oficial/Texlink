@@ -28,7 +28,22 @@ export class SettingsService {
     this.storage = new LocalStorageProvider();
   }
 
-  // Get supplier company for user
+  // Get company for any user (BRAND or SUPPLIER)
+  private async getUserCompanyId(userId: string): Promise<string> {
+    const companyUser = await this.prisma.companyUser.findFirst({
+      where: { userId },
+    });
+
+    if (!companyUser) {
+      throw new ForbiddenException(
+        'Você deve estar associado a uma empresa',
+      );
+    }
+
+    return companyUser.companyId;
+  }
+
+  // Get supplier company for user (capacity-only)
   private async getSupplierCompanyId(userId: string): Promise<string> {
     const companyUser = await this.prisma.companyUser.findFirst({
       where: {
@@ -49,7 +64,7 @@ export class SettingsService {
   // ==================== COMPANY DATA ====================
 
   async getCompanyData(userId: string) {
-    const companyId = await this.getSupplierCompanyId(userId);
+    const companyId = await this.getUserCompanyId(userId);
 
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
@@ -79,7 +94,7 @@ export class SettingsService {
   }
 
   async updateCompanyData(userId: string, dto: UpdateCompanyDataDto) {
-    const companyId = await this.getSupplierCompanyId(userId);
+    const companyId = await this.getUserCompanyId(userId);
 
     // Normalize zipCode
     if (dto.zipCode) {
@@ -109,7 +124,7 @@ export class SettingsService {
   }
 
   async uploadLogo(userId: string, file: UploadedFile) {
-    const companyId = await this.getSupplierCompanyId(userId);
+    const companyId = await this.getUserCompanyId(userId);
 
     // Validate file
     if (!ALLOWED_LOGO_TYPES.includes(file.mimetype)) {
@@ -155,7 +170,7 @@ export class SettingsService {
   // ==================== BANK ACCOUNT ====================
 
   async getBankAccount(userId: string) {
-    const companyId = await this.getSupplierCompanyId(userId);
+    const companyId = await this.getUserCompanyId(userId);
 
     const bankAccount = await this.prisma.bankAccount.findUnique({
       where: { companyId },
@@ -165,7 +180,7 @@ export class SettingsService {
   }
 
   async updateBankAccount(userId: string, dto: UpdateBankAccountDto) {
-    const companyId = await this.getSupplierCompanyId(userId);
+    const companyId = await this.getUserCompanyId(userId);
 
     // Normalize document
     dto.holderDocument = dto.holderDocument.replace(/\D/g, '');
@@ -254,7 +269,7 @@ export class SettingsService {
   // ==================== NOTIFICATIONS ====================
 
   async getNotificationSettings(userId: string) {
-    const companyId = await this.getSupplierCompanyId(userId);
+    const companyId = await this.getUserCompanyId(userId);
 
     let settings = await this.prisma.notificationSettings.findUnique({
       where: { companyId },
@@ -274,7 +289,7 @@ export class SettingsService {
     userId: string,
     dto: UpdateNotificationSettingsDto,
   ) {
-    const companyId = await this.getSupplierCompanyId(userId);
+    const companyId = await this.getUserCompanyId(userId);
 
     const existing = await this.prisma.notificationSettings.findUnique({
       where: { companyId },
@@ -340,7 +355,7 @@ export class SettingsService {
   // ==================== SUGGESTIONS ====================
 
   async getSuggestions(userId: string) {
-    const companyId = await this.getSupplierCompanyId(userId);
+    const companyId = await this.getUserCompanyId(userId);
 
     return this.prisma.suggestion.findMany({
       where: { companyId },
@@ -359,7 +374,7 @@ export class SettingsService {
   }
 
   async createSuggestion(userId: string, dto: CreateSuggestionDto) {
-    const companyId = await this.getSupplierCompanyId(userId);
+    const companyId = await this.getUserCompanyId(userId);
 
     return this.prisma.suggestion.create({
       data: {

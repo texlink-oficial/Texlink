@@ -34,14 +34,14 @@ export class SettingsController {
 
   @Get('company')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPLIER)
+  @Roles(UserRole.SUPPLIER, UserRole.BRAND)
   async getCompanyData(@CurrentUser('id') userId: string) {
     return this.settingsService.getCompanyData(userId);
   }
 
   @Patch('company')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPLIER)
+  @Roles(UserRole.SUPPLIER, UserRole.BRAND)
   async updateCompanyData(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateCompanyDataDto,
@@ -51,7 +51,7 @@ export class SettingsController {
 
   @Post('company/logo')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPLIER)
+  @Roles(UserRole.SUPPLIER, UserRole.BRAND)
   @UseInterceptors(FileInterceptor('file'))
   async uploadLogo(
     @CurrentUser('id') userId: string,
@@ -72,14 +72,14 @@ export class SettingsController {
 
   @Get('bank-account')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPLIER)
+  @Roles(UserRole.SUPPLIER, UserRole.BRAND)
   async getBankAccount(@CurrentUser('id') userId: string) {
     return this.settingsService.getBankAccount(userId);
   }
 
   @Put('bank-account')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPLIER)
+  @Roles(UserRole.SUPPLIER, UserRole.BRAND)
   async updateBankAccount(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateBankAccountDto,
@@ -110,14 +110,14 @@ export class SettingsController {
 
   @Get('notifications')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPLIER)
+  @Roles(UserRole.SUPPLIER, UserRole.BRAND)
   async getNotificationSettings(@CurrentUser('id') userId: string) {
     return this.settingsService.getNotificationSettings(userId);
   }
 
   @Patch('notifications')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPLIER)
+  @Roles(UserRole.SUPPLIER, UserRole.BRAND)
   async updateNotificationSettings(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateNotificationSettingsDto,
@@ -129,7 +129,7 @@ export class SettingsController {
 
   @Post('security/change-password')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPLIER)
+  @Roles(UserRole.SUPPLIER, UserRole.BRAND)
   async changePassword(
     @CurrentUser('id') userId: string,
     @Body() dto: ChangePasswordDto,
@@ -141,14 +141,14 @@ export class SettingsController {
 
   @Get('suggestions')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPLIER)
+  @Roles(UserRole.SUPPLIER, UserRole.BRAND)
   async getSuggestions(@CurrentUser('id') userId: string) {
     return this.settingsService.getSuggestions(userId);
   }
 
   @Post('suggestions')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPLIER)
+  @Roles(UserRole.SUPPLIER, UserRole.BRAND)
   async createSuggestion(
     @CurrentUser('id') userId: string,
     @Body() dto: CreateSuggestionDto,

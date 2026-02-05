@@ -6,7 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RegisterDto, LoginDto } from './dto';
+import { RegisterDto, LoginDto, UpdateProfileDto } from './dto';
 
 @Injectable()
 export class AuthService {
@@ -213,6 +213,32 @@ export class AuthService {
       ...(companyType === 'SUPPLIER' && { supplierId: companyId }),
       ...(companyType === 'BRAND' && { brandId: companyId }),
     };
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    // If email is changing, check uniqueness
+    if (dto.email) {
+      const existing = await this.prisma.user.findFirst({
+        where: {
+          email: dto.email,
+          id: { not: userId },
+        },
+      });
+
+      if (existing) {
+        throw new ConflictException('Este email já está em uso');
+      }
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.email && { email: dto.email }),
+      },
+    });
+
+    return this.getProfile(userId);
   }
 
   private generateToken(userId: string, email: string, role: string): string {
