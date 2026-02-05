@@ -35,6 +35,9 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+# Cache bust - change this to force rebuild
+ARG CACHEBUST=2
+
 # Set production environment
 ENV NODE_ENV=production
 
@@ -68,4 +71,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT}/api/health || exit 1
 
 # Start the application with Prisma migrations
-CMD ["./start.sh"]
+CMD ["/bin/sh", "./start.sh"]
