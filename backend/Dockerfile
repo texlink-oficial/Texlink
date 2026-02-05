@@ -25,10 +25,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
-
-# Build the application
+# Build the application (Prisma client will be generated at runtime)
 RUN npm run build
 
 # Stage 3: Production
@@ -64,5 +61,5 @@ EXPOSE ${PORT}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT}/api/health || exit 1
 
-# Start the application with Prisma migrations
-CMD ["sh", "-c", "echo 'Starting migrations...' && npx prisma migrate deploy && echo 'Migrations done. Starting app...' && node dist/main.js"]
+# Start the application with Prisma generate and migrations
+CMD ["sh", "-c", "echo 'Generating Prisma client...' && npx prisma generate && echo 'Running migrations...' && npx prisma migrate deploy && echo 'Starting app...' && node dist/main.js"]
