@@ -62,6 +62,7 @@ const BrandHelpCenter = React.lazy(() => import('./pages/brand/HelpCenterPage'))
 const BrandTicketDetail = React.lazy(() => import('./pages/brand/TicketDetailPage'));
 const BrandAnalyticsDashboard = React.lazy(() => import('./pages/brand/AnalyticsDashboardPage'));
 const RejectionAnalyticsPage = React.lazy(() => import('./pages/brand/reports/RejectionAnalyticsPage'));
+const CapacityUtilizationPage = React.lazy(() => import('./pages/brand/reports/CapacityUtilizationPage'));
 const BrandCodeOfConductPage = React.lazy(() => import('./pages/brand/documents/CodeOfConductPage'));
 const BrandCodeOfConductReportPage = React.lazy(() => import('./pages/brand/documents/CodeOfConductReportPage'));
 
@@ -211,6 +212,7 @@ const App: React.FC = () => {
                                                 {/* Relatórios e Analytics */}
                                                 <Route path="relatorios" element={<BrandReports />} />
                                                 <Route path="relatorios/rejeicoes" element={<RejectionAnalyticsPage />} />
+                                                <Route path="relatorios/capacidade" element={<CapacityUtilizationPage />} />
                                                 <Route path="analytics" element={<BrandAnalyticsDashboard />} />
                                                 {/* Favoritos */}
                                                 <Route path="favoritos" element={<BrandFavorites />} />

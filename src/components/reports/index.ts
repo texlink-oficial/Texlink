@@ -4,3 +4,6 @@ export { BarChartRejectionsBySupplier } from './BarChartRejectionsBySupplier';
 export { LineChartRejectionTrend } from './LineChartRejectionTrend';
 export { SupplierRejectionTable } from './SupplierRejectionTable';
 export { RejectionDetailModal } from './RejectionDetailModal';
+
+// Capacity reports
+export * from './capacity';

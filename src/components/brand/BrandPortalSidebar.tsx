@@ -102,6 +102,7 @@ const navGroups: NavGroup[] = [
                 children: [
                     { label: 'Visão Geral', path: '/brand/relatorios' },
                     { label: 'Rejeições', path: '/brand/relatorios/rejeicoes' },
+                    { label: 'Capacidade', path: '/brand/relatorios/capacidade' },
                 ],
             },
             {

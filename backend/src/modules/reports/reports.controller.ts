@@ -1,7 +1,8 @@
 import { Controller, Get, Query, Param, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { ReportsService } from './reports.service';
-import { RejectionReportFiltersDto } from './dto';
+import { CapacityReportsService } from './capacity-reports.service';
+import { RejectionReportFiltersDto, CapacityReportFiltersDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -15,6 +16,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class ReportsController {
   constructor(
     private readonly reportsService: ReportsService,
+    private readonly capacityReportsService: CapacityReportsService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -123,6 +125,80 @@ export class ReportsController {
     const csv = await this.reportsService.exportToCsv(brandId, filters);
 
     const filename = `relatorio-rejeicoes-${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send('\ufeff' + csv); // BOM for Excel UTF-8 compatibility
+  }
+
+  // ==================== CAPACITY REPORTS ====================
+
+  /**
+   * GET /reports/capacity
+   * Returns capacity summary KPIs
+   */
+  @Get('capacity')
+  async getCapacitySummary(
+    @CurrentUser('id') userId: string,
+    @Query() filters: CapacityReportFiltersDto,
+  ) {
+    const brandId = await this.getBrandId(userId);
+    return this.capacityReportsService.getSummary(brandId, filters);
+  }
+
+  /**
+   * GET /reports/capacity/by-supplier
+   * Returns capacity breakdown by supplier
+   */
+  @Get('capacity/by-supplier')
+  async getCapacityBySupplier(
+    @CurrentUser('id') userId: string,
+    @Query() filters: CapacityReportFiltersDto,
+  ) {
+    const brandId = await this.getBrandId(userId);
+    return this.capacityReportsService.getBySupplier(brandId, filters);
+  }
+
+  /**
+   * GET /reports/capacity/alerts
+   * Returns capacity alerts
+   */
+  @Get('capacity/alerts')
+  async getCapacityAlerts(
+    @CurrentUser('id') userId: string,
+    @Query() filters: CapacityReportFiltersDto,
+  ) {
+    const brandId = await this.getBrandId(userId);
+    return this.capacityReportsService.getAlerts(brandId, filters);
+  }
+
+  /**
+   * GET /reports/capacity/trend
+   * Returns capacity trend over time with projections
+   */
+  @Get('capacity/trend')
+  async getCapacityTrend(
+    @CurrentUser('id') userId: string,
+    @Query() filters: CapacityReportFiltersDto,
+  ) {
+    const brandId = await this.getBrandId(userId);
+    return this.capacityReportsService.getTrend(brandId, filters);
+  }
+
+  /**
+   * GET /reports/capacity/export
+   * Export capacity data to CSV
+   */
+  @Get('capacity/export')
+  async exportCapacityReport(
+    @CurrentUser('id') userId: string,
+    @Query() filters: CapacityReportFiltersDto,
+    @Res() res: Response,
+  ) {
+    const brandId = await this.getBrandId(userId);
+    const csv = await this.capacityReportsService.exportToCsv(brandId, filters);
+
+    const filename = `relatorio-capacidade-${new Date().toISOString().split('T')[0]}.csv`;
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
