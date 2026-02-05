@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Plus,
@@ -18,6 +18,7 @@ import {
     RotateCcw,
     Send,
     Users,
+    Handshake,
 } from 'lucide-react';
 import { relationshipsService } from '../../services';
 import type {
@@ -25,9 +26,22 @@ import type {
     RelationshipStatus,
     RelationshipStats,
 } from '../../types/relationships';
-import SupplierInvitationsList from '../../components/suppliers/SupplierInvitationsList';
+import { PartnershipRequestCard } from '../../components/partnership-requests';
+import {
+    partnershipRequestsService,
+    type PartnershipRequest,
+    type PartnershipRequestStatus,
+} from '../../services/partnershipRequests.service';
 
-type TabType = 'suppliers' | 'invitations';
+type TabType = 'suppliers' | 'requests';
+type RequestTabStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED';
+
+const requestTabs: { id: RequestTabStatus; label: string; icon: React.ElementType }[] = [
+    { id: 'PENDING', label: 'Pendentes', icon: Clock },
+    { id: 'ACCEPTED', label: 'Aceitas', icon: CheckCircle },
+    { id: 'REJECTED', label: 'Recusadas', icon: XCircle },
+    { id: 'CANCELLED', label: 'Canceladas', icon: Ban },
+];
 
 const BrandSuppliersPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>('suppliers');
@@ -48,17 +62,55 @@ const BrandSuppliersPage: React.FC = () => {
     });
     const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
 
+    // Partnership requests state
+    const [requestsTab, setRequestsTab] = useState<RequestTabStatus>('PENDING');
+    const [requests, setRequests] = useState<PartnershipRequest[]>([]);
+    const [isLoadingRequests, setIsLoadingRequests] = useState(false);
+    const [requestsError, setRequestsError] = useState<string | null>(null);
+    const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
     // Get current user's brandId from localStorage
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const brandId = user.brandId || user.companyId;
 
+    const fetchRequests = useCallback(async () => {
+        setIsLoadingRequests(true);
+        setRequestsError(null);
+        try {
+            const status = requestsTab as PartnershipRequestStatus;
+            const response = await partnershipRequestsService.getSent({ status });
+            setRequests(response.data);
+        } catch (err) {
+            setRequestsError('Erro ao carregar solicitações');
+            console.error(err);
+        } finally {
+            setIsLoadingRequests(false);
+        }
+    }, [requestsTab]);
+
+    const fetchPendingCount = useCallback(async () => {
+        try {
+            const response = await partnershipRequestsService.getSent({ status: 'PENDING' });
+            setPendingRequestsCount(response.data.length);
+        } catch (err) {
+            console.error('Error fetching pending count:', err);
+        }
+    }, []);
+
     useEffect(() => {
         loadRelationships();
+        fetchPendingCount();
     }, [brandId]);
 
     useEffect(() => {
         applyFilters();
     }, [relationships, searchTerm, statusFilter]);
+
+    useEffect(() => {
+        if (activeTab === 'requests') {
+            fetchRequests();
+        }
+    }, [activeTab, requestsTab, fetchRequests]);
 
     const loadRelationships = async () => {
         try {
@@ -134,6 +186,19 @@ const BrandSuppliersPage: React.FC = () => {
         } catch (error) {
             console.error('Error terminating relationship:', error);
             alert('Erro ao encerrar relacionamento');
+        }
+    };
+
+    const handleCancelRequest = async (request: PartnershipRequest) => {
+        if (!window.confirm('Deseja cancelar esta solicitação?')) return;
+
+        try {
+            await partnershipRequestsService.cancel(request.id);
+            fetchRequests();
+            fetchPendingCount();
+        } catch (err) {
+            console.error('Erro ao cancelar:', err);
+            alert('Erro ao cancelar solicitação');
         }
     };
 
@@ -279,21 +344,109 @@ const BrandSuppliersPage: React.FC = () => {
                         </span>
                     </button>
                     <button
-                        onClick={() => setActiveTab('invitations')}
-                        className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'invitations'
+                        onClick={() => setActiveTab('requests')}
+                        className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'requests'
                             ? 'border-brand-500 text-brand-600 dark:text-brand-400'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                             }`}
                     >
-                        <Send className="w-4 h-4" />
-                        Convites Pendentes
+                        <Handshake className="w-4 h-4" />
+                        Solicitações
+                        {pendingRequestsCount > 0 && (
+                            <span className={`px-2 py-0.5 text-xs rounded-full ${activeTab === 'requests'
+                                ? 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                                }`}>
+                                {pendingRequestsCount}
+                            </span>
+                        )}
                     </button>
                 </nav>
             </div>
 
             {/* Tab Content */}
-            {activeTab === 'invitations' ? (
-                <SupplierInvitationsList />
+            {activeTab === 'requests' ? (
+                <div className="space-y-6">
+                    {/* Sub-tabs for requests */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1">
+                        <nav className="flex gap-1">
+                            {requestTabs.map((tab) => {
+                                const Icon = tab.icon;
+                                const isActive = requestsTab === tab.id;
+                                const count = tab.id === 'PENDING' ? pendingRequestsCount : undefined;
+
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setRequestsTab(tab.id)}
+                                        className={`
+                                            flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors flex-1 justify-center
+                                            ${isActive
+                                                ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400'
+                                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                            }
+                                        `}
+                                    >
+                                        <Icon className="w-4 h-4" />
+                                        {tab.label}
+                                        {count !== undefined && count > 0 && (
+                                            <span className="ml-1 px-2 py-0.5 text-xs font-medium bg-brand-100 dark:bg-brand-900 text-brand-600 dark:text-brand-400 rounded-full">
+                                                {count}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                    </div>
+
+                    {/* Requests Content */}
+                    {isLoadingRequests ? (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
+                        </div>
+                    ) : requestsError ? (
+                        <div className="text-center py-12">
+                            <p className="text-red-500">{requestsError}</p>
+                            <button
+                                onClick={fetchRequests}
+                                className="mt-4 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            >
+                                Tentar novamente
+                            </button>
+                        </div>
+                    ) : requests.length === 0 ? (
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center">
+                            <Handshake className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                Nenhuma solicitação encontrada
+                            </h3>
+                            <p className="text-gray-500 dark:text-gray-400 mb-4">
+                                {requestsTab === 'PENDING'
+                                    ? 'Você não tem solicitações pendentes'
+                                    : 'Não há solicitações nesta categoria'}
+                            </p>
+                            <Link
+                                to="/brand/fornecedores/adicionar"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-medium transition-colors"
+                            >
+                                <Send className="w-5 h-5" />
+                                Buscar Fornecedores
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {requests.map((request) => (
+                                <PartnershipRequestCard
+                                    key={request.id}
+                                    request={request}
+                                    viewType="brand"
+                                    onCancel={request.status === 'PENDING' ? handleCancelRequest : undefined}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
             ) : (
                 <>
                     {/* Filters */}

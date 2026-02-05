@@ -72,10 +72,7 @@ const navGroups: NavGroup[] = [
                 icon: <Factory className="h-5 w-5" />,
                 children: [
                     { label: 'Minhas Facções', path: '/brand/fornecedores' },
-                    { label: 'Solicitações', path: '/brand/fornecedores/solicitacoes' },
-                    { label: 'Buscar Novas', path: '/brand/faccoes' },
-                    { label: 'Meus Parceiros', path: '/brand/faccoes/parceiros' },
-                    { label: 'Credenciar', path: '/brand/fornecedores/adicionar' },
+                    { label: 'Adicionar Facção', path: '/brand/fornecedores/adicionar' },
                 ],
             },
             {
@@ -111,12 +108,6 @@ const navGroups: NavGroup[] = [
                 label: 'Favoritos',
                 icon: <Star className="h-5 w-5" />,
                 path: '/brand/favoritos',
-            },
-            {
-                id: 'equipe',
-                label: 'Minha Equipe',
-                icon: <Users className="h-5 w-5" />,
-                path: '/brand/equipe',
             },
             {
                 id: 'documentos',
