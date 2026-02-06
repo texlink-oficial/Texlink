@@ -100,7 +100,7 @@ export class RatingsService {
     const companyIds = companyUsers.map((cu) => cu.companyId);
 
     // Get finalized orders without a rating from this user's company
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: {
         status: OrderStatus.FINALIZADO,
         OR: [
@@ -118,6 +118,20 @@ export class RatingsService {
         supplier: { select: { id: true, tradeName: true } },
       },
       orderBy: { updatedAt: 'desc' },
+    });
+
+    // Transform to PendingRating shape expected by frontend
+    return orders.map((order) => {
+      const isBrand = companyIds.includes(order.brandId);
+      const partner = isBrand ? order.supplier : order.brand;
+
+      return {
+        orderId: order.id,
+        orderDisplayId: order.displayId,
+        partnerCompanyId: partner?.id || '',
+        partnerName: partner?.tradeName || '',
+        completedAt: order.updatedAt.toISOString(),
+      };
     });
   }
 

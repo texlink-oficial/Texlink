@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ordersService, chatService, Order, Message, TransitionResponse } from '../../services';
+import { ordersService, chatService, ratingsService, Order, Message, TransitionResponse } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
 import {
     ArrowLeft, Package, Calendar, DollarSign, Factory,
@@ -9,6 +9,7 @@ import {
     Star, Image as ImageIcon
 } from 'lucide-react';
 import { OrderTimeline, StatusActionBar } from '../../components/orders';
+import { RatingModal } from '../../components/ratings/RatingModal';
 
 const OrderDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -21,6 +22,7 @@ const OrderDetailsPage: React.FC = () => {
     const [isSending, setSending] = useState(false);
     const [showChat, setShowChat] = useState(false);
     const [transitionData, setTransitionData] = useState<TransitionResponse | null>(null);
+    const [showRatingModal, setShowRatingModal] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -246,12 +248,29 @@ const OrderDetailsPage: React.FC = () => {
                         <StatusActionBar order={order} onStatusUpdated={loadOrder} />
                         {isFinalized && !order.ratings?.length && (
                             <button
+                                onClick={() => setShowRatingModal(true)}
                                 className="w-full flex items-center justify-center gap-2 py-3 bg-amber-500 hover:bg-amber-400 text-white font-medium rounded-xl transition-colors"
                             >
                                 <Star className="w-5 h-5" />
                                 Avaliar Facção
                             </button>
                         )}
+
+                        <RatingModal
+                            isOpen={showRatingModal}
+                            onClose={() => setShowRatingModal(false)}
+                            onSubmit={async (rating, comment) => {
+                                await ratingsService.submitRating(order.id, {
+                                    score: rating,
+                                    comment: comment || undefined
+                                });
+                                setShowRatingModal(false);
+                                loadOrder();
+                            }}
+                            partnerName={order.supplier?.tradeName || 'Facção'}
+                            orderId={order.id}
+                            orderDisplayId={order.displayId}
+                        />
                     </div>
 
                     {/* Chat Sidebar */}

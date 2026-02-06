@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { ordersService, Order as ApiOrder, OrderStatus as ApiOrderStatus } from '../../services';
+import { ordersService, ratingsService, Order as ApiOrder, OrderStatus as ApiOrderStatus, PendingRating } from '../../services';
 import { Order, OrderStatus } from '../../types';
 
 import { OrderCard } from '../../components/kanban/OrderCard';
@@ -9,6 +9,7 @@ import { OrderDetailModal } from '../../components/kanban/OrderDetailModal';
 import { StatsOverview } from '../../components/kanban/StatsOverview';
 import { OrderListView } from '../../components/kanban/OrderListView';
 import { OrderFiltersDropdown } from '../../components/kanban/OrderFiltersDropdown';
+import { RatingModal } from '../../components/ratings/RatingModal';
 import { Filter, LayoutGrid, List, Loader2, Plus, Search } from 'lucide-react';
 
 // Status mapping from API to Kanban UI (Brand perspective)
@@ -99,6 +100,8 @@ const BrandKanbanDashboard: React.FC = () => {
     const [productTypeFilter, setProductTypeFilter] = useState('');
     const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
     const filterMenuRef = useRef<HTMLDivElement>(null);
+    const [pendingRating, setPendingRating] = useState<PendingRating | null>(null);
+    const [showRatingModal, setShowRatingModal] = useState(false);
 
     // Load orders from API
     useEffect(() => {
@@ -108,8 +111,15 @@ const BrandKanbanDashboard: React.FC = () => {
     const loadData = async () => {
         try {
             setIsLoading(true);
-            const apiOrders = await ordersService.getBrandOrders();
+            const [apiOrders, pendingRatings] = await Promise.all([
+                ordersService.getBrandOrders(),
+                ratingsService.getPendingRatings().catch(() => [])
+            ]);
             setOrders(apiOrders.map(convertApiOrder));
+            if (pendingRatings.length > 0) {
+                setPendingRating(pendingRatings[0]);
+                setShowRatingModal(true);
+            }
         } catch (error) {
             console.error('Error loading orders:', error);
         } finally {
@@ -370,6 +380,28 @@ const BrandKanbanDashboard: React.FC = () => {
                     onClose={() => setSelectedOrder(null)}
                     onStatusChange={handleStatusChange}
                     onTimelineStepToggle={handleTimelineStepToggle}
+                />
+            )}
+
+            {pendingRating && (
+                <RatingModal
+                    isOpen={showRatingModal}
+                    onClose={() => {
+                        setShowRatingModal(false);
+                        setPendingRating(null);
+                    }}
+                    onSubmit={async (rating, comment) => {
+                        await ratingsService.submitRating(pendingRating.orderId, {
+                            score: rating,
+                            comment: comment || undefined
+                        });
+                        setShowRatingModal(false);
+                        setPendingRating(null);
+                    }}
+                    partnerName={pendingRating.partnerName}
+                    partnerImage={pendingRating.partnerImage}
+                    orderId={pendingRating.orderId}
+                    orderDisplayId={pendingRating.orderDisplayId}
                 />
             )}
         </div>
