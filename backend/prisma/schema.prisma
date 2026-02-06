@@ -1554,6 +1554,7 @@ model SupplierDocument {
   // Arquivo
   fileName String?
   fileUrl  String?
+  fileKey  String? // S3 object key for presigned URL generation
   fileSize Int? // bytes
   mimeType String?
 

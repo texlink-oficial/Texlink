@@ -54,6 +54,35 @@ export class SupplierDocumentsService {
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
 
+  // Extract S3 key from a full URL (for backward compatibility with docs missing fileKey)
+  private extractKeyFromUrl(url: string): string | null {
+    // Local storage: http://localhost:3000/uploads/supplier-documents/...
+    const localMatch = url.match(/\/uploads\/(.+)$/);
+    if (localMatch) return localMatch[1];
+
+    // S3: https://bucket.s3.region.amazonaws.com/supplier-documents/...
+    // CloudFront or CDN: https://cdn.domain.com/supplier-documents/...
+    const httpsMatch = url.match(/^https?:\/\/[^/]+\/(.+)$/);
+    if (httpsMatch) return httpsMatch[1];
+
+    return null;
+  }
+
+  // Generate an accessible URL (presigned for S3, direct for local storage)
+  private async getAccessibleUrl(document: {
+    fileUrl: string | null;
+    fileKey?: string | null;
+  }): Promise<string> {
+    if (!document.fileUrl) return '';
+    const key = document.fileKey || this.extractKeyFromUrl(document.fileUrl);
+    if (!key) return document.fileUrl;
+
+    if (this.storage.getPresignedUrl) {
+      return this.storage.getPresignedUrl(key, 3600);
+    }
+    return document.fileUrl;
+  }
+
   // Calculate document status based on expiration date
   private calculateStatus(expiresAt: Date | null): SupplierDocumentStatus {
     if (!expiresAt) {
@@ -233,7 +262,7 @@ export class SupplierDocumentsService {
     }
 
     // Upload new file
-    const { url } = await this.storage.upload(
+    const { url, key } = await this.storage.upload(
       file,
       `supplier-documents/${companyId}`,
     );
@@ -248,6 +277,7 @@ export class SupplierDocumentsService {
       data: {
         fileName: file.originalname,
         fileUrl: url,
+        fileKey: key,
         fileSize: file.size,
         mimeType: file.mimetype,
         uploadedAt: new Date(),
@@ -297,7 +327,7 @@ export class SupplierDocumentsService {
     }
 
     // Upload file
-    const { url } = await this.storage.upload(
+    const { url, key } = await this.storage.upload(
       file,
       `supplier-documents/${companyId}`,
     );
@@ -314,6 +344,7 @@ export class SupplierDocumentsService {
         status,
         fileName: file.originalname,
         fileUrl: url,
+        fileKey: key,
         fileSize: file.size,
         mimeType: file.mimetype,
         uploadedAt: new Date(),
@@ -700,13 +731,44 @@ export class SupplierDocumentsService {
       throw new BadRequestException('Este documento ainda não possui arquivo anexado');
     }
 
-    // For local storage, return the URL directly
-    // For S3, this would generate a signed URL
+    const url = await this.getAccessibleUrl(document);
+
     return {
-      url: document.fileUrl,
+      url,
       fileName: document.fileName,
       mimeType: document.mimeType,
-      expiresIn: 3600, // URL expiration in seconds (for signed URLs)
+      expiresIn: 3600,
+    };
+  }
+
+  // Get download URL for a document (supplier's own access)
+  async getDocumentDownloadUrl(documentId: string, userId: string) {
+    const companyId = await this.getSupplierCompanyId(userId);
+
+    const document = await this.prisma.supplierDocument.findFirst({
+      where: {
+        id: documentId,
+        companyId,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Documento não encontrado');
+    }
+
+    if (!document.fileUrl) {
+      throw new BadRequestException(
+        'Este documento ainda não possui arquivo anexado',
+      );
+    }
+
+    const url = await this.getAccessibleUrl(document);
+
+    return {
+      url,
+      fileName: document.fileName,
+      mimeType: document.mimeType,
+      expiresIn: 3600,
     };
   }
 }

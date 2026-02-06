@@ -59,6 +59,17 @@ export class SupplierDocumentsController {
     return this.supplierDocumentsService.getDocumentChecklist(userId);
   }
 
+  // Get download URL for a document (supplier access)
+  @Get(':id/download')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPPLIER)
+  async getDocumentDownloadUrl(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.supplierDocumentsService.getDocumentDownloadUrl(id, userId);
+  }
+
   // Get a specific document
   @Get(':id')
   @UseGuards(RolesGuard)

@@ -126,6 +126,14 @@ class SupplierDocumentsService {
         await api.delete(`${this.basePath}/${id}`);
     }
 
+    // Get download URL for a document (supplier's own access - presigned URL)
+    async getDownloadUrl(documentId: string): Promise<DocumentDownloadResponse> {
+        const response = await api.get<DocumentDownloadResponse>(
+            `${this.basePath}/${documentId}/download`
+        );
+        return response.data;
+    }
+
     // ========== BRAND ACCESS METHODS ==========
 
     /**

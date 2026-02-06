@@ -93,6 +93,24 @@ const DocumentsPage: React.FC = () => {
         }
     };
 
+    const handleView = async (id: string) => {
+        try {
+            const { url } = await supplierDocumentsService.getDownloadUrl(id);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('Error viewing document:', error);
+        }
+    };
+
+    const handleDownload = async (id: string) => {
+        try {
+            const { url } = await supplierDocumentsService.getDownloadUrl(id);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('Error downloading document:', error);
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm('Tem certeza que deseja excluir este documento?')) return;
 
@@ -263,23 +281,20 @@ const DocumentsPage: React.FC = () => {
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             {doc?.fileUrl && (
                                                 <>
-                                                    <a
-                                                        href={doc.fileUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
+                                                    <button
+                                                        onClick={() => doc.id && handleView(doc.id)}
                                                         className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                                         title="Visualizar"
                                                     >
                                                         <Eye className="w-4 h-4" />
-                                                    </a>
-                                                    <a
-                                                        href={doc.fileUrl}
-                                                        download
+                                                    </button>
+                                                    <button
+                                                        onClick={() => doc.id && handleDownload(doc.id)}
                                                         className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                                         title="Download"
                                                     >
                                                         <Download className="w-4 h-4" />
-                                                    </a>
+                                                    </button>
                                                     <button
                                                         onClick={() => doc.id && handleDelete(doc.id)}
                                                         className="p-2 text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"

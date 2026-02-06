@@ -302,7 +302,7 @@ export const SupplierDocumentsTab: React.FC<SupplierDocumentsTabProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.open(doc.fileUrl!, '_blank')}
+                          onClick={() => handleDownload(doc.id)}
                           title="Visualizar"
                         >
                           <Eye className="w-4 h-4" />
