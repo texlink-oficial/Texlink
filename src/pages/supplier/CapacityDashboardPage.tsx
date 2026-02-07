@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { suppliersService, SupplierDashboard } from '../../services';
+import { settingsService } from '../../services/settings.service';
 import {
     ArrowLeft,
     Calendar,
@@ -26,7 +28,9 @@ const formatDate = (date: Date) => date.toLocaleDateString('pt-BR');
 
 const CapacityDashboardPage: React.FC = () => {
     const { user } = useAuth();
+    const { success, error: toastError } = useToast();
     const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [profile, setProfile] = useState<SupplierDashboard | null>(null);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -321,13 +325,26 @@ const CapacityDashboardPage: React.FC = () => {
                                 Cancelar
                             </button>
                             <button
-                                onClick={() => {
-                                    // TODO: Call API to update capacity
-                                    setIsEditingCapacity(false);
+                                disabled={isSaving}
+                                onClick={async () => {
+                                    try {
+                                        setIsSaving(true);
+                                        await settingsService.updateCapacitySettings({ monthlyCapacity: newCapacity });
+                                        setProfile(prev => prev ? {
+                                            ...prev,
+                                            profile: { ...prev.profile, monthlyCapacity: newCapacity },
+                                        } : prev);
+                                        success('Capacidade atualizada com sucesso');
+                                        setIsEditingCapacity(false);
+                                    } catch (err) {
+                                        toastError('Erro ao atualizar capacidade. Tente novamente.');
+                                    } finally {
+                                        setIsSaving(false);
+                                    }
                                 }}
-                                className="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-medium transition-colors"
+                                className="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
                             >
-                                Salvar
+                                {isSaving ? 'Salvando...' : 'Salvar'}
                             </button>
                         </div>
                     </div>
