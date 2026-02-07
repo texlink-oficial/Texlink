@@ -448,13 +448,15 @@ describe('ComplianceService', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(mockPrismaService.complianceAnalysis.update).toHaveBeenCalledWith({
-        where: { credentialId: 'cred-123' },
-        data: expect.objectContaining({
-          manualReviewStatus: ManualReviewStatus.REJECTED,
-          manualReviewNotes: expect.stringMatching(new RegExp(`(?=.*${reason})(?=.*${notes})`)),
+      expect(mockPrismaService.complianceAnalysis.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { credentialId: 'cred-123' },
+          data: expect.objectContaining({
+            manualReviewStatus: ManualReviewStatus.REJECTED,
+            manualReviewNotes: expect.stringMatching(new RegExp(`(?=.*${reason})(?=.*${notes})`, 's')),
+          }),
         }),
-      });
+      );
 
       expect(mockPrismaService.supplierCredential.update).toHaveBeenCalledWith(
         expect.objectContaining({

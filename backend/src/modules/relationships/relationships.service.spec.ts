@@ -364,9 +364,9 @@ describe('RelationshipsService', () => {
       const pendingRelationship = {
         ...mockRelationship,
         status: RelationshipStatus.CONTRACT_PENDING,
-        contract: {
-          supplierSignedAt: new Date(),
-        },
+        contracts: [
+          { supplierSignedAt: new Date() },
+        ],
       };
       mockPrisma.supplierBrandRelationship.findUnique.mockResolvedValue(
         pendingRelationship,
@@ -386,9 +386,9 @@ describe('RelationshipsService', () => {
       const pendingRelationship = {
         ...mockRelationship,
         status: RelationshipStatus.CONTRACT_PENDING,
-        contract: {
-          supplierSignedAt: null,
-        },
+        contracts: [
+          { supplierSignedAt: null },
+        ],
       };
       mockPrisma.supplierBrandRelationship.findUnique.mockResolvedValue(
         pendingRelationship,
