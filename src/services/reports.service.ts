@@ -116,4 +116,27 @@ export const reportsService = {
         const response = await api.get<UnifiedReport>('/suppliers/reports', { params });
         return response.data;
     },
+
+    async exportReport(
+        format: 'pdf' | 'excel',
+        startDate?: string,
+        endDate?: string,
+    ): Promise<Blob> {
+        if (MOCK_MODE) {
+            await simulateDelay(1000);
+            const content = format === 'pdf' ? 'Mock PDF' : 'Mock Excel';
+            const type = format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            return new Blob([content], { type });
+        }
+
+        const params: Record<string, string> = { format };
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
+
+        const response = await api.get('/suppliers/reports/export', {
+            params,
+            responseType: 'blob',
+        });
+        return response.data;
+    },
 };

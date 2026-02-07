@@ -8,9 +8,10 @@ import {
   Query,
   UseGuards,
   Req,
+  Res,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { SuppliersService } from './suppliers.service';
 import { ConsentService } from './services/consent.service';
 import type { RevokeConsentDto } from './services/consent.service';
@@ -113,6 +114,50 @@ export class SuppliersController {
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined,
     );
+  }
+
+  @Get('reports/export')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPPLIER)
+  async exportReport(
+    @CurrentUser('id') userId: string,
+    @Query('format') format: string = 'pdf',
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Res() res?: Response,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    const dateStr = new Date().toISOString().split('T')[0];
+
+    if (format === 'excel') {
+      const buffer = await this.suppliersService.exportReportExcel(
+        userId,
+        start,
+        end,
+      );
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="relatorio-${dateStr}.xlsx"`,
+      );
+      res.send(buffer);
+    } else {
+      const buffer = await this.suppliersService.exportReportPdf(
+        userId,
+        start,
+        end,
+      );
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="relatorio-${dateStr}.pdf"`,
+      );
+      res.send(buffer);
+    }
   }
 
   @Get('opportunities')

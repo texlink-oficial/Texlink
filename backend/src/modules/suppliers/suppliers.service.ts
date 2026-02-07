@@ -1045,4 +1045,169 @@ export class SuppliersService {
       '$1.$2.$3/$4-$5',
     );
   }
+
+  // ========== REPORT EXPORT ==========
+
+  async exportReportPdf(
+    userId: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<Buffer> {
+    const report = await this.getReports(userId, startDate, endDate);
+    const PDFDocument = (await import('pdfkit')).default;
+
+    return new Promise((resolve) => {
+      const doc = new PDFDocument({ margin: 50 });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+
+      const fmt = (v: number) =>
+        new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        }).format(v);
+
+      // Header
+      doc
+        .fontSize(20)
+        .text('Relatório de Operações', { align: 'center' });
+      doc.moveDown(0.3);
+      doc
+        .fontSize(10)
+        .fillColor('#666')
+        .text(
+          `Período: ${report.period.start.toLocaleDateString('pt-BR')} a ${report.period.end.toLocaleDateString('pt-BR')}`,
+          { align: 'center' },
+        );
+      doc.moveDown(1.5);
+
+      // Summary
+      doc.fontSize(14).fillColor('#000').text('Resumo');
+      doc.moveDown(0.5);
+      doc
+        .fontSize(10)
+        .text(`Total de Pedidos: ${report.summary.totalOrders}`)
+        .text(`Faturamento: ${fmt(report.summary.totalRevenue)}`)
+        .text(`Ticket Médio: ${fmt(report.summary.avgTicket)}`)
+        .text(
+          `Nota Média: ${Number(report.summary.avgRating).toFixed(1)}`,
+        );
+      doc.moveDown(1);
+
+      // Sales
+      doc.fontSize(14).text('Vendas');
+      doc.moveDown(0.5);
+      doc
+        .fontSize(10)
+        .text(`Aceitos: ${report.sales.accepted}`)
+        .text(`Recusados: ${report.sales.rejected}`)
+        .text(`Concluídos: ${report.sales.completed}`)
+        .text(`Taxa de Aceite: ${report.sales.acceptanceRate}%`);
+      doc.moveDown(1);
+
+      // Cancellations
+      doc.fontSize(14).text('Cancelamentos');
+      doc.moveDown(0.5);
+      doc
+        .fontSize(10)
+        .text(`Total: ${report.cancellations.total}`)
+        .text(`Perda Total: ${fmt(report.cancellations.totalLoss)}`)
+        .text(`Percentual: ${report.cancellations.percentage}%`);
+
+      if (report.cancellations.byReason.length > 0) {
+        doc.moveDown(0.5);
+        doc.fontSize(10).text('Por Motivo:');
+        report.cancellations.byReason.forEach((r) => {
+          doc.text(
+            `  • ${r.reason}: ${r.count} pedido(s), ${fmt(r.value)} (${r.percentage}%)`,
+          );
+        });
+      }
+      doc.moveDown(1);
+
+      // Quality
+      doc.fontSize(14).text('Qualidade');
+      doc.moveDown(0.5);
+      doc
+        .fontSize(10)
+        .text(
+          `Nota Média: ${Number(report.quality.avgRating).toFixed(1)}`,
+        )
+        .text(`Taxa de Conclusão: ${report.quality.completionRate}%`);
+
+      doc.end();
+    });
+  }
+
+  async exportReportExcel(
+    userId: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<Buffer> {
+    const report = await this.getReports(userId, startDate, endDate);
+    const ExcelJS = await import('exceljs');
+    const workbook = new ExcelJS.Workbook();
+
+    // Summary sheet
+    const summary = workbook.addWorksheet('Resumo');
+    summary.columns = [
+      { header: 'Métrica', key: 'metric', width: 25 },
+      { header: 'Valor', key: 'value', width: 20 },
+    ];
+    summary.addRows([
+      { metric: 'Total de Pedidos', value: report.summary.totalOrders },
+      { metric: 'Faturamento', value: report.summary.totalRevenue },
+      { metric: 'Ticket Médio', value: report.summary.avgTicket },
+      { metric: 'Nota Média', value: Number(report.summary.avgRating) },
+      { metric: 'Aceitos', value: report.sales.accepted },
+      { metric: 'Recusados', value: report.sales.rejected },
+      { metric: 'Concluídos', value: report.sales.completed },
+      {
+        metric: 'Taxa de Aceite (%)',
+        value: report.sales.acceptanceRate,
+      },
+      {
+        metric: 'Total Cancelamentos',
+        value: report.cancellations.total,
+      },
+      { metric: 'Perda Cancelamentos', value: report.cancellations.totalLoss },
+      { metric: 'Taxa de Conclusão (%)', value: report.quality.completionRate },
+    ]);
+    summary.getRow(1).font = { bold: true };
+
+    // Cancellations by reason sheet
+    if (report.cancellations.byReason.length > 0) {
+      const reasons = workbook.addWorksheet('Cancelamentos');
+      reasons.columns = [
+        { header: 'Motivo', key: 'reason', width: 30 },
+        { header: 'Quantidade', key: 'count', width: 15 },
+        { header: 'Valor (R$)', key: 'value', width: 15 },
+        { header: '%', key: 'percentage', width: 10 },
+      ];
+      report.cancellations.byReason.forEach((r) => {
+        reasons.addRow(r);
+      });
+      reasons.getRow(1).font = { bold: true };
+    }
+
+    // Recent cancellations sheet
+    if (report.cancellations.recent.length > 0) {
+      const recent = workbook.addWorksheet('Recentes');
+      recent.columns = [
+        { header: 'Código', key: 'code', width: 20 },
+        { header: 'Data', key: 'date', width: 15 },
+        { header: 'Marca', key: 'brand', width: 20 },
+        { header: 'Motivo', key: 'reason', width: 25 },
+        { header: 'Valor (R$)', key: 'value', width: 15 },
+      ];
+      report.cancellations.recent.forEach((r) => {
+        recent.addRow(r);
+      });
+      recent.getRow(1).font = { bold: true };
+    }
+
+    return (await workbook.xlsx.writeBuffer()) as Buffer;
+  }
 }

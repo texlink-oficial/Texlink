@@ -49,15 +49,24 @@ const ReportsPage: React.FC = () => {
         }
     };
 
-    const handleExportPDF = () => {
-        // TODO: Implement PDF export
-        alert('Exportação para PDF em desenvolvimento');
+    const handleExport = async (format: 'pdf' | 'excel') => {
+        try {
+            const blob = await reportsService.exportReport(format, startDate, endDate);
+            const ext = format === 'pdf' ? 'pdf' : 'xlsx';
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `relatorio-operacoes.${ext}`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Error exporting report:', err);
+        }
     };
 
-    const handleExportExcel = () => {
-        // TODO: Implement Excel export
-        alert('Exportação para Excel em desenvolvimento');
-    };
+    const handleExportPDF = () => handleExport('pdf');
+
+    const handleExportExcel = () => handleExport('excel');
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-BR', {
