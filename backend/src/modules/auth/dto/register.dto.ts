@@ -3,6 +3,8 @@ import {
   IsNotEmpty,
   IsString,
   MinLength,
+  MaxLength,
+  Matches,
   IsEnum,
   IsOptional,
 } from 'class-validator';
@@ -13,7 +15,12 @@ export class RegisterDto {
   email: string;
 
   @IsString()
-  @MinLength(6)
+  @MinLength(8, { message: 'A senha deve ter pelo menos 8 caracteres' })
+  @MaxLength(128)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+    message:
+      'A senha deve conter pelo menos uma letra maiúscula, uma minúscula e um número',
+  })
   password: string;
 
   @IsString()

@@ -224,7 +224,7 @@ export class TeamService {
       company.type === 'BRAND' ? UserRole.BRAND : UserRole.SUPPLIER;
 
     // Criar novo usuário
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = await bcrypt.hash(dto.password, 12);
 
     const user = await this.prisma.user.create({
       data: {
@@ -591,7 +591,7 @@ export class TeamService {
         invitation.company.type === 'BRAND'
           ? UserRole.BRAND
           : UserRole.SUPPLIER;
-      const hashedPassword = await bcrypt.hash(newUserData.password, 10);
+      const hashedPassword = await bcrypt.hash(newUserData.password, 12);
 
       user = await this.prisma.user.create({
         data: {

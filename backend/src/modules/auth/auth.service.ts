@@ -6,13 +6,18 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CacheService } from '../../common/services/cache.service';
 import { RegisterDto, LoginDto, UpdateProfileDto } from './dto';
+
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_SECONDS = 900; // 15 minutes
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private cache: CacheService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -36,7 +41,7 @@ export class AuthService {
     }
 
     // Hash password
-    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const passwordHash = await bcrypt.hash(dto.password, 12);
 
     // Create user
     const user = await this.prisma.user.create({
@@ -103,6 +108,17 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
+    const lockoutKey = `auth:lockout:${dto.email}`;
+    const attemptsKey = `auth:attempts:${dto.email}`;
+
+    // Check if account is locked
+    const lockout = await this.cache.get<string>(lockoutKey);
+    if (lockout) {
+      throw new UnauthorizedException(
+        'Conta temporariamente bloqueada por excesso de tentativas. Tente novamente em 15 minutos.',
+      );
+    }
+
     // Find user with company information
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -124,6 +140,7 @@ export class AuthService {
     });
 
     if (!user) {
+      await this.incrementFailedAttempts(attemptsKey, lockoutKey);
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -134,12 +151,16 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
+      await this.incrementFailedAttempts(attemptsKey, lockoutKey);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     if (!user.isActive) {
       throw new UnauthorizedException('Account is inactive');
     }
+
+    // Clear failed attempts on successful login
+    await this.cache.del(attemptsKey);
 
     // Generate token
     const token = this.generateToken(user.id, user.email, user.role);
@@ -247,5 +268,20 @@ export class AuthService {
       email,
       role,
     });
+  }
+
+  private async incrementFailedAttempts(
+    attemptsKey: string,
+    lockoutKey: string,
+  ): Promise<void> {
+    const current = (await this.cache.get<number>(attemptsKey)) || 0;
+    const attempts = current + 1;
+
+    if (attempts >= MAX_LOGIN_ATTEMPTS) {
+      await this.cache.set(lockoutKey, 'locked', LOCKOUT_DURATION_SECONDS);
+      await this.cache.del(attemptsKey);
+    } else {
+      await this.cache.set(attemptsKey, attempts, LOCKOUT_DURATION_SECONDS);
+    }
   }
 }

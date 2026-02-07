@@ -42,7 +42,10 @@ interface TypingPayload {
 @WebSocketGateway({
   namespace: 'chat',
   cors: {
-    origin: '*',
+    origin: process.env.CORS_ORIGINS?.split(',') || [
+      'http://localhost:5173',
+      'http://localhost:3001',
+    ],
     credentials: true,
   },
 })

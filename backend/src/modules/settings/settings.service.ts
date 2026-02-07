@@ -339,7 +339,7 @@ export class SettingsService {
     }
 
     // Hash new password
-    const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, 12);
 
     // Update password
     await this.prisma.user.update({

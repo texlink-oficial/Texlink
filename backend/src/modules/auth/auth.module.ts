@@ -19,7 +19,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         return {
           secret,
           signOptions: {
-            expiresIn: 604800, // 7 days in seconds
+            expiresIn: config.get<number>('jwt.expiresIn') ?? '7d',
           },
         };
       },
