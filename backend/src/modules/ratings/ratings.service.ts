@@ -89,6 +89,26 @@ export class RatingsService {
     });
   }
 
+  // Get ratings received by the current user's company
+  async getReceivedRatings(userId: string) {
+    const companyUsers = await this.prisma.companyUser.findMany({
+      where: { userId },
+      select: { companyId: true },
+    });
+
+    const companyIds = companyUsers.map((cu) => cu.companyId);
+
+    return this.prisma.rating.findMany({
+      where: { toCompanyId: { in: companyIds } },
+      include: {
+        fromCompany: { select: { id: true, tradeName: true } },
+        order: { select: { id: true, displayId: true, productName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+  }
+
   // Get my pending ratings (orders that can be rated)
   async getPendingRatings(userId: string) {
     // Get user's companies

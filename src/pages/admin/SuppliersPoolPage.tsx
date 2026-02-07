@@ -86,11 +86,11 @@ const SuppliersPoolPage: React.FC = () => {
             const data = await adminService.getSuppliers(filter || undefined);
             setSuppliers(data);
 
-            // Calculate stats
+            // Calculate stats using data actually returned by the backend
             const total = data.length;
-            const onboarded = data.filter((s: PoolSupplier) => s.onboarding?.isCompleted).length;
+            const onboarded = data.filter((s: PoolSupplier) => s.supplierProfile?.onboardingComplete).length;
             const withBrands = data.filter(
-                (s: PoolSupplier) => (s.relationships?.length || 0) > 0
+                (s: PoolSupplier) => (s._count?.ordersAsSupplier || 0) > 0
             ).length;
             const available = onboarded - withBrands;
 
@@ -329,12 +329,12 @@ const SuppliersPoolPage: React.FC = () => {
 
                                     {/* Onboarding Status */}
                                     <div
-                                        className={`flex items-center gap-2 text-sm mb-4 ${supplier.onboarding?.isCompleted
+                                        className={`flex items-center gap-2 text-sm mb-4 ${supplier.supplierProfile?.onboardingComplete
                                             ? 'text-green-400'
                                             : 'text-amber-400'
                                             }`}
                                     >
-                                        {supplier.onboarding?.isCompleted ? (
+                                        {supplier.supplierProfile?.onboardingComplete ? (
                                             <>
                                                 <CheckCircle className="w-4 h-4" />
                                                 <span>Onboarding completo</span>
@@ -467,25 +467,18 @@ const SuppliersPoolPage: React.FC = () => {
 
                                 {/* Onboarding Status */}
                                 <div
-                                    className={`rounded-2xl p-4 border ${selectedSupplier.onboarding?.isCompleted
+                                    className={`rounded-2xl p-4 border ${selectedSupplier.supplierProfile?.onboardingComplete
                                         ? 'bg-emerald-500/5 border-emerald-500/20'
                                         : 'bg-amber-500/5 border-amber-500/20'
                                         }`}
                                 >
                                     <div className="flex items-center gap-2">
-                                        {selectedSupplier.onboarding?.isCompleted ? (
+                                        {selectedSupplier.supplierProfile?.onboardingComplete ? (
                                             <>
                                                 <CheckCircle className="w-5 h-5 text-emerald-500" />
                                                 <span className="text-emerald-700 dark:text-emerald-400 font-medium font-bold uppercase tracking-wider text-xs">
                                                     Onboarding Completo
                                                 </span>
-                                                {selectedSupplier.onboarding.completedAt && (
-                                                    <span className="text-gray-400 text-sm ml-auto">
-                                                        {new Date(
-                                                            selectedSupplier.onboarding.completedAt
-                                                        ).toLocaleDateString('pt-BR')}
-                                                    </span>
-                                                )}
                                             </>
                                         ) : (
                                             <>

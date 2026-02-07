@@ -47,6 +47,7 @@ interface UseChatSocketOptions {
     onConnect?: () => void;
     onDisconnect?: () => void;
     onError?: (error: string) => void;
+    onOrderUpdated?: (order: any) => void;
 }
 
 interface UseChatSocketReturn {
@@ -280,7 +281,7 @@ export function useChatSocket(
             });
         });
 
-        socket.on('proposal-updated', ({ messageId, status }: { messageId: string; status: string }) => {
+        socket.on('proposal-updated', ({ messageId, status, updatedOrder }: { messageId: string; status: string; updatedOrder?: any }) => {
             setMessages((prev) =>
                 prev.map((msg) => {
                     if (msg.id === messageId && msg.proposalData) {
@@ -295,6 +296,9 @@ export function useChatSocket(
                     return msg;
                 })
             );
+            if (updatedOrder && status === 'ACCEPTED') {
+                options.onOrderUpdated?.(updatedOrder);
+            }
         });
 
         // Cleanup
@@ -305,7 +309,7 @@ export function useChatSocket(
             socket.disconnect();
             socketRef.current = null;
         };
-    }, [orderId, getToken, options.onConnect, options.onDisconnect, options.onError]);
+    }, [orderId, getToken, options.onConnect, options.onDisconnect, options.onError, options.onOrderUpdated]);
 
     // Process queue when reconnecting
     useEffect(() => {

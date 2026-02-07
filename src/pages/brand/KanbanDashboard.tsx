@@ -380,6 +380,11 @@ const BrandKanbanDashboard: React.FC = () => {
                     onClose={() => setSelectedOrder(null)}
                     onStatusChange={handleStatusChange}
                     onTimelineStepToggle={handleTimelineStepToggle}
+                    onOrderUpdated={(updatedOrder) => {
+                        const refreshed = convertApiOrder(updatedOrder);
+                        setOrders(prev => prev.map(o => o.id === refreshed.id ? refreshed : o));
+                        setSelectedOrder(prev => prev && prev.id === refreshed.id ? refreshed : prev);
+                    }}
                 />
             )}
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { portalService, PerformanceData, TrendPoint } from '../../services/portal.service';
+import { ratingsService, Rating } from '../../services/ratings.service';
 import { MetricCard } from '../../components/shared/MetricCard';
 import {
     LineChart,
@@ -26,7 +27,9 @@ import {
     BarChart3,
     ArrowUp,
     ArrowDown,
-    Minus
+    Minus,
+    Star,
+    MessageSquare,
 } from 'lucide-react';
 
 const formatCurrency = (value: number) =>
@@ -368,9 +371,12 @@ const PerformancePage: React.FC = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [activeTab, setActiveTab] = useState<'byStatus' | 'byBrand'>('byStatus');
+    const [receivedRatings, setReceivedRatings] = useState<Rating[]>([]);
+    const [isLoadingRatings, setIsLoadingRatings] = useState(true);
 
     useEffect(() => {
         loadData();
+        loadRatings();
     }, [periodPreset, startDate, endDate]);
 
     const loadData = async () => {
@@ -382,6 +388,18 @@ const PerformancePage: React.FC = () => {
             console.error('Error loading performance:', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const loadRatings = async () => {
+        try {
+            setIsLoadingRatings(true);
+            const ratings = await ratingsService.getMyRatings();
+            setReceivedRatings(ratings);
+        } catch (error) {
+            console.error('Error loading ratings:', error);
+        } finally {
+            setIsLoadingRatings(false);
         }
     };
 
@@ -630,7 +648,7 @@ const PerformancePage: React.FC = () => {
             </div>
 
             {/* Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
                 <div className="border-b border-gray-200 dark:border-gray-700">
                     <div className="flex">
                         <button
@@ -685,6 +703,77 @@ const PerformancePage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            {/* Received Ratings Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                            <MessageSquare className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                Avaliacoes Recebidas
+                            </h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Veja o que as marcas dizem sobre seu trabalho
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {isLoadingRatings ? (
+                    <div className="flex justify-center py-12">
+                        <Loader2 className="w-6 h-6 text-brand-500 animate-spin" />
+                    </div>
+                ) : receivedRatings.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <Star className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                        <p className="text-gray-500 dark:text-gray-400 text-sm">
+                            Nenhuma avaliacao recebida ainda
+                        </p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                        {receivedRatings.map((rating) => (
+                            <div key={rating.id} className="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                {rating.fromCompany?.tradeName || 'Marca'}
+                                            </span>
+                                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                                                {new Date(rating.createdAt).toLocaleDateString('pt-BR')}
+                                            </span>
+                                        </div>
+                                        {rating.order && (
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                                Pedido #{rating.order.displayId} - {rating.order.productName}
+                                            </p>
+                                        )}
+                                        {rating.comment && (
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 italic">
+                                                "{rating.comment}"
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <Star
+                                                key={i}
+                                                className={`w-4 h-4 ${i < rating.score
+                                                    ? 'text-amber-400 fill-amber-400'
+                                                    : 'text-gray-200 dark:text-gray-600'
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -11,9 +11,10 @@ interface OrderDetailModalProps {
     onClose: () => void;
     onStatusChange: (id: string, newStatus: OrderStatus) => void;
     onTimelineStepToggle?: (id: string, stepName: string) => void;
+    onOrderUpdated?: (order: any) => void;
 }
 
-export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onStatusChange, onTimelineStepToggle }) => {
+export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onStatusChange, onTimelineStepToggle, onOrderUpdated }) => {
     const navigate = useNavigate();
     const [isChatOpen, setIsChatOpen] = useState(false);
 
@@ -570,7 +571,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                 </div>
             )}
 
-            {isChatOpen && <ChatInterface order={order} onClose={() => setIsChatOpen(false)} />}
+            {isChatOpen && <ChatInterface order={order} onClose={() => setIsChatOpen(false)} onOrderUpdated={onOrderUpdated} />}
 
             {/* Quality Review Modal */}
             <OrderReviewModal

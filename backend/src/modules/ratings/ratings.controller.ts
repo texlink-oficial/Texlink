@@ -26,6 +26,11 @@ export class RatingsController {
     return this.ratingsService.getCompanyRatings(companyId);
   }
 
+  @Get('received')
+  async getReceivedRatings(@CurrentUser('id') userId: string) {
+    return this.ratingsService.getReceivedRatings(userId);
+  }
+
   @Get('pending')
   async getPendingRatings(@CurrentUser('id') userId: string) {
     return this.ratingsService.getPendingRatings(userId);

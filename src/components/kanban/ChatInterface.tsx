@@ -21,11 +21,12 @@ import {
 interface ChatInterfaceProps {
   order: Order;
   onClose: () => void;
+  onOrderUpdated?: (order: any) => void;
 }
 
 const MAX_MESSAGE_LENGTH = 5000;
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ order, onClose }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ order, onClose, onOrderUpdated }) => {
   const {
     messages,
     isConnected,
@@ -42,7 +43,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ order, onClose }) 
     acceptProposal,
     rejectProposal,
     loadMore,
-  } = useChatSocket(order.id);
+  } = useChatSocket(order.id, { onOrderUpdated });
 
   const [inputValue, setInputValue] = useState('');
   const [showProposalForm, setShowProposalForm] = useState(false);

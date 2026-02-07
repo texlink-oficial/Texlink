@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { adminService } from '../../services';
 import {
     ArrowLeft, Package, Search, Filter, Loader2,
     ChevronRight, Clock, CheckCircle, Truck, Factory,
-    Building2, Calendar, DollarSign, AlertCircle
+    Building2, Calendar, DollarSign, AlertCircle, RefreshCw
 } from 'lucide-react';
 
 interface Order {
@@ -30,6 +30,7 @@ interface Order {
 
 const ORDER_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
     LANCADO_PELA_MARCA: { label: 'Aguardando Aceite', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-500/10' },
+    EM_NEGOCIACAO: { label: 'Em Negociacao', color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-100 dark:bg-indigo-500/10' },
     ACEITO_PELA_FACCAO: { label: 'Aceito', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-500/10' },
     EM_PREPARACAO_SAIDA_MARCA: { label: 'Preparando Envio', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-500/10' },
     EM_TRANSITO_PARA_FACCAO: { label: 'Em Trânsito (Ida)', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-500/10' },
@@ -46,14 +47,30 @@ const ORDER_STATUS_CONFIG: Record<string, { label: string; color: string; bg: st
     DISPONIVEL_PARA_OUTRAS: { label: 'Disponível', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-500/10' },
 };
 
+const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
+
 const OrdersPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [filter, setFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
         loadOrders();
+    }, [filter]);
+
+    // Auto-refresh every 30s
+    useEffect(() => {
+        intervalRef.current = setInterval(() => {
+            refreshOrders();
+        }, AUTO_REFRESH_INTERVAL);
+
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+        };
     }, [filter]);
 
     const loadOrders = async () => {
@@ -61,12 +78,26 @@ const OrdersPage: React.FC = () => {
             setIsLoading(true);
             const data = await adminService.getAllOrders(filter || undefined);
             setOrders(data);
+            setLastUpdated(new Date());
         } catch (error) {
             console.error('Error loading orders:', error);
         } finally {
             setIsLoading(false);
         }
     };
+
+    const refreshOrders = useCallback(async () => {
+        try {
+            setIsRefreshing(true);
+            const data = await adminService.getAllOrders(filter || undefined);
+            setOrders(data);
+            setLastUpdated(new Date());
+        } catch (error) {
+            console.error('Error refreshing orders:', error);
+        } finally {
+            setIsRefreshing(false);
+        }
+    }, [filter]);
 
     const filteredOrders = orders.filter(order =>
         order.displayId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -102,10 +133,25 @@ const OrdersPage: React.FC = () => {
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pedidos</h1>
-                        <p className="text-gray-500 dark:text-gray-400">{stats.total} pedidos gerenciados no sistema</p>
+                        <p className="text-gray-500 dark:text-gray-400">
+                            {stats.total} pedidos gerenciados no sistema
+                            {lastUpdated && (
+                                <span className="ml-2 text-xs text-gray-400">
+                                    Atualizado: {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            )}
+                        </p>
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                        <button
+                            onClick={refreshOrders}
+                            disabled={isRefreshing}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/[0.06] rounded-xl text-sm font-medium text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-sm disabled:opacity-50"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                            Atualizar
+                        </button>
                         <div className="relative flex-1 sm:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
