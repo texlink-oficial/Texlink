@@ -2,8 +2,8 @@
 
 > Generated: 2026-02-07
 > Status: Active
-> Total Tasks: 30
-> Estimated Effort: ~95 story points
+> Total Tasks: 31 (incl. TASK-018b)
+> Estimated Effort: ~103 story points
 
 ---
 
@@ -440,6 +440,38 @@
 
 ---
 
+### TASK-018b-SEC — Remediate all 19 security findings
+
+| Field | Value |
+|-------|-------|
+| **Story** | As a platform, all security vulnerabilities identified in the audit must be fixed before production |
+| **Size** | L (8 pts) |
+| **Agent** | Developer + Security Analyst |
+| **Status** | :white_check_mark: Done |
+| **Priority** | P0 - Critical |
+| **Depends On** | TASK-018-SEC |
+
+**Acceptance Criteria:**
+- [x] Fix 3 Critical findings: JWT secret hardcoding, SQL injection, mock token bypass
+- [x] Fix 5 High findings: WebSocket CORS, JWT expiration, bcrypt cost, password policy, account lockout
+- [x] Fix 6 Medium findings: Swagger in prod, .env in git, implicit conversion, Twilio webhook, RolesGuard, health endpoint
+- [x] Fix 5 Low findings: localStorage→sessionStorage, ADMIN self-assign, magic bytes, body size limit
+- [x] All 226 unit tests passing, no regressions
+- [x] Frontend build clean
+- [x] Security audit report updated — risk level downgraded HIGH → LOW
+- [x] OWASP compliance: 9/10 categories PASS (A06 pending Dependabot)
+
+**Commits:**
+- `0afe8c9` — Critical (3): VULN-001, VULN-002, VULN-003
+- `9e8855b` — High (5): VULN-004, VULN-005, VULN-006, VULN-007, VULN-008
+- `b18bb17` — Medium (6): VULN-009, VULN-010, VULN-011, VULN-012, VULN-013, VULN-014
+- `0f1fd52` — Low (5): VULN-015, VULN-016, VULN-017, VULN-018, VULN-019
+- `cd15746` — Updated audit report
+
+**Commit Convention:** `fix(security): [TASK-018b-SEC] remediate security findings`
+
+---
+
 ### TASK-019-DEV — Implement Redis caching for hot paths
 
 | Field | Value |
@@ -679,7 +711,7 @@
 | **Sprint 2** | Financial & Reports | TASK-005 to TASK-008 | 23 pts | P1-P2 |
 | **Sprint 3** | Cleanup & Quality | TASK-009 to TASK-012 | 6 pts | P1-P3 |
 | **Sprint 4** | Testing & Docs | TASK-013 to TASK-017 | 39 pts | P1-P2 |
-| **Sprint 5** | Security & Perf | TASK-018 to TASK-020 | 21 pts | P1-P2 |
+| **Sprint 5** | Security & Perf | TASK-018 to TASK-020 (incl. 018b) | 29 pts | P0-P2 |
 | **Sprint 6** | Deploy & Infra | TASK-021 to TASK-022 | 13 pts | P1 |
 | **Sprint 7** | Advanced Features | TASK-023 to TASK-026 | 20 pts | P2 |
 | **Backlog** | Future | TASK-027 to TASK-030 | 42 pts | P3 |
@@ -691,7 +723,7 @@
 | **Developer** | 19 | ~82 pts |
 | **QA Tester** | 4 | 34 pts |
 | **Architect** | 2 | 18 pts |
-| **Security Analyst** | 1 | 8 pts |
+| **Security Analyst** | 2 | 16 pts |
 | **DevOps** | 2 | 13 pts |
 
 ## Dependency Graph
@@ -705,7 +737,8 @@ TASK-005 ─┬── TASK-008 (payment gateway ADR)
 TASK-006 ─┘        └── TASK-028 (invoices)
 TASK-009 ──────────────────────────────────── (independent)
 TASK-013 ──────────────────────────────────── (independent)
-TASK-018 ─┬── TASK-019 (Redis caching)
+TASK-018 ─┬── TASK-018b (security remediation) ✅
+          ├── TASK-019 (Redis caching)
           └── TASK-020 (credit providers)
 TASK-021 ─── TASK-022 (infra depends on CI/CD)
 ```
