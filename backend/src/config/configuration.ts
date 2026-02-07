@@ -1,7 +1,7 @@
 export default () => {
   // Validate required environment variables in production
   if (process.env.NODE_ENV === 'production') {
-    const requiredEnvVars = ['JWT_SECRET', 'DATABASE_URL'];
+    const requiredEnvVars = ['JWT_SECRET', 'DATABASE_URL', 'CORS_ORIGINS'];
     const missing = requiredEnvVars.filter((v) => !process.env[v]);
     if (missing.length > 0) {
       throw new Error(
@@ -13,6 +13,7 @@ export default () => {
     const weakSecrets = [
       'default-secret',
       'texlink-dev-secret-change-in-production',
+      'jwt_secret_change_in_production',
       'secret',
       'changeme',
     ];
