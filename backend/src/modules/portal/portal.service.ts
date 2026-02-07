@@ -255,6 +255,7 @@ export class PortalService {
       ordersByStatus,
       ordersByBrand,
       revenueByWeek,
+      avgLeadTimeResult,
     ] = await Promise.all([
       // Completed orders
       this.prisma.order.count({
@@ -322,6 +323,19 @@ export class PortalService {
         GROUP BY DATE_TRUNC('week', "updatedAt")
         ORDER BY week ASC
       `,
+      // Average lead time in days (acceptedAt → updatedAt for FINALIZADO orders)
+      this.prisma.$queryRaw<{ avg_days: number }[]>`
+        SELECT COALESCE(
+          AVG(EXTRACT(EPOCH FROM ("updatedAt" - "acceptedAt")) / 86400),
+          0
+        )::float as avg_days
+        FROM "orders"
+        WHERE "supplierId" = ${company.id}
+          AND "status" = 'FINALIZADO'
+          AND "acceptedAt" IS NOT NULL
+          AND "updatedAt" >= ${start}
+          AND "updatedAt" <= ${end}
+      `,
     ]);
 
     // Get brand names for the groupBy results
@@ -352,7 +366,7 @@ export class PortalService {
     return {
       completedOrders,
       acceptanceRate: Math.round(acceptanceRate),
-      avgLeadTime: 7, // TODO: Calculate from actual order timestamps
+      avgLeadTime: Math.round(avgLeadTimeResult[0]?.avg_days || 0),
       cancellationRate: Math.round(cancellationRate * 10) / 10,
       totalRevenue: Number(totalRevenue._sum.totalValue) || 0,
       chartData: revenueByWeek.map((w) => ({
