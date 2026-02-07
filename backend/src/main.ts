@@ -2,8 +2,18 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
+import * as Sentry from '@sentry/nestjs';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    enabled: process.env.NODE_ENV === 'production',
+    tracesSampleRate: 0.2,
+  });
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {

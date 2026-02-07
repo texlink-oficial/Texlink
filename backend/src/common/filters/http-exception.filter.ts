@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import * as Sentry from '@sentry/nestjs';
 
 interface ErrorResponse {
   statusCode: number;
@@ -57,7 +58,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
           : exception.message;
       error = 'Internal Server Error';
 
-      // Log the full error in production (but don't expose to client)
+      // Report to Sentry + log the full error (but don't expose to client)
+      Sentry.captureException(exception, {
+        extra: { correlationId, path: request.url, method: request.method },
+      });
       this.logger.error(
         `Unhandled exception: ${exception.message}`,
         exception.stack,

@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 
 interface Props {
   children: ReactNode;
@@ -28,10 +29,9 @@ class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo });
 
-    // Log to error tracking service in production
+    // Send to Sentry in production
     if (import.meta.env.PROD) {
-      // TODO: Send to Sentry or similar service
-      // Example: Sentry.captureException(error, { extra: errorInfo });
+      Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
     }
   }
 
