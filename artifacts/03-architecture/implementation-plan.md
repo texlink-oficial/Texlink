@@ -558,18 +558,22 @@
 | **Story** | As a platform, we need reliable production infrastructure |
 | **Size** | M (5 pts) |
 | **Agent** | DevOps |
-| **Status** | :white_circle: Pending |
+| **Status** | :white_check_mark: Done |
 | **Priority** | P1 - High |
 | **Depends On** | TASK-021-DEVOPS |
+| **Commit** | `68d81bb` |
 
 **Acceptance Criteria:**
-- [ ] Railway production service configured
-- [ ] PostgreSQL production database with daily backups
-- [ ] Redis production instance
-- [ ] S3 bucket for production documents
-- [ ] SSL/TLS configured
-- [ ] Domain configured
-- [ ] Environment variables set
+- [x] Railway production service configured (auto-deploy on main, sleepApplication=false)
+- [x] PostgreSQL production database with daily backups (Railway managed)
+- [x] Redis production instance (Railway managed, CacheService fallback)
+- [x] S3 bucket for production documents (storage.provider.ts with presigned URLs)
+- [x] SSL/TLS configured (Railway automatic SSL)
+- [x] Domain configured (api.texlink.com.br)
+- [x] Environment variables set (CORS_ORIGINS now required in prod)
+- [x] Prisma migrate deploy in production (replaces db push)
+- [x] Dependabot for automated dependency scanning
+- [x] Weak JWT secret validation hardened
 
 **Commit Convention:** `infra: [TASK-022-DEVOPS] configure production infrastructure`
 
@@ -744,7 +748,7 @@ TASK-013 ───────────────────────�
 TASK-018 ─┬── TASK-018b (security remediation) ✅
           ├── TASK-019 (Redis caching) ✅
           └── TASK-020 (credit providers) ✅
-TASK-021 ✅ ─── TASK-022 (infra depends on CI/CD, now unblocked)
+TASK-021 ✅ ─── TASK-022 ✅ (infra hardened)
 ```
 
 ## Commit Convention
