@@ -1,5 +1,6 @@
 import {
   IsInt,
+  IsNumber,
   IsOptional,
   IsArray,
   IsString,
@@ -18,6 +19,18 @@ export class UpdateCapacityDto {
   @Min(0)
   @Max(100)
   currentOccupancy?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(9999)
+  activeWorkers?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(1)
+  @Max(24)
+  hoursPerDay?: number;
 
   @IsOptional()
   @IsArray()

@@ -215,6 +215,8 @@ export class SettingsService {
       select: {
         monthlyCapacity: true,
         currentOccupancy: true,
+        activeWorkers: true,
+        hoursPerDay: true,
         productTypes: true,
         specialties: true,
       },
@@ -225,6 +227,8 @@ export class SettingsService {
       return {
         monthlyCapacity: null,
         currentOccupancy: 0,
+        activeWorkers: null,
+        hoursPerDay: null,
         productTypes: [],
         specialties: [],
       };
@@ -247,6 +251,8 @@ export class SettingsService {
         select: {
           monthlyCapacity: true,
           currentOccupancy: true,
+          activeWorkers: true,
+          hoursPerDay: true,
           productTypes: true,
           specialties: true,
         },
@@ -261,6 +267,8 @@ export class SettingsService {
       select: {
         monthlyCapacity: true,
         currentOccupancy: true,
+        activeWorkers: true,
+        hoursPerDay: true,
         productTypes: true,
         specialties: true,
       },
