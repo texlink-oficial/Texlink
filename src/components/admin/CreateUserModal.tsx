@@ -22,6 +22,7 @@ export default function CreateUserModal({ onClose, onSuccess }: CreateUserModalP
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'ADMIN' | 'BRAND' | 'SUPPLIER'>('ADMIN');
   const [companyId, setCompanyId] = useState('');
+  const [isCompanyAdmin, setIsCompanyAdmin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -40,6 +41,7 @@ export default function CreateUserModal({ onClose, onSuccess }: CreateUserModalP
       setCompanies([]);
       setCompanyId('');
     }
+    setIsCompanyAdmin(true);
   }, [role]);
 
   function generatePassword() {
@@ -79,6 +81,7 @@ export default function CreateUserModal({ onClose, onSuccess }: CreateUserModalP
         password,
         role,
         companyId: companyId || undefined,
+        ...(companyId && { isCompanyAdmin }),
       });
       toast.success('Usuario criado', 'Usuario criado com sucesso');
       onSuccess();
@@ -177,6 +180,44 @@ export default function CreateUserModal({ onClose, onSuccess }: CreateUserModalP
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {/* Nível de Acesso na Empresa (conditional - only when company selected) */}
+          {(role === 'BRAND' || role === 'SUPPLIER') && companyId && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                Nível de Acesso
+              </label>
+              <div className="flex rounded-lg bg-gray-100 dark:bg-gray-900 p-1 border border-gray-200 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => setIsCompanyAdmin(true)}
+                  className={`flex-1 px-4 py-2 text-sm font-bold rounded-md transition-all ${
+                    isCompanyAdmin
+                      ? 'bg-white dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                  }`}
+                >
+                  {role === 'BRAND' ? 'Admin da Marca' : 'Admin da Facção'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCompanyAdmin(false)}
+                  className={`flex-1 px-4 py-2 text-sm font-bold rounded-md transition-all ${
+                    !isCompanyAdmin
+                      ? 'bg-white dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                  }`}
+                >
+                  {role === 'BRAND' ? 'Usuário da Marca' : 'Usuário da Facção'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+                {isCompanyAdmin
+                  ? 'Terá acesso total à empresa, incluindo gestão de equipe e configurações.'
+                  : 'Terá acesso limitado (visualização). Permissões podem ser ajustadas depois.'}
+              </p>
             </div>
           )}
 

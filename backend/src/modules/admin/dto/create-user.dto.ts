@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsOptional,
@@ -25,4 +26,8 @@ export class AdminCreateUserDto {
   @IsString()
   @IsOptional()
   companyId?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isCompanyAdmin?: boolean;
 }

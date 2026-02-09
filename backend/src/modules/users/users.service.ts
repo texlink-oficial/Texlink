@@ -88,8 +88,8 @@ export class UsersService {
           companyUsers: {
             create: {
               companyId: dto.companyId,
-              companyRole: 'ADMIN',
-              isCompanyAdmin: true,
+              companyRole: dto.isCompanyAdmin ? 'ADMIN' : 'VIEWER',
+              isCompanyAdmin: dto.isCompanyAdmin ?? false,
             },
           },
         }),

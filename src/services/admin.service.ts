@@ -91,6 +91,7 @@ export interface CreateUserData {
     password: string;
     role: 'ADMIN' | 'BRAND' | 'SUPPLIER';
     companyId?: string;
+    isCompanyAdmin?: boolean;
 }
 
 export interface UpdateUserData {

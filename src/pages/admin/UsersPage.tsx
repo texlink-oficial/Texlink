@@ -242,11 +242,19 @@ const UsersPage: React.FC = () => {
                                                 <StatusBadge isActive={user.isActive} />
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                                                    {user.companyUsers && user.companyUsers.length > 0
-                                                        ? user.companyUsers.map(cu => cu.company.tradeName || '—').join(', ')
-                                                        : '—'}
-                                                </span>
+                                                {user.companyUsers && user.companyUsers.length > 0
+                                                    ? <div className="flex flex-wrap gap-1.5">
+                                                        {user.companyUsers.map(cu => (
+                                                            <span key={cu.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.06] rounded-lg text-xs font-medium text-gray-600 dark:text-gray-400">
+                                                                {cu.company.tradeName || '—'}
+                                                                <span className={`text-[9px] font-bold uppercase ${cu.isCompanyAdmin ? 'text-sky-500' : 'text-gray-400'}`}>
+                                                                    {cu.isCompanyAdmin ? 'admin' : 'user'}
+                                                                </span>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                    : <span className="text-sm text-gray-400">—</span>
+                                                }
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
