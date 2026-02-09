@@ -27,8 +27,6 @@ const AdminDashboard: React.FC = () => {
     const [dashboard, setDashboard] = useState<DashboardData | null>(null);
     const [revenueHistory, setRevenueHistory] = useState<RevenueHistoryItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const toggleDarkMode = () => { }; // Removed, handled by Header
-
     useEffect(() => {
         loadDashboard();
     }, []);

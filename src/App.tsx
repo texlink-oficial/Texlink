@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PermissionProvider } from './contexts/PermissionContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastContainer } from './components/ui/ToastContainer';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/error/ErrorBoundary';
@@ -116,6 +117,7 @@ const queryClient = new QueryClient({
 const App: React.FC = () => {
     return (
         <ErrorBoundary>
+            <ThemeProvider>
             <QueryClientProvider client={queryClient}>
                 <AuthProvider>
                     <ToastProvider>
@@ -280,6 +282,7 @@ const App: React.FC = () => {
                     </ToastProvider>
                 </AuthProvider>
             </QueryClientProvider>
+            </ThemeProvider>
         </ErrorBoundary>
     );
 };

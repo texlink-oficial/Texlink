@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { NotificationBell } from '../notifications';
 import {
     Shield,
@@ -20,29 +21,12 @@ import { Tooltip } from '../ui/Tooltip';
 export const AdminHeader: React.FC = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const [darkMode, setDarkMode] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return document.documentElement.classList.contains('dark');
-        }
-        return false;
-    });
-
-    useEffect(() => {
-        if (darkMode) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    }, [darkMode]);
+    const { darkMode, toggleDarkMode } = useTheme();
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
-
-    const toggleDarkMode = () => setDarkMode(!darkMode);
 
     const navItems = [
         { label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" />, path: '/admin' },

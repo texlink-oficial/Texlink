@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { NotificationBell } from '../notifications';
 import { Tooltip } from '../ui/Tooltip';
 import { BrandUserMenuDropdown } from './BrandUserMenuDropdown';
@@ -164,29 +165,12 @@ export const BrandPortalSidebar: React.FC = () => {
     const [expandedItems, setExpandedItems] = useState<string[]>(['pedidos', 'faccoes']);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [darkMode, setDarkMode] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return document.documentElement.classList.contains('dark');
-        }
-        return false;
-    });
+    const { darkMode, toggleDarkMode } = useTheme();
 
     // Close mobile menu on route change
     useEffect(() => {
         setIsMobileMenuOpen(false);
     }, [location.pathname]);
-
-    useEffect(() => {
-        if (darkMode) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    }, [darkMode]);
-
-    const toggleDarkMode = () => setDarkMode(!darkMode);
 
     const toggleExpand = (id: string) => {
         if (isCollapsed) {
