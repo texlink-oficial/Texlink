@@ -66,6 +66,62 @@ export interface SupplierDocument {
     uploadedBy?: { id: string; name: string } | null;
 }
 
+export interface AdminUser {
+    id: string;
+    email: string;
+    name: string;
+    role: 'ADMIN' | 'BRAND' | 'SUPPLIER';
+    isActive: boolean;
+    createdAt: string;
+    companyUsers: {
+        id: string;
+        companyRole: string;
+        isCompanyAdmin: boolean;
+        company: {
+            id: string;
+            tradeName: string | null;
+            type: string;
+        };
+    }[];
+}
+
+export interface CreateUserData {
+    email: string;
+    name: string;
+    password: string;
+    role: 'ADMIN' | 'BRAND' | 'SUPPLIER';
+    companyId?: string;
+}
+
+export interface UpdateUserData {
+    name?: string;
+    email?: string;
+    role?: 'ADMIN' | 'BRAND' | 'SUPPLIER';
+    isActive?: boolean;
+}
+
+export interface CreateCompanyData {
+    legalName: string;
+    tradeName?: string;
+    document: string;
+    type: 'BRAND' | 'SUPPLIER';
+    city: string;
+    state: string;
+    phone?: string;
+    email?: string;
+    ownerUserId?: string;
+}
+
+export interface UpdateCompanyData {
+    legalName?: string;
+    tradeName?: string;
+    document?: string;
+    city?: string;
+    state?: string;
+    phone?: string;
+    email?: string;
+}
+
 export interface PendingApproval {
     id: string;
     legalName: string;
@@ -318,5 +374,68 @@ export const adminService = {
         } catch {
             return null;
         }
+    },
+
+    // ========== User Management ==========
+
+    async getAllUsers(role?: string): Promise<AdminUser[]> {
+        if (MOCK_MODE) {
+            await simulateDelay(400);
+            return [];
+        }
+
+        const params = role ? { role } : undefined;
+        const response = await api.get<AdminUser[]>('/users', { params });
+        return response.data;
+    },
+
+    async getUserById(id: string): Promise<AdminUser> {
+        const response = await api.get<AdminUser>(`/users/${id}`);
+        return response.data;
+    },
+
+    async createUser(data: CreateUserData): Promise<AdminUser> {
+        const response = await api.post<AdminUser>('/users', data);
+        return response.data;
+    },
+
+    async updateUser(id: string, data: UpdateUserData): Promise<AdminUser> {
+        const response = await api.put<AdminUser>(`/users/${id}`, data);
+        return response.data;
+    },
+
+    async deleteUser(id: string) {
+        const response = await api.delete(`/users/${id}`);
+        return response.data;
+    },
+
+    async resetPassword(id: string, newPassword: string) {
+        const response = await api.post(`/users/${id}/reset-password`, { newPassword });
+        return response.data;
+    },
+
+    // ========== Company Management ==========
+
+    async createCompany(data: CreateCompanyData) {
+        const response = await api.post('/admin/companies', data);
+        return response.data;
+    },
+
+    async updateCompany(id: string, data: UpdateCompanyData) {
+        const response = await api.patch(`/admin/companies/${id}`, data);
+        return response.data;
+    },
+
+    async addUserToCompany(companyId: string, userId: string, companyRole?: string) {
+        const response = await api.post(`/admin/companies/${companyId}/users`, {
+            userId,
+            companyRole,
+        });
+        return response.data;
+    },
+
+    async removeUserFromCompany(companyId: string, userId: string) {
+        const response = await api.delete(`/admin/companies/${companyId}/users/${userId}`);
+        return response.data;
     },
 };

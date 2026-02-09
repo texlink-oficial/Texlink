@@ -12,7 +12,8 @@ import {
     Building2,
     Package,
     LayoutDashboard,
-    Search
+    Search,
+    Users,
 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 
@@ -48,6 +49,7 @@ export const AdminHeader: React.FC = () => {
         { label: 'Facções', icon: <Factory className="w-4 h-4" />, path: '/admin/suppliers' },
         { label: 'Marcas', icon: <Building2 className="w-4 h-4" />, path: '/admin/brands' },
         { label: 'Pedidos', icon: <Package className="w-4 h-4" />, path: '/admin/orders' },
+        { label: 'Usuários', icon: <Users className="w-4 h-4" />, path: '/admin/users' },
     ];
 
     return (

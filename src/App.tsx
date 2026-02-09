@@ -82,6 +82,7 @@ const AdminSupportTickets = React.lazy(() => import('./pages/admin/SupportTicket
 const AdminBrands = React.lazy(() => import('./pages/admin/BrandsPage'));
 const AdminOrders = React.lazy(() => import('./pages/admin/OrdersPage'));
 const AdminDocuments = React.lazy(() => import('./pages/admin/DocumentsPage'));
+const AdminUsers = React.lazy(() => import('./pages/admin/UsersPage'));
 
 // Shared pages
 const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage'));
@@ -258,6 +259,7 @@ const App: React.FC = () => {
                                                 <Route path="educational-content" element={<AdminEducationalContent />} />
                                                 <Route path="support" element={<AdminSupportTickets />} />
                                                 <Route path="documents" element={<AdminDocuments />} />
+                                                <Route path="users" element={<AdminUsers />} />
                                                 <Route path="notificacoes" element={<NotificationsPage />} />
                                             </Route>
 

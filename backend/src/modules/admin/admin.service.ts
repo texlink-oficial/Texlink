@@ -1,11 +1,12 @@
-import { Injectable, Logger, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, Inject, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
-import { OrderStatus, CompanyStatus, CompanyType, SupplierDocumentType, SupplierDocumentStatus } from '@prisma/client';
+import { OrderStatus, CompanyStatus, CompanyType, SupplierDocumentType, SupplierDocumentStatus, CompanyRole } from '@prisma/client';
 import { SUPPLIER_STATUS_CHANGED } from '../notifications/events/notification.events';
 import type { SupplierStatusChangedEvent } from '../notifications/events/notification.events';
 import type { StorageProvider } from '../upload/storage.provider';
 import { STORAGE_PROVIDER } from '../upload/storage.provider';
+import { AdminCreateCompanyDto, AdminUpdateCompanyDto, AddUserToCompanyDto } from './dto';
 
 @Injectable()
 export class AdminService {
@@ -555,5 +556,157 @@ export class AdminService {
         value: Number(b._sum.totalValue) || 0,
       })),
     };
+  }
+
+  // ========== Company CRUD ==========
+
+  async createCompany(dto: AdminCreateCompanyDto, adminId: string) {
+    const existing = await this.prisma.company.findUnique({
+      where: { document: dto.document },
+    });
+
+    if (existing) {
+      throw new ConflictException('Já existe uma empresa com este CNPJ');
+    }
+
+    const company = await this.prisma.company.create({
+      data: {
+        legalName: dto.legalName,
+        tradeName: dto.tradeName,
+        document: dto.document,
+        type: dto.type,
+        city: dto.city,
+        state: dto.state,
+        phone: dto.phone,
+        email: dto.email,
+        status: CompanyStatus.ACTIVE,
+        statusChangedAt: new Date(),
+        statusChangedById: adminId,
+        ...(dto.type === CompanyType.SUPPLIER && {
+          supplierProfile: {
+            create: {},
+          },
+        }),
+        ...(dto.ownerUserId && {
+          companyUsers: {
+            create: {
+              userId: dto.ownerUserId,
+              companyRole: CompanyRole.ADMIN,
+              isCompanyAdmin: true,
+            },
+          },
+        }),
+      },
+      include: {
+        supplierProfile: true,
+        companyUsers: {
+          include: { user: { select: { id: true, name: true, email: true } } },
+        },
+      },
+    });
+
+    await this.prisma.adminAction.create({
+      data: {
+        companyId: company.id,
+        adminId,
+        action: 'CREATED',
+        newStatus: CompanyStatus.ACTIVE,
+      },
+    });
+
+    return company;
+  }
+
+  async updateCompany(id: string, dto: AdminUpdateCompanyDto, adminId: string) {
+    const company = await this.prisma.company.findUnique({ where: { id } });
+    if (!company) {
+      throw new NotFoundException('Empresa não encontrada');
+    }
+
+    if (dto.document && dto.document !== company.document) {
+      const existing = await this.prisma.company.findUnique({
+        where: { document: dto.document },
+      });
+      if (existing) {
+        throw new ConflictException('Já existe uma empresa com este CNPJ');
+      }
+    }
+
+    const updated = await this.prisma.company.update({
+      where: { id },
+      data: {
+        ...(dto.legalName !== undefined && { legalName: dto.legalName }),
+        ...(dto.tradeName !== undefined && { tradeName: dto.tradeName }),
+        ...(dto.document !== undefined && { document: dto.document }),
+        ...(dto.city !== undefined && { city: dto.city }),
+        ...(dto.state !== undefined && { state: dto.state }),
+        ...(dto.phone !== undefined && { phone: dto.phone }),
+        ...(dto.email !== undefined && { email: dto.email }),
+      },
+      include: {
+        supplierProfile: true,
+        companyUsers: {
+          include: { user: { select: { id: true, name: true, email: true } } },
+        },
+      },
+    });
+
+    await this.prisma.adminAction.create({
+      data: {
+        companyId: id,
+        adminId,
+        action: 'UPDATED',
+      },
+    });
+
+    return updated;
+  }
+
+  async addUserToCompany(companyId: string, dto: AddUserToCompanyDto, adminId: string) {
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) {
+      throw new NotFoundException('Empresa não encontrada');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: dto.userId } });
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    const existing = await this.prisma.companyUser.findUnique({
+      where: { userId_companyId: { userId: dto.userId, companyId } },
+    });
+    if (existing) {
+      throw new ConflictException('Usuário já está vinculado a esta empresa');
+    }
+
+    return this.prisma.companyUser.create({
+      data: {
+        userId: dto.userId,
+        companyId,
+        companyRole: dto.companyRole || CompanyRole.VIEWER,
+        isCompanyAdmin: dto.isCompanyAdmin || false,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        company: { select: { id: true, tradeName: true, type: true } },
+      },
+    });
+  }
+
+  async removeUserFromCompany(companyId: string, userId: string) {
+    const link = await this.prisma.companyUser.findUnique({
+      where: { userId_companyId: { userId, companyId } },
+    });
+
+    if (!link) {
+      throw new NotFoundException('Vínculo não encontrado');
+    }
+
+    await this.prisma.companyUser.delete({
+      where: { id: link.id },
+    });
+
+    return { success: true, message: 'Usuário removido da empresa' };
   }
 }

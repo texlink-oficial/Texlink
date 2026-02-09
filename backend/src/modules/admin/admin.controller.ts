@@ -1,7 +1,9 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
+  Delete,
   Param,
   Query,
   Body,
@@ -14,6 +16,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, CompanyStatus, OrderStatus, SupplierDocumentType, SupplierDocumentStatus } from '@prisma/client';
+import { AdminCreateCompanyDto, AdminUpdateCompanyDto, AddUserToCompanyDto } from './dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -99,5 +102,41 @@ export class AdminController {
     return this.adminService.getOrdersMonthlyStats(
       months ? parseInt(months, 10) : 6,
     );
+  }
+
+  // ========== Company CRUD ==========
+
+  @Post('companies')
+  async createCompany(
+    @Body() dto: AdminCreateCompanyDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.adminService.createCompany(dto, user.id);
+  }
+
+  @Patch('companies/:id')
+  async updateCompany(
+    @Param('id') id: string,
+    @Body() dto: AdminUpdateCompanyDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.adminService.updateCompany(id, dto, user.id);
+  }
+
+  @Post('companies/:id/users')
+  async addUserToCompany(
+    @Param('id') id: string,
+    @Body() dto: AddUserToCompanyDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.adminService.addUserToCompany(id, dto, user.id);
+  }
+
+  @Delete('companies/:id/users/:userId')
+  async removeUserFromCompany(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
+    return this.adminService.removeUserFromCompany(id, userId);
   }
 }
