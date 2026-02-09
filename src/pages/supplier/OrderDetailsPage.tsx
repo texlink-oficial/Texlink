@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ordersService, chatService, Order, Message, TransitionResponse } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -75,7 +75,7 @@ const OrderDetailsPage: React.FC = () => {
     const handleReject = async () => {
         try {
             await ordersService.reject(id!, rejectReason);
-            navigate('/supplier/orders');
+            navigate(-1);
         } catch (error) {
             console.error('Error rejecting order:', error);
         }
@@ -123,9 +123,9 @@ const OrderDetailsPage: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Link to="/supplier/orders" className="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                            <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white">
                                 <ArrowLeft className="w-5 h-5" />
-                            </Link>
+                            </button>
                             <div>
                                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">{order.displayId}</h1>
                                 <StatusBadge status={order.status} />
