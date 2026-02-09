@@ -177,7 +177,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 }}
                 aria-label={`Pedido ${order.displayId} - ${order.productName}`}
                 className={`
-                    relative bg-white dark:bg-gray-800 p-3.5 rounded-xl
+                    relative bg-white dark:bg-gray-800 p-3 rounded-xl
                     shadow-card border
                     transition-all duration-300 ease-spring
                     group
@@ -220,121 +220,108 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                     </div>
                 )}
 
-                {/* Top Row: ID & Brand */}
-                <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                        {/* Drag Handle */}
-                        <div className="md:hidden lg:group-hover:block hidden text-gray-300 dark:text-gray-600 -ml-3 cursor-grab p-1 flex-shrink-0">
-                            <GripVertical className="h-4 w-4" />
-                        </div>
-
-                        <div className="relative flex-shrink-0">
-                            <img src={order.brand.image} alt={order.brand.name} className="h-8 w-8 rounded-full border border-gray-100 dark:border-gray-600 shadow-sm object-cover" />
-                            <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5 border border-gray-100 dark:border-gray-600 text-[8px] font-bold flex items-center shadow-sm px-1">
-                                <span className="text-yellow-500 mr-0.5">★</span><span className="dark:text-gray-300">{order.brand.rating}</span>
-                            </div>
-                        </div>
-
-                        <div
-                            ref={brandRef}
-                            onMouseEnter={handleMouseEnter}
-                            onMouseLeave={() => setShowTooltip(false)}
-                            className="relative"
-                        >
-                            <div className="text-sm text-gray-600 dark:text-gray-300 font-medium mb-0.5">{order.brand.name}</div>
-                            <div className="text-[10px] font-bold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded w-fit whitespace-nowrap group-hover:bg-brand-50 dark:group-hover:bg-brand-900/50 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
-                                {order.displayId}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-2">
-                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide border border-gray-100 dark:border-gray-700 px-2 py-0.5 rounded bg-gray-50 dark:bg-gray-700/50">
-                            {order.type}
-                        </span>
-                        {getPaymentBadge()}
-                    </div>
+                {/* Drag Handle — absolute, never affects layout */}
+                <div className="absolute left-1 top-3.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-grab z-10">
+                    <GripVertical className="h-4 w-4 text-gray-300 dark:text-gray-600" />
                 </div>
 
-                {/* Main Content */}
-                <div className="mb-2">
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-white leading-tight line-clamp-2 mb-1">
-                        {order.productName}
-                    </h4>
-
-                    {/* OP and Artigo badges */}
-                    {(order.op || order.artigo) && (
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                            {order.op && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 px-2 py-0.5 rounded">
-                                    <FileText className="h-3 w-3" />
-                                    OP: {order.op}
-                                </span>
-                            )}
-                            {order.artigo && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 px-2 py-0.5 rounded">
-                                    <Tag className="h-3 w-3" />
-                                    {order.artigo}
-                                </span>
-                            )}
-                        </div>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-y-1.5 gap-x-3 text-xs text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-700/30 px-2 py-1 rounded-lg border border-gray-100 dark:border-gray-700/50">
-                            <Package className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
-                            <span className="font-semibold text-gray-700 dark:text-gray-300">{order.quantity}</span> <span className="text-[10px]">pçs</span>
-                        </div>
-                        {order.attachments && order.attachments.length > 0 && (
-                            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/30 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700/50" title={`${order.attachments.length} anexo(s)`}>
-                                <Paperclip className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                                <span className="font-semibold text-gray-700 dark:text-gray-300">{order.attachments.length}</span>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-1.5 px-1 py-1">
-                            <span className="text-gray-300 dark:text-gray-600 text-lg font-light">|</span>
-                            <span className="text-xs text-gray-500">Total:</span>
-                            <span className="font-semibold text-gray-900 dark:text-gray-200">R$ {order.totalValue.toLocaleString('pt-BR')}</span>
-                        </div>
+                {/* Header: Brand + Type */}
+                <div className="flex items-center justify-between mb-1">
+                    <div
+                        ref={brandRef}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={() => setShowTooltip(false)}
+                        className="flex items-center gap-2 min-w-0"
+                    >
+                        <img src={order.brand.image} alt={order.brand.name} className="h-6 w-6 rounded-full border border-gray-100 dark:border-gray-600 object-cover flex-shrink-0" />
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{order.brand.name}</span>
+                        <span className="text-[10px] text-yellow-500 flex-shrink-0">★{order.brand.rating}</span>
                     </div>
+                    <span className="text-[9px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border border-gray-100 dark:border-gray-700 px-1.5 py-px rounded bg-gray-50 dark:bg-gray-700/50 flex-shrink-0">
+                        {order.type}
+                    </span>
+                </div>
+
+                {/* DisplayId + Payment */}
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold font-mono text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-1.5 py-px rounded whitespace-nowrap group-hover:bg-brand-50 dark:group-hover:bg-brand-900/50 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
+                        {order.displayId}
+                    </span>
+                    {getPaymentBadge()}
+                </div>
+
+                {/* Product Name */}
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white leading-tight line-clamp-1 mb-1">
+                    {order.productName}
+                </h4>
+
+                {/* OP + Artigo inline */}
+                {(order.op || order.artigo) && (
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1.5">
+                        {order.op && <span>OP: {order.op}</span>}
+                        {order.op && order.artigo && <span className="mx-1.5 text-gray-300 dark:text-gray-600">·</span>}
+                        {order.artigo && <span>{order.artigo}</span>}
+                    </div>
+                )}
+
+                {/* Metrics row */}
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span className="flex items-center gap-1">
+                        <Package className="h-3 w-3" />
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">{order.quantity}</span>
+                        <span className="text-[10px]">pçs</span>
+                    </span>
+                    {order.attachments && order.attachments.length > 0 && (
+                        <>
+                            <span className="text-gray-200 dark:text-gray-700">|</span>
+                            <span className="flex items-center gap-1">
+                                <Paperclip className="h-3 w-3" />
+                                <span className="font-semibold text-gray-700 dark:text-gray-300">{order.attachments.length}</span>
+                            </span>
+                        </>
+                    )}
+                    <span className="text-gray-200 dark:text-gray-700">|</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">
+                        R$ {order.totalValue.toLocaleString('pt-BR')}
+                    </span>
                 </div>
 
                 {getWaitingBadge()}
 
                 {/* Accept/Reject Buttons for NEW orders */}
                 {showAcceptReject && (
-                    <div className="mt-4 flex gap-3">
+                    <div className="mt-2.5 flex gap-2">
                         <button
                             onClick={handleAccept}
                             disabled={isProcessing}
                             aria-label="Aceitar pedido"
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-sm press-scale touch-feedback focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-sm press-scale touch-feedback focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
                         >
-                            <Check className="h-4 w-4" aria-hidden="true" />
+                            <Check className="h-3.5 w-3.5" aria-hidden="true" />
                             Aceitar
                         </button>
                         <button
                             onClick={handleReject}
                             disabled={isProcessing}
                             aria-label="Recusar pedido"
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-sm press-scale touch-feedback focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-sm press-scale touch-feedback focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                         >
-                            <X className="h-4 w-4" aria-hidden="true" />
+                            <X className="h-3.5 w-3.5" aria-hidden="true" />
                             Recusar
                         </button>
                     </div>
                 )}
 
                 {/* Footer / Deadline */}
-                <div className={`${showAcceptReject ? 'mt-3' : 'mt-3'} pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center`}>
-                    <div className={`text-[10px] px-2 py-1 rounded-lg border flex items-center gap-1.5 font-medium transition-colors ${getUrgencyColor(order.deliveryDeadline)}`}>
+                <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                    <div className={`text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1 font-medium transition-colors ${getUrgencyColor(order.deliveryDeadline)}`}>
                         {isFinalized ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                         {getDaysLeft(order.deliveryDeadline)}
                     </div>
 
-                    <div className="flex items-center text-xs font-medium text-gray-400 dark:text-gray-500">
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">
                         Entregar: {new Date(order.deliveryDeadline).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                    </div>
+                    </span>
                 </div>
             </div>
 
