@@ -66,4 +66,9 @@ export class UploadController {
     await this.uploadService.incrementDownloadCount(attachmentId);
     return { success: true };
   }
+
+  @Get(':attachmentId/download-url')
+  async getDownloadUrl(@Param('attachmentId') attachmentId: string) {
+    return this.uploadService.getAttachmentDownloadUrl(attachmentId);
+  }
 }

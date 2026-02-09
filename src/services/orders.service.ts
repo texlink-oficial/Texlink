@@ -638,4 +638,9 @@ export const ordersService = {
             return { monthly: [] };
         }
     },
+
+    async getAttachmentDownloadUrl(orderId: string, attachmentId: string): Promise<{ url: string; fileName: string; mimeType: string }> {
+        const response = await api.get<{ url: string; fileName: string; mimeType: string }>(`/orders/${orderId}/attachments/${attachmentId}/download-url`);
+        return response.data;
+    },
 };

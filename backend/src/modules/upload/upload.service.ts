@@ -172,4 +172,52 @@ export class UploadService {
       data: { downloadCount: { increment: 1 } },
     });
   }
+
+  async getAttachmentDownloadUrl(attachmentId: string) {
+    const attachment = await this.prisma.orderAttachment.findUnique({
+      where: { id: attachmentId },
+    });
+
+    if (!attachment) {
+      throw new NotFoundException('Anexo não encontrado');
+    }
+
+    // Increment download count
+    await this.prisma.orderAttachment.update({
+      where: { id: attachmentId },
+      data: { downloadCount: { increment: 1 } },
+    });
+
+    // Generate presigned URL if storage supports it
+    const key = this.extractKeyFromUrl(attachment.url);
+    if (key && this.storage.getPresignedUrl) {
+      const url = await this.storage.getPresignedUrl(key, 3600);
+      return {
+        url,
+        fileName: attachment.name,
+        mimeType: attachment.mimeType,
+        expiresIn: 3600,
+      };
+    }
+
+    // Fallback to direct URL (local storage)
+    return {
+      url: attachment.url,
+      fileName: attachment.name,
+      mimeType: attachment.mimeType,
+      expiresIn: null,
+    };
+  }
+
+  private extractKeyFromUrl(url: string): string | null {
+    // Local: http://localhost:3000/uploads/orders/uuid/file.ext
+    const localMatch = url.match(/\/uploads\/(.+)$/);
+    if (localMatch) return localMatch[1];
+
+    // S3/CDN: https://bucket.s3.region.amazonaws.com/orders/uuid/file.ext
+    const httpsMatch = url.match(/^https?:\/\/[^/]+\/(.+)$/);
+    if (httpsMatch) return httpsMatch[1];
+
+    return null;
+  }
 }

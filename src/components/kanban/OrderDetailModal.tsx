@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Order, OrderStatus } from '../../types';
 import { ChatInterface } from './ChatInterface';
 import { OrderReviewModal } from '../orders/OrderReviewModal';
-import { OrderReview } from '../../services/orders.service';
+import { OrderReview, ordersService } from '../../services/orders.service';
 import { X, CheckCircle, AlertOctagon, FileText, Truck, MapPin, DollarSign, Calendar, Scissors, Box, Clock, MessageCircle, Video, Image as ImageIcon, Download, ChevronRight, CreditCard, Play, PackageCheck, AlertTriangle, Copy, ClipboardCheck } from 'lucide-react';
 
 interface OrderDetailModalProps {
@@ -430,7 +430,19 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                         </h4>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                                             {order.attachments.map((att) => (
-                                                <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" download className="group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg hover:border-brand-300 dark:hover:border-brand-600 transition-all cursor-pointer">
+                                                <div
+                                                    key={att.id}
+                                                    onClick={async (e) => {
+                                                        e.preventDefault();
+                                                        try {
+                                                            const { url } = await ordersService.getAttachmentDownloadUrl(order.id, att.id);
+                                                            window.open(url, '_blank');
+                                                        } catch {
+                                                            window.open(att.url, '_blank');
+                                                        }
+                                                    }}
+                                                    className="group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg hover:border-brand-300 dark:hover:border-brand-600 transition-all cursor-pointer"
+                                                >
                                                     {/* Thumbnail Area */}
                                                     <div className="h-28 w-full relative overflow-hidden">
                                                         {renderThumbnail(att)}
@@ -450,10 +462,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                                         </p>
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{att.type}</span>
-                                                            <span className="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 px-1 rounded">{att.size}</span>
                                                         </div>
                                                     </div>
-                                                </a>
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
