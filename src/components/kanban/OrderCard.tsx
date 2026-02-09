@@ -222,13 +222,13 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
                 {/* Top Row: ID & Brand */}
                 <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                         {/* Drag Handle */}
-                        <div className="md:hidden lg:group-hover:block hidden text-gray-300 dark:text-gray-600 -ml-3 cursor-grab p-1">
+                        <div className="md:hidden lg:group-hover:block hidden text-gray-300 dark:text-gray-600 -ml-3 cursor-grab p-1 flex-shrink-0">
                             <GripVertical className="h-4 w-4" />
                         </div>
 
-                        <div className="relative">
+                        <div className="relative flex-shrink-0">
                             <img src={order.brand.image} alt={order.brand.name} className="h-8 w-8 rounded-full border border-gray-100 dark:border-gray-600 shadow-sm object-cover" />
                             <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5 border border-gray-100 dark:border-gray-600 text-[8px] font-bold flex items-center shadow-sm px-1">
                                 <span className="text-yellow-500 mr-0.5">★</span><span className="dark:text-gray-300">{order.brand.rating}</span>
@@ -248,7 +248,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-1.5">
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-2">
                         <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide border border-gray-100 dark:border-gray-700 px-2 py-0.5 rounded bg-gray-50 dark:bg-gray-700/50">
                             {order.type}
                         </span>
