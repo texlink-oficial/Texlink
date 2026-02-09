@@ -4,7 +4,7 @@ import { adminService } from '../../services';
 import {
     ArrowLeft, Package, Search, Filter, Loader2,
     ChevronRight, Clock, CheckCircle, Truck, Factory,
-    Building2, Calendar, DollarSign, AlertCircle, RefreshCw
+    Building2, Calendar, DollarSign, AlertCircle, RefreshCw, X
 } from 'lucide-react';
 
 interface Order {
@@ -56,6 +56,7 @@ const OrdersPage: React.FC = () => {
     const [filter, setFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
@@ -301,6 +302,7 @@ const OrdersPage: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <button
+                                                        onClick={() => setSelectedOrder(order)}
                                                         className="text-gray-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors p-2 bg-gray-50 dark:bg-white/[0.05] rounded-xl border border-gray-200 dark:border-white/[0.06]"
                                                         title="Ver detalhes"
                                                     >
@@ -316,6 +318,108 @@ const OrdersPage: React.FC = () => {
                     </div>
                 )}
             </main>
+
+            {selectedOrder && (
+                <OrderDetailModal
+                    order={selectedOrder}
+                    onClose={() => setSelectedOrder(null)}
+                    formatCurrency={formatCurrency}
+                    formatDate={formatDate}
+                />
+            )}
+        </div>
+    );
+};
+
+// Order Detail Modal
+interface OrderDetailModalProps {
+    order: Order;
+    onClose: () => void;
+    formatCurrency: (v: number) => string;
+    formatDate: (d: string) => string;
+}
+
+const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, formatCurrency, formatDate }) => {
+    const statusConfig = ORDER_STATUS_CONFIG[order.status] || {
+        label: order.status, color: 'text-gray-400', bg: 'bg-gray-500/10'
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div
+                className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-white/[0.06]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-sky-500/10 rounded-xl flex items-center justify-center">
+                            <Package className="w-5 h-5 text-sky-500" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white font-mono">#{order.displayId}</h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{order.productName}</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Status</span>
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusConfig.bg} ${statusConfig.color}`}>
+                            {statusConfig.label}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Marca</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                            <Building2 className="w-4 h-4 text-gray-400" />
+                            {order.brand?.tradeName || '-'}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Facção</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                            <Factory className="w-4 h-4 text-gray-400" />
+                            {order.supplier?.tradeName || <span className="text-amber-500 italic">Aguardando</span>}
+                        </span>
+                    </div>
+
+                    <div className="border-t border-gray-100 dark:border-white/[0.06] pt-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Produto</span>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">{order.productType}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Quantidade</span>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">{order.quantity} peças</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Preço unitário</span>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(order.pricePerUnit)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Valor total</span>
+                            <span className="text-base font-bold text-gray-900 dark:text-white">{formatCurrency(order.totalValue)}</span>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-gray-100 dark:border-white/[0.06] pt-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Prazo de entrega</span>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">{formatDate(order.deliveryDeadline)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Criado em</span>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">{formatDate(order.createdAt)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
