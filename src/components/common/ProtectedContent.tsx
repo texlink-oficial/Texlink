@@ -21,8 +21,8 @@ export const ProtectedContent: React.FC<ProtectedContentProps> = ({
     return (
         <div className="relative rounded-xl overflow-hidden">
             <div className="absolute inset-0 bg-brand-100/90 dark:bg-brand-900/80 backdrop-blur-sm flex items-center justify-center z-10">
-                <div className="text-center p-4">
-                    <Lock className="w-6 h-6 text-brand-600 dark:text-brand-400 mx-auto mb-2" />
+                <div className="flex items-center gap-2 p-4">
+                    <Lock className="w-5 h-5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
                     <p className="text-sm text-brand-700 dark:text-brand-300 font-medium">{message}</p>
                 </div>
             </div>
