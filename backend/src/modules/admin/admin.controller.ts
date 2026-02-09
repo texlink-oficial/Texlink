@@ -77,6 +77,11 @@ export class AdminController {
     return this.adminService.getDocumentsStats();
   }
 
+  @Get('documents/:id/download')
+  async getDocumentDownloadUrl(@Param('id') id: string) {
+    return this.adminService.getDocumentDownloadUrl(id);
+  }
+
   @Get('suppliers/:id/documents')
   async getSupplierDocuments(@Param('id') supplierId: string) {
     return this.adminService.getSupplierDocuments(supplierId);

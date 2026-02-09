@@ -100,6 +100,15 @@ const DocumentsPage: React.FC = () => {
         SUPPLIER_DOCUMENT_TYPE_LABELS[doc.type].toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const handleDownload = async (docId: string) => {
+        try {
+            const { url } = await adminDocumentsService.getDownloadUrl(docId);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('Error getting download URL:', error);
+        }
+    };
+
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return '-';
         return new Date(dateStr).toLocaleDateString('pt-BR');
@@ -264,23 +273,20 @@ const DocumentsPage: React.FC = () => {
                                                     <div className="flex items-center justify-end gap-2">
                                                         {doc.fileUrl && (
                                                             <>
-                                                                <a
-                                                                    href={doc.fileUrl}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
+                                                                <button
+                                                                    onClick={() => handleDownload(doc.id)}
                                                                     className="p-2 text-gray-400 hover:text-sky-500 hover:bg-sky-500/10 rounded-xl transition-all"
                                                                     title="Visualizar"
                                                                 >
                                                                     <Eye className="w-4 h-4" />
-                                                                </a>
-                                                                <a
-                                                                    href={doc.fileUrl}
-                                                                    download
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDownload(doc.id)}
                                                                     className="p-2 text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-xl transition-all"
                                                                     title="Download"
                                                                 >
                                                                     <Download className="w-4 h-4" />
-                                                                </a>
+                                                                </button>
                                                             </>
                                                         )}
                                                     </div>
@@ -351,6 +357,15 @@ const SupplierDocumentsModal: React.FC<SupplierDocumentsModalProps> = ({
     isLoading,
     onClose,
 }) => {
+    const handleDownload = async (docId: string) => {
+        try {
+            const { url } = await adminDocumentsService.getDownloadUrl(docId);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('Error getting download URL:', error);
+        }
+    };
+
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return '-';
         return new Date(dateStr).toLocaleDateString('pt-BR');
@@ -400,23 +415,20 @@ const SupplierDocumentsModal: React.FC<SupplierDocumentsModalProps> = ({
                 </div>
                 {doc.fileUrl && (
                     <div className="flex items-center gap-1.5">
-                        <a
-                            href={doc.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <button
+                            onClick={() => handleDownload(doc.id)}
                             className="p-1.5 text-gray-400 hover:text-sky-500 hover:bg-sky-500/10 rounded-lg transition-all"
                         >
                             <span className="sr-only">Visualizar</span>
                             <Eye className="w-4 h-4" />
-                        </a>
-                        <a
-                            href={doc.fileUrl}
-                            download
+                        </button>
+                        <button
+                            onClick={() => handleDownload(doc.id)}
                             className="p-1.5 text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all"
                         >
                             <span className="sr-only">Download</span>
                             <Download className="w-4 h-4" />
-                        </a>
+                        </button>
                     </div>
                 )}
             </div>

@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrderStatus, CompanyStatus, CompanyType, SupplierDocumentType, SupplierDocumentStatus } from '@prisma/client';
 import { SUPPLIER_STATUS_CHANGED } from '../notifications/events/notification.events';
 import type { SupplierStatusChangedEvent } from '../notifications/events/notification.events';
+import type { StorageProvider } from '../upload/storage.provider';
+import { STORAGE_PROVIDER } from '../upload/storage.provider';
 
 @Injectable()
 export class AdminService {
@@ -12,6 +14,7 @@ export class AdminService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
+    @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
 
   // Get dashboard metrics
@@ -344,6 +347,56 @@ export class AdminService {
       const calculatedStatus = this.calculateDocumentStatus(doc.expiresAt, !!doc.fileUrl);
       return { ...doc, status: calculatedStatus };
     });
+  }
+
+  // Extract S3 key from a full URL
+  private extractKeyFromUrl(url: string): string | null {
+    const localMatch = url.match(/\/uploads\/(.+)$/);
+    if (localMatch) return localMatch[1];
+
+    const httpsMatch = url.match(/^https?:\/\/[^/]+\/(.+)$/);
+    if (httpsMatch) return httpsMatch[1];
+
+    return null;
+  }
+
+  // Generate an accessible URL (presigned for S3, direct for local storage)
+  private async getAccessibleUrl(document: {
+    fileUrl: string | null;
+    fileKey?: string | null;
+  }): Promise<string> {
+    if (!document.fileUrl) return '';
+    const key = document.fileKey || this.extractKeyFromUrl(document.fileUrl);
+    if (!key) return document.fileUrl;
+
+    if (this.storage.getPresignedUrl) {
+      return this.storage.getPresignedUrl(key, 3600);
+    }
+    return document.fileUrl;
+  }
+
+  // Get download URL for a document (admin access - no ownership check)
+  async getDocumentDownloadUrl(documentId: string) {
+    const document = await this.prisma.supplierDocument.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Documento não encontrado');
+    }
+
+    if (!document.fileUrl) {
+      throw new BadRequestException('Este documento ainda não possui arquivo anexado');
+    }
+
+    const url = await this.getAccessibleUrl(document);
+
+    return {
+      url,
+      fileName: document.fileName,
+      mimeType: document.mimeType,
+      expiresIn: 3600,
+    };
   }
 
   /**

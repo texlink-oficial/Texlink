@@ -57,6 +57,19 @@ class AdminDocumentsService {
         );
         return response.data;
     }
+
+    // Get presigned download URL for a document
+    async getDownloadUrl(documentId: string): Promise<{
+        url: string;
+        fileName: string;
+        mimeType: string;
+        expiresIn: number;
+    }> {
+        const response = await api.get(
+            `${this.basePath}/documents/${documentId}/download`
+        );
+        return response.data;
+    }
 }
 
 export const adminDocumentsService = new AdminDocumentsService();
