@@ -122,21 +122,14 @@ export class ChatService {
         brandId: true,
         supplierId: true,
         pricePerUnit: true,
-        netValue: true,
         quantity: true,
         deliveryDeadline: true,
-        supplier: { select: { companyUsers: { select: { userId: true } } } },
       },
     });
 
     if (!order) {
       throw new NotFoundException('Order not found');
     }
-
-    // Determine if sender is supplier (for price masking)
-    const isSenderSupplier = order.supplier?.companyUsers.some(
-      (cu) => cu.userId === userId,
-    );
 
     const messageData: any = {
       orderId,
@@ -180,15 +173,9 @@ export class ChatService {
         );
       }
 
-      // Use net price for supplier (what they actually see), raw price for brand
-      const visiblePrice =
-        isSenderSupplier && order.netValue
-          ? Number(order.netValue) / order.quantity
-          : Number(order.pricePerUnit);
-
       messageData.proposalData = {
         originalValues: {
-          pricePerUnit: visiblePrice,
+          pricePerUnit: Number(order.pricePerUnit),
           quantity: order.quantity,
           deliveryDeadline: order.deliveryDeadline.toISOString(),
         },

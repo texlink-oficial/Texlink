@@ -436,9 +436,6 @@ export class OrdersService {
         let result = {
           ...order,
           totalValue: order.netValue || order.totalValue,
-          pricePerUnit: order.netValue
-            ? Number(order.netValue) / order.quantity
-            : order.pricePerUnit,
           platformFee: undefined,
         };
 
@@ -561,9 +558,6 @@ export class OrdersService {
       let result = {
         ...order,
         totalValue: order.netValue || order.totalValue,
-        pricePerUnit: order.netValue
-          ? Number(order.netValue) / order.quantity
-          : order.pricePerUnit,
         platformFee: undefined,
       };
 
