@@ -185,13 +185,44 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
     const getBadgeStyle = (status: OrderStatus) => {
         switch (status) {
             case OrderStatus.NEW: return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+            case OrderStatus.NEGOTIATING: return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300';
             case OrderStatus.PRODUCTION: return 'bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300';
             case OrderStatus.ACCEPTED: return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
             case OrderStatus.PREPARING_BRAND: return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
+            case OrderStatus.TRANSIT_TO_SUPPLIER: return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300';
+            case OrderStatus.RECEIVED_SUPPLIER: return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300';
             case OrderStatus.READY_SEND: return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300';
+            case OrderStatus.TRANSIT_TO_BRAND: return 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300';
+            case OrderStatus.IN_REVIEW: return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+            case OrderStatus.PARTIALLY_APPROVED: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+            case OrderStatus.DISAPPROVED: return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+            case OrderStatus.AWAITING_REWORK: return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
             case OrderStatus.FINALIZED: return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
             case OrderStatus.REJECTED: return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+            case OrderStatus.AVAILABLE_FOR_OTHERS: return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
             default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        }
+    };
+
+    const getStatusLabel = (status: OrderStatus) => {
+        switch (status) {
+            case OrderStatus.NEW: return 'Novo';
+            case OrderStatus.NEGOTIATING: return 'Em Negociação';
+            case OrderStatus.ACCEPTED: return 'Aceito';
+            case OrderStatus.PREPARING_BRAND: return 'Preparando Envio';
+            case OrderStatus.TRANSIT_TO_SUPPLIER: return 'Em Trânsito';
+            case OrderStatus.RECEIVED_SUPPLIER: return 'Conferindo Insumos';
+            case OrderStatus.PRODUCTION: return 'Em Produção';
+            case OrderStatus.READY_SEND: return 'Pronto';
+            case OrderStatus.TRANSIT_TO_BRAND: return 'Em Trânsito';
+            case OrderStatus.IN_REVIEW: return 'Em Revisão';
+            case OrderStatus.PARTIALLY_APPROVED: return 'Parcialmente Aprovado';
+            case OrderStatus.DISAPPROVED: return 'Reprovado';
+            case OrderStatus.AWAITING_REWORK: return 'Aguardando Retrabalho';
+            case OrderStatus.FINALIZED: return 'Concluído';
+            case OrderStatus.REJECTED: return 'Recusado';
+            case OrderStatus.AVAILABLE_FOR_OTHERS: return 'Disponível';
+            default: return status;
         }
     };
 
@@ -265,10 +296,10 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                     <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white flex flex-wrap items-center gap-2">
                                         Pedido {order.displayId}
                                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${getBadgeStyle(order.status)}`}>
-                                            {order.status}
+                                            {getStatusLabel(order.status)}
                                         </span>
                                     </h2>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Criado em {order.createdAt}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Criado em {new Date(order.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
