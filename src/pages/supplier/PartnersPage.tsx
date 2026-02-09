@@ -214,7 +214,7 @@ const PartnersPage: React.FC = () => {
 
                                         {/* Discount Badge */}
                                         {(partner.discountCode || partner.discountInfo) && (
-                                            <div className="bg-green-50 dark:bg-gradient-to-r dark:from-green-500/10 dark:to-emerald-500/10 rounded-xl p-4 border border-green-200 dark:border-green-500/20">
+                                            <div className="bg-green-50 dark:bg-green-500/10 rounded-xl p-4 border border-green-200 dark:border-green-500/20">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <Tag className="w-4 h-4 text-green-600 dark:text-green-400" />
                                                     <span className="text-green-700 dark:text-green-400 font-semibold text-sm">
