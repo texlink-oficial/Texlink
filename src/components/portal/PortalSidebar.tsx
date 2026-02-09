@@ -178,7 +178,7 @@ export const PortalSidebar: React.FC = () => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Load supplier dashboard data
+  // Load supplier dashboard data (reload on navigation to pick up capacity changes)
   useEffect(() => {
     const loadProfile = async () => {
       try {
@@ -189,7 +189,7 @@ export const PortalSidebar: React.FC = () => {
       }
     };
     loadProfile();
-  }, []);
+  }, [location.pathname]);
 
   // Load pending documents count
   useEffect(() => {

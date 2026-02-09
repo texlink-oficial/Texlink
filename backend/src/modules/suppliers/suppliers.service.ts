@@ -269,7 +269,19 @@ export class SuppliersService {
     const company = await this.getMyProfile(userId);
 
     // Get order statistics
-    const [pendingOrders, activeOrders, completedOrders, totalRevenue] =
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const activeStatuses = [
+      OrderStatus.ACEITO_PELA_FACCAO,
+      OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
+      OrderStatus.EM_TRANSITO_PARA_FACCAO,
+      OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO,
+      OrderStatus.EM_PRODUCAO,
+    ];
+
+    const [pendingOrders, activeOrders, completedOrders, totalRevenue, activeOrdersForCapacity] =
       await Promise.all([
         // Pending orders (waiting for acceptance)
         this.prisma.order.count({
@@ -282,15 +294,7 @@ export class SuppliersService {
         this.prisma.order.count({
           where: {
             supplierId: company.id,
-            status: {
-              in: [
-                OrderStatus.ACEITO_PELA_FACCAO,
-                OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
-                OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO,
-                OrderStatus.EM_PRODUCAO,
-                OrderStatus.PRONTO,
-              ],
-            },
+            status: { in: activeStatuses },
           },
         }),
         // Completed this month
@@ -298,9 +302,7 @@ export class SuppliersService {
           where: {
             supplierId: company.id,
             status: OrderStatus.FINALIZADO,
-            updatedAt: {
-              gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-            },
+            updatedAt: { gte: monthStart },
           },
         }),
         // Total revenue from completed orders
@@ -311,7 +313,45 @@ export class SuppliersService {
           },
           _sum: { totalValue: true },
         }),
+        // Active orders overlapping this month (for capacity calculation)
+        this.prisma.order.findMany({
+          where: {
+            supplierId: company.id,
+            status: { in: activeStatuses },
+            plannedStartDate: { not: null, lte: monthEnd },
+            plannedEndDate: { not: null, gte: monthStart },
+          },
+          select: {
+            totalProductionMinutes: true,
+            plannedStartDate: true,
+            plannedEndDate: true,
+          },
+        }),
       ]);
+
+    // Calculate real capacity usage for the current month
+    const monthlyCapacity = company.supplierProfile?.monthlyCapacity || 0;
+    let capacityUsage = 0;
+
+    if (monthlyCapacity > 0 && activeOrdersForCapacity.length > 0) {
+      // Sum the production minutes that overlap with the current month
+      let totalAllocatedMinutes = 0;
+      for (const order of activeOrdersForCapacity) {
+        if (!order.plannedStartDate || !order.plannedEndDate || !order.totalProductionMinutes) continue;
+        const orderStart = order.plannedStartDate;
+        const orderEnd = order.plannedEndDate;
+        const totalDays = Math.max(1, Math.ceil((orderEnd.getTime() - orderStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        const dailyMinutes = order.totalProductionMinutes / totalDays;
+
+        // Count how many days of this order fall within the current month
+        const overlapStart = orderStart > monthStart ? orderStart : monthStart;
+        const overlapEnd = orderEnd < monthEnd ? orderEnd : monthEnd;
+        const overlapDays = Math.max(0, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+        totalAllocatedMinutes += dailyMinutes * overlapDays;
+      }
+      capacityUsage = Math.min(100, Math.round((totalAllocatedMinutes / monthlyCapacity) * 100));
+    }
 
     return {
       company: {
@@ -326,7 +366,7 @@ export class SuppliersService {
         activeOrders,
         completedOrdersThisMonth: completedOrders,
         totalRevenue: totalRevenue._sum.totalValue || 0,
-        capacityUsage: company.supplierProfile?.currentOccupancy || 0,
+        capacityUsage,
       },
     };
   }
