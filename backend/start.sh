@@ -18,16 +18,17 @@ if [ "$NODE_ENV" = "production" ]; then
           npx prisma migrate resolve --applied "$migration_name" --schema=./prisma/schema.prisma
         fi
       done
-      echo "Baseline complete. Syncing schema to ensure all columns exist..."
-      npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma
-      echo "Schema synced. Running migrate deploy..."
-      npx prisma migrate deploy --schema=./prisma/schema.prisma
+      echo "Baseline complete."
     else
       echo "Migration failed with unexpected error:"
       cat /tmp/migrate_err.log
       exit 1
     fi
   fi
+
+  # Always sync schema to ensure DB matches schema.prisma
+  echo "Syncing database schema..."
+  npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma
 else
   npx prisma db push --schema=./prisma/schema.prisma
 fi
