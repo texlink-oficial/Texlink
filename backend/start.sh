@@ -7,7 +7,25 @@ echo "DATABASE_URL is set: ${DATABASE_URL:+yes}"
 
 echo "Running Prisma migrations..."
 if [ "$NODE_ENV" = "production" ]; then
-  npx prisma migrate deploy --schema=./prisma/schema.prisma
+  # Try migrate deploy; if it fails with P3005 (non-empty schema), baseline first
+  if ! npx prisma migrate deploy --schema=./prisma/schema.prisma >/tmp/migrate_err.log 2>&1; then
+    if grep -q "P3005" /tmp/migrate_err.log; then
+      echo "Database needs baselining (P3005). Marking existing migrations as applied..."
+      for migration_dir in prisma/migrations/*/; do
+        migration_name=$(basename "$migration_dir")
+        if [ "$migration_name" != "migration_lock.toml" ]; then
+          echo "  Resolving: $migration_name"
+          npx prisma migrate resolve --applied "$migration_name" --schema=./prisma/schema.prisma
+        fi
+      done
+      echo "Baseline complete. Running migrate deploy..."
+      npx prisma migrate deploy --schema=./prisma/schema.prisma
+    else
+      echo "Migration failed with unexpected error:"
+      cat /tmp/migrate_err.log
+      exit 1
+    fi
+  fi
 else
   npx prisma db push --schema=./prisma/schema.prisma
 fi
