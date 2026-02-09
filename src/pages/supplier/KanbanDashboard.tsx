@@ -251,6 +251,24 @@ const SupplierKanbanDashboard: React.FC = () => {
 
     const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
         try {
+            // Rejection uses dedicated endpoint
+            if (newStatus === OrderStatus.REJECTED) {
+                await ordersService.reject(orderId);
+                setOrders(prev => prev.filter(o => o.id !== orderId));
+                setSelectedOrder(null);
+                return;
+            }
+
+            // Acceptance uses dedicated endpoint
+            if (newStatus === OrderStatus.ACCEPTED) {
+                await ordersService.accept(orderId);
+                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+                if (selectedOrder && selectedOrder.id === orderId) {
+                    setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+                }
+                return;
+            }
+
             const apiStatus = REVERSE_STATUS_MAP[newStatus];
             if (apiStatus) {
                 await ordersService.updateStatus(orderId, apiStatus);
