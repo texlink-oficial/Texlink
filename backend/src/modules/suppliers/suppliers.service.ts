@@ -313,15 +313,14 @@ export class SuppliersService {
           },
           _sum: { totalValue: true },
         }),
-        // Active orders overlapping this month (for capacity calculation)
+        // All active orders for capacity calculation (with AND without planned dates)
         this.prisma.order.findMany({
           where: {
             supplierId: company.id,
             status: { in: activeStatuses },
-            plannedStartDate: { not: null, lte: monthEnd },
-            plannedEndDate: { not: null, gte: monthStart },
           },
           select: {
+            quantity: true,
             totalProductionMinutes: true,
             plannedStartDate: true,
             plannedEndDate: true,
@@ -331,24 +330,33 @@ export class SuppliersService {
 
     // Calculate real capacity usage for the current month
     const monthlyCapacity = company.supplierProfile?.monthlyCapacity || 0;
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const DEFAULT_MINUTES_PER_PIECE = 15;
     let capacityUsage = 0;
 
     if (monthlyCapacity > 0 && activeOrdersForCapacity.length > 0) {
-      // Sum the production minutes that overlap with the current month
       let totalAllocatedMinutes = 0;
       for (const order of activeOrdersForCapacity) {
-        if (!order.plannedStartDate || !order.plannedEndDate || !order.totalProductionMinutes) continue;
-        const orderStart = order.plannedStartDate;
-        const orderEnd = order.plannedEndDate;
-        const totalDays = Math.max(1, Math.ceil((orderEnd.getTime() - orderStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-        const dailyMinutes = order.totalProductionMinutes / totalDays;
+        const productionMinutes = order.totalProductionMinutes
+          || Math.round(order.quantity * DEFAULT_MINUTES_PER_PIECE);
 
-        // Count how many days of this order fall within the current month
-        const overlapStart = orderStart > monthStart ? orderStart : monthStart;
-        const overlapEnd = orderEnd < monthEnd ? orderEnd : monthEnd;
-        const overlapDays = Math.max(0, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        if (order.plannedStartDate && order.plannedEndDate) {
+          // Has planned dates — calculate overlap with current month
+          const orderStart = order.plannedStartDate;
+          const orderEnd = order.plannedEndDate;
+          if (orderStart > monthEnd || orderEnd < monthStart) continue;
+          const totalDays = Math.max(1, Math.ceil((orderEnd.getTime() - orderStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+          const dailyMinutes = productionMinutes / totalDays;
 
-        totalAllocatedMinutes += dailyMinutes * overlapDays;
+          const overlapStart = orderStart > monthStart ? orderStart : monthStart;
+          const overlapEnd = orderEnd < monthEnd ? orderEnd : monthEnd;
+          const overlapDays = Math.max(0, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+          totalAllocatedMinutes += dailyMinutes * overlapDays;
+        } else {
+          // No planned dates — assume it spans the entire current month
+          totalAllocatedMinutes += productionMinutes;
+        }
       }
       capacityUsage = Math.min(100, Math.round((totalAllocatedMinutes / monthlyCapacity) * 100));
     }

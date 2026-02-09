@@ -146,18 +146,11 @@ export class CapacityService {
       OrderStatus.EM_PRODUCAO,
     ];
 
-    // Find orders that overlap with this calendar month
+    // Find all active orders for this supplier (with AND without planned dates)
     const orders = await this.prisma.order.findMany({
       where: {
         supplierId: companyId,
         status: { in: activeStatuses },
-        plannedStartDate: { not: null },
-        plannedEndDate: { not: null },
-        // Overlap condition: order starts before month ends AND order ends after month starts
-        AND: [
-          { plannedStartDate: { lte: monthEnd } },
-          { plannedEndDate: { gte: monthStart } },
-        ],
       },
       select: {
         id: true,
@@ -171,25 +164,44 @@ export class CapacityService {
       },
     });
 
-    // Pre-calculate each order's total span in days (for daily allocation)
-    const ordersWithDays = orders.map((order) => {
-      const start = order.plannedStartDate!;
-      const end = order.plannedEndDate!;
-      const totalDays = Math.max(
-        1,
-        Math.ceil(
-          (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-        ) + 1,
-      );
-      const dailyMinutes = (order.totalProductionMinutes || 0) / totalDays;
+    // Estimate production minutes for orders without totalProductionMinutes
+    // Use a default of 15 min/piece when no specific time is set
+    const DEFAULT_MINUTES_PER_PIECE = 15;
 
-      return {
-        ...order,
-        startDate: start,
-        endDate: end,
-        dailyMinutes,
-      };
-    });
+    // Pre-calculate each order's daily allocation
+    const ordersWithDays = orders
+      .map((order) => {
+        const productionMinutes = order.totalProductionMinutes
+          || Math.round(order.quantity * DEFAULT_MINUTES_PER_PIECE);
+
+        if (order.plannedStartDate && order.plannedEndDate) {
+          // Has planned dates — distribute across its date range
+          const start = order.plannedStartDate;
+          const end = order.plannedEndDate;
+          const totalDays = Math.max(
+            1,
+            Math.ceil(
+              (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+            ) + 1,
+          );
+          return {
+            ...order,
+            startDate: start,
+            endDate: end,
+            dailyMinutes: productionMinutes / totalDays,
+          };
+        } else {
+          // No planned dates — assume it spans the entire queried month
+          return {
+            ...order,
+            startDate: monthStart,
+            endDate: monthEnd,
+            dailyMinutes: productionMinutes / daysInMonth,
+          };
+        }
+      })
+      // Filter to only orders that overlap the queried month
+      .filter((o) => o.startDate <= monthEnd && o.endDate >= monthStart);
 
     // Build calendar days
     const days: Array<{
