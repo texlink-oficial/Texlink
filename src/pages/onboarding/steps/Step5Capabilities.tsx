@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package, Sparkles, Gauge, Factory } from 'lucide-react';
+import { Package, Sparkles, Users, Clock, Factory } from 'lucide-react';
 
 interface Step5CapabilitiesProps {
   token: string;
@@ -9,8 +9,8 @@ interface Step5CapabilitiesProps {
 interface CapabilitiesData {
   productTypes: string[];
   specialties?: string[];
-  monthlyCapacity: number;
-  currentOccupancy: number;
+  activeWorkers: number;
+  hoursPerDay: number;
 }
 
 const productTypeOptions = [
@@ -42,8 +42,7 @@ const specialtyOptions = [
  * Coleta informações sobre a produção da facção:
  * - Tipos de produtos que produz
  * - Especialidades
- * - Capacidade mensal
- * - Ocupação atual
+ * - Costureiros ativos e horas por dia (capacidade calculada automaticamente)
  */
 export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,9 +51,15 @@ export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps)
   const [formData, setFormData] = useState<CapabilitiesData>({
     productTypes: [],
     specialties: [],
-    monthlyCapacity: 0,
-    currentOccupancy: 50,
+    activeWorkers: 0,
+    hoursPerDay: 8,
   });
+
+  const monthlyCapacityMinutes = formData.activeWorkers > 0
+    ? Math.round(formData.activeWorkers * formData.hoursPerDay * 60 * 22)
+    : 0;
+
+  const monthlyCapacityHours = Math.round(monthlyCapacityMinutes / 60);
 
   const toggleProductType = (type: string) => {
     setFormData((prev) => ({
@@ -75,23 +80,25 @@ export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps)
   };
 
   const isFormValid =
-    formData.productTypes.length > 0 && formData.monthlyCapacity >= 100;
+    formData.productTypes.length > 0 && formData.activeWorkers >= 1 && formData.hoursPerDay >= 1;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (!isFormValid) {
-      setError('Selecione pelo menos um tipo de produto e informe a capacidade (mín. 100 peças/mês)');
+      setError('Selecione pelo menos um tipo de produto e informe a equipe de produção');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Integrate with backend API
       const { onboardingService } = await import('../../../services/onboarding.service');
-      await onboardingService.saveCapabilities(token, formData);
+      await onboardingService.saveCapabilities(token, {
+        ...formData,
+        monthlyCapacity: monthlyCapacityMinutes,
+      });
 
       onComplete();
     } catch (err: any) {
@@ -181,75 +188,70 @@ export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps)
           )}
         </div>
 
-        {/* Capacidade Mensal */}
+        {/* Equipe de Produção */}
         <div>
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
-            <Gauge className="w-4 h-4" />
-            Capacidade mensal (peças/mês)
+            <Users className="w-4 h-4" />
+            Equipe de Produção
           </label>
-          <input
-            type="number"
-            min="100"
-            step="100"
-            value={formData.monthlyCapacity || ''}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                monthlyCapacity: parseInt(e.target.value) || 0,
-              })
-            }
-            placeholder="Ex: 5000"
-            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Capacidade mínima: 100 peças/mês
-          </p>
-        </div>
-
-        {/* Ocupação Atual */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
-            <Gauge className="w-4 h-4" />
-            Ocupação atual: {formData.currentOccupancy}%
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={formData.currentOccupancy}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                currentOccupancy: parseInt(e.target.value),
-              })
-            }
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>0% (Ocioso)</span>
-            <span>50%</span>
-            <span>100% (Lotado)</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Costureiros Ativos
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="9999"
+                value={formData.activeWorkers || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    activeWorkers: parseInt(e.target.value) || 0,
+                  })
+                }
+                placeholder="Ex: 12"
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+            <div>
+              <label className="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
+                <Clock className="w-3 h-3" />
+                Horas por Dia
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="24"
+                step="0.5"
+                value={formData.hoursPerDay || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    hoursPerDay: parseFloat(e.target.value) || 0,
+                  })
+                }
+                placeholder="Ex: 8"
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
           </div>
 
-          {/* Indicador Visual */}
+          {/* Capacidade Calculada */}
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-blue-900">
-                Capacidade disponível
+                Capacidade mensal estimada
               </span>
               <span className="text-sm font-bold text-blue-600">
-                {formData.monthlyCapacity > 0
-                  ? Math.round(
-                      (formData.monthlyCapacity * (100 - formData.currentOccupancy)) / 100
-                    ).toLocaleString()
-                  : 0}{' '}
-                peças/mês
+                {monthlyCapacityHours.toLocaleString('pt-BR')} horas/mês
               </span>
             </div>
             <p className="text-xs text-blue-700">
-              Capacidade total: {formData.monthlyCapacity.toLocaleString()} peças/mês
-              • Ocupação: {formData.currentOccupancy}%
+              {formData.activeWorkers} costureiro(s) x {formData.hoursPerDay}h/dia x 22 dias úteis
+              = {monthlyCapacityMinutes.toLocaleString('pt-BR')} minutos/mês
             </p>
           </div>
         </div>
@@ -267,12 +269,12 @@ export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps)
       {/* Info */}
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 className="font-medium text-blue-900 mb-2 text-sm">
-          💡 Por que estas informações são importantes?
+          Por que estas informações são importantes?
         </h4>
         <ul className="text-sm text-blue-700 space-y-1">
-          <li>• As marcas usarão isso para encontrar facções adequadas</li>
-          <li>• Pedidos serão direcionados conforme sua capacidade disponível</li>
-          <li>• Você poderá atualizar estas informações a qualquer momento</li>
+          <li>- As marcas usarão isso para encontrar facções adequadas</li>
+          <li>- Pedidos serão direcionados conforme sua capacidade disponível</li>
+          <li>- Você poderá atualizar estas informações a qualquer momento</li>
         </ul>
       </div>
     </div>

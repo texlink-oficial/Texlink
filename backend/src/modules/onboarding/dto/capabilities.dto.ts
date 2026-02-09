@@ -32,22 +32,43 @@ export class CapabilitiesDto {
   specialties?: string[];
 
   @ApiProperty({
-    description: 'Capacidade mensal de produção em peças',
-    example: 5000,
-    minimum: 100,
+    description: 'Número de costureiros ativos',
+    example: 12,
+    minimum: 1,
   })
   @IsNumber()
-  @Min(100, { message: 'Capacidade mínima é de 100 peças/mês' })
-  monthlyCapacity: number;
+  @Min(1, { message: 'Informe pelo menos 1 costureiro' })
+  activeWorkers: number;
 
   @ApiProperty({
+    description: 'Horas de trabalho por dia',
+    example: 8,
+    minimum: 1,
+    maximum: 24,
+  })
+  @IsNumber()
+  @Min(1)
+  @Max(24)
+  hoursPerDay: number;
+
+  @ApiPropertyOptional({
+    description: 'Capacidade mensal em minutos (calculado automaticamente)',
+    example: 126720,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  monthlyCapacity?: number;
+
+  @ApiPropertyOptional({
     description: 'Ocupação atual da capacidade (0-100%)',
     example: 50,
     minimum: 0,
     maximum: 100,
   })
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
-  currentOccupancy: number;
+  currentOccupancy?: number;
 }

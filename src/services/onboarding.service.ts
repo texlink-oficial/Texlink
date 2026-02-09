@@ -299,8 +299,10 @@ export const onboardingService = {
         data: {
             productTypes: string[];
             specialties?: string[];
-            monthlyCapacity: number;
-            currentOccupancy: number;
+            activeWorkers: number;
+            hoursPerDay: number;
+            monthlyCapacity?: number;
+            currentOccupancy?: number;
         }
     ): Promise<{ success: boolean; onboardingId: string; currentStep: number }> {
         if (MOCK_MODE) {
