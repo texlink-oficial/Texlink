@@ -375,21 +375,21 @@ const SupplierKanbanDashboard: React.FC = () => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                    <div className="max-w-[1600px] mx-auto h-full flex flex-col">
+                    <div className="mx-auto h-full flex flex-col">
                         <StatsOverview orders={orders} />
                         <div className="h-full flex-1">
                             {viewMode === 'kanban' ? (
-                                <div className="flex gap-4 overflow-x-auto pb-4 h-full items-start kanban-scroll snap-x snap-mandatory md:snap-none">
+                                <div className="flex gap-3 overflow-x-auto pb-4 h-full items-start kanban-scroll snap-x snap-mandatory md:snap-none">
                                     {STATUS_COLUMNS.map(col => (
                                         <div
                                             key={col.id}
-                                            className="min-w-[280px] w-[280px] md:min-w-[300px] md:w-[300px] flex flex-col h-full bg-gray-100/50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex-shrink-0 snap-start"
+                                            className="min-w-[240px] w-[240px] md:min-w-[260px] md:w-[260px] flex flex-col h-full bg-gray-100/50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex-shrink-0 snap-start"
                                         >
                                             <div className="p-3 rounded-t-xl border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-between items-center sticky top-0 z-10">
                                                 <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-200">{col.label}</h3>
                                                 <span className="text-xs font-bold text-gray-400 bg-gray-50 dark:bg-gray-700 px-2 py-0.5 rounded-full">{ordersByStatus[col.id]?.length || 0}</span>
                                             </div>
-                                            <div className="p-2 space-y-3">
+                                            <div className="p-1.5 space-y-2">
                                                 {ordersByStatus[col.id]?.map(order => (
                                                     <OrderCard
                                                         key={order.id}
