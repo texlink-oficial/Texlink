@@ -38,6 +38,25 @@ const LoginPage: React.FC = () => {
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <div className="text-center mb-8">
+                    <div className="relative inline-flex items-center justify-center mb-4">
+                        <div className="absolute inset-0 bg-brand-500/30 blur-2xl rounded-full animate-pulse" />
+                        <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/30">
+                            <svg
+                                className="h-9 w-9 text-white"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                            >
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                <polyline points="15 3 21 3 21 9" />
+                                <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                        </div>
+                    </div>
                     <h1 className="text-4xl font-bold text-white mb-2">TEXLINK</h1>
                     <p className="text-brand-300">Conectando marcas e facções</p>
                 </div>
