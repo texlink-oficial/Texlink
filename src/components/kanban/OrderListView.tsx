@@ -242,7 +242,6 @@ export const OrderListView: React.FC<OrderListViewProps> = ({ orders, onOrderCli
                 {renderHeader('Artigo', 'artigo')}
                 {renderHeader('Qtd / Valor', 'value')}
                 {renderHeader('Status', 'status')}
-                {renderHeader('$', 'payment')}
                 {renderHeader('Prazo', 'deadline')}
                 <th className="px-3 py-2 text-right text-[10px] text-gray-500 dark:text-gray-400">Ações</th>
               </tr>
@@ -319,9 +318,6 @@ export const OrderListView: React.FC<OrderListViewProps> = ({ orders, onOrderCli
                           ⚠️ {order.waitingReason}
                         </div>
                       )}
-                    </td>
-                    <td className="px-3 py-2">
-                      {getPaymentStatusIcon(order.paymentStatus)}
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex flex-col">
