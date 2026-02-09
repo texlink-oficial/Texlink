@@ -242,7 +242,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                             className="relative"
                         >
                             <div className="text-sm text-gray-600 dark:text-gray-300 font-medium mb-0.5">{order.brand.name}</div>
-                            <div className="text-[10px] font-bold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded w-fit group-hover:bg-brand-50 dark:group-hover:bg-brand-900/50 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
+                            <div className="text-[10px] font-bold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded w-fit whitespace-nowrap group-hover:bg-brand-50 dark:group-hover:bg-brand-900/50 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
                                 {order.displayId}
                             </div>
                         </div>
