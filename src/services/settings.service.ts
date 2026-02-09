@@ -65,6 +65,8 @@ const MOCK_NOTIFICATION_SETTINGS: NotificationSettings = {
 const MOCK_CAPACITY_SETTINGS: CapacitySettings = {
     monthlyCapacity: 5000,
     currentOccupancy: 75,
+    activeWorkers: 12,
+    hoursPerDay: 8.5,
     productTypes: ['Infantil', 'Adulto', 'Fitness'],
     specialties: ['Malha', 'Jeans', 'Moletom'],
 };

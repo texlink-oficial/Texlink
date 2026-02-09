@@ -1,62 +1,147 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { suppliersService, SupplierDashboard } from '../../services';
-import { settingsService } from '../../services/settings.service';
+import { capacityService } from '../../services/capacity.service';
+import { CapacityConfig, CalendarDay, CalendarDayOrder } from '../../types';
 import {
     ArrowLeft,
     Calendar,
     Loader2,
     AlertTriangle,
+    Users,
+    Clock,
     Package,
     TrendingUp,
     Settings,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    X
 } from 'lucide-react';
 
-interface DeliveryItem {
-    orderId: string;
-    displayId: string;
-    productName: string;
-    quantity: number;
-    deadline: string;
+const monthNames = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+const dayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+
+function minutesToHours(minutes: number): string {
+    const h = minutes / 60;
+    return h % 1 === 0 ? `${h}h` : `${h.toFixed(1)}h`;
 }
 
-const formatDate = (date: Date) => date.toLocaleDateString('pt-BR');
+function getStatusLabel(status: string): string {
+    const map: Record<string, string> = {
+        LANCADO_PELA_MARCA: 'Novo',
+        EM_NEGOCIACAO: 'Negociacao',
+        ACEITO_PELA_FACCAO: 'Aceito',
+        EM_PREPARACAO_SAIDA_MARCA: 'Preparando',
+        EM_TRANSITO_PARA_FACCAO: 'Transito',
+        EM_PREPARACAO_ENTRADA_FACCAO: 'Preparacao',
+        EM_PRODUCAO: 'Producao',
+        PRONTO: 'Pronto',
+        EM_TRANSITO_PARA_MARCA: 'Transito',
+        EM_REVISAO: 'Em Revisao',
+        PARCIALMENTE_APROVADO: 'Parcial',
+        REPROVADO: 'Reprovado',
+        AGUARDANDO_RETRABALHO: 'Retrabalho',
+        FINALIZADO: 'Finalizado',
+        RECUSADO_PELA_FACCAO: 'Recusado',
+        DISPONIVEL_PARA_OUTRAS: 'Disponivel',
+    };
+    return map[status] || status;
+}
 
 const CapacityDashboardPage: React.FC = () => {
     const { user } = useAuth();
     const { success, error: toastError } = useToast();
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [profile, setProfile] = useState<SupplierDashboard | null>(null);
-    const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-    const [isEditingCapacity, setIsEditingCapacity] = useState(false);
-    const [newCapacity, setNewCapacity] = useState(0);
 
-    useEffect(() => {
-        loadData();
+    const [isLoading, setIsLoading] = useState(true);
+    const [config, setConfig] = useState<CapacityConfig | null>(null);
+    const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
+
+    // Edit modal state
+    const [isEditingCapacity, setIsEditingCapacity] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [editWorkers, setEditWorkers] = useState<number>(1);
+    const [editHours, setEditHours] = useState<number>(8);
+
+    // ---------------------------------------------------------------------------
+    // Data loading
+    // ---------------------------------------------------------------------------
+
+    const loadConfig = useCallback(async () => {
+        try {
+            const data = await capacityService.getConfig();
+            setConfig(data);
+            setEditWorkers(data.activeWorkers ?? 1);
+            setEditHours(data.hoursPerDay ?? 8);
+        } catch (err) {
+            console.error('Error loading capacity config:', err);
+        }
     }, []);
 
-    const loadData = async () => {
+    const loadCalendar = useCallback(async (year: number, month: number) => {
         try {
-            setIsLoading(true);
-            const data = await suppliersService.getDashboard();
-            setProfile(data);
-            setNewCapacity(data.profile?.monthlyCapacity || 1000);
-        } catch (error) {
-            console.error('Error loading capacity data:', error);
-        } finally {
-            setIsLoading(false);
+            const data = await capacityService.getCalendar(year, month);
+            setCalendarDays(data);
+        } catch (err) {
+            console.error('Error loading calendar:', err);
         }
-    };
+    }, []);
 
-    const capacityPercentage = profile?.stats?.capacityUsage || 0;
-    const isOverloaded = capacityPercentage >= 90;
-    const isWarning = capacityPercentage >= 70 && capacityPercentage < 90;
+    // Initial load
+    useEffect(() => {
+        const init = async () => {
+            setIsLoading(true);
+            await Promise.all([
+                loadConfig(),
+                loadCalendar(currentMonth.getFullYear(), currentMonth.getMonth() + 1),
+            ]);
+            setIsLoading(false);
+        };
+        init();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Reload calendar when month changes (after initial load)
+    useEffect(() => {
+        if (!isLoading) {
+            setSelectedDay(null);
+            loadCalendar(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
+        }
+    }, [currentMonth]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ---------------------------------------------------------------------------
+    // Derived data
+    // ---------------------------------------------------------------------------
+
+    const { occupancyPercent, totalCapacity, totalAllocated, uniqueOrderCount } = useMemo(() => {
+        let cap = 0;
+        let alloc = 0;
+        const orderIds = new Set<string>();
+
+        for (const day of calendarDays) {
+            cap += day.totalCapacityMinutes;
+            alloc += day.allocatedMinutes;
+            for (const o of day.orders) {
+                orderIds.add(o.id);
+            }
+        }
+
+        const pct = cap > 0 ? Math.round((alloc / cap) * 100) : 0;
+        return {
+            occupancyPercent: Math.min(pct, 100),
+            totalCapacity: cap,
+            totalAllocated: alloc,
+            uniqueOrderCount: orderIds.size,
+        };
+    }, [calendarDays]);
+
+    const isOverloaded = occupancyPercent >= 90;
+    const isWarning = occupancyPercent >= 70 && occupancyPercent < 90;
 
     const getCapacityColor = () => {
         if (isOverloaded) return 'text-red-500';
@@ -64,36 +149,96 @@ const CapacityDashboardPage: React.FC = () => {
         return 'text-green-500';
     };
 
-    const getCapacityBg = () => {
-        if (isOverloaded) return 'from-red-500 to-red-600';
-        if (isWarning) return 'from-yellow-500 to-yellow-600';
-        return 'from-green-500 to-green-600';
-    };
+    // ---------------------------------------------------------------------------
+    // Calendar grid helpers
+    // ---------------------------------------------------------------------------
 
-    // Calendar generation
-    const generateCalendarDays = () => {
+    const calendarDayMap = useMemo(() => {
+        const map = new Map<string, CalendarDay>();
+        for (const d of calendarDays) {
+            map.set(d.date, d);
+        }
+        return map;
+    }, [calendarDays]);
+
+    const generateCalendarGrid = () => {
         const year = currentMonth.getFullYear();
         const month = currentMonth.getMonth();
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const startDay = firstDay.getDay();
 
-        const days: (Date | null)[] = [];
+        const cells: (string | null)[] = [];
 
-        // Add empty days for padding
+        // Padding before first day
         for (let i = 0; i < startDay; i++) {
-            days.push(null);
+            cells.push(null);
         }
 
-        // Add days of month
-        for (let i = 1; i <= lastDay.getDate(); i++) {
-            days.push(new Date(year, month, i));
+        // Days of month as YYYY-MM-DD strings
+        for (let d = 1; d <= lastDay.getDate(); d++) {
+            const dd = String(d).padStart(2, '0');
+            const mm = String(month + 1).padStart(2, '0');
+            cells.push(`${year}-${mm}-${dd}`);
         }
 
-        return days;
+        return cells;
     };
 
-    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const getDayIndicator = (day: CalendarDay | undefined) => {
+        if (!day || day.isWeekend || day.totalCapacityMinutes === 0) return null;
+
+        const pct = day.totalCapacityMinutes > 0
+            ? (day.allocatedMinutes / day.totalCapacityMinutes) * 100
+            : 0;
+
+        if (pct > 80) return 'bg-red-500';
+        if (pct >= 50) return 'bg-yellow-500';
+        return 'bg-green-500';
+    };
+
+    // ---------------------------------------------------------------------------
+    // Month navigation
+    // ---------------------------------------------------------------------------
+
+    const goToPrevMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+    };
+
+    const goToNextMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+    };
+
+    const goToToday = () => {
+        setCurrentMonth(new Date());
+    };
+
+    // ---------------------------------------------------------------------------
+    // Save capacity config
+    // ---------------------------------------------------------------------------
+
+    const handleSaveCapacity = async () => {
+        try {
+            setIsSaving(true);
+            const updated = await capacityService.updateConfig({
+                activeWorkers: editWorkers,
+                hoursPerDay: editHours,
+            });
+            setConfig(updated);
+            success('Capacidade atualizada com sucesso');
+            setIsEditingCapacity(false);
+            // Reload calendar to reflect new capacity
+            await loadCalendar(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
+        } catch (err) {
+            toastError('Erro ao atualizar capacidade. Tente novamente.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // ---------------------------------------------------------------------------
+    // Render
+    // ---------------------------------------------------------------------------
 
     if (isLoading) {
         return (
@@ -102,6 +247,8 @@ const CapacityDashboardPage: React.FC = () => {
             </div>
         );
     }
+
+    const todayStr = new Date().toISOString().split('T')[0];
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -114,12 +261,16 @@ const CapacityDashboardPage: React.FC = () => {
                                 <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                             </Link>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestão de Capacidade</h1>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Calendário de entregas e ocupação</p>
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestao de Capacidade</h1>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Calendario de entregas e ocupacao</p>
                             </div>
                         </div>
                         <button
-                            onClick={() => setIsEditingCapacity(true)}
+                            onClick={() => {
+                                setEditWorkers(config?.activeWorkers ?? 1);
+                                setEditHours(config?.hoursPerDay ?? 8);
+                                setIsEditingCapacity(true);
+                            }}
                             className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         >
                             <Settings className="h-4 w-4" />
@@ -130,21 +281,23 @@ const CapacityDashboardPage: React.FC = () => {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Alert */}
+                {/* Overload Alert */}
                 {isOverloaded && (
                     <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3">
                         <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
                         <p className="text-red-700 dark:text-red-300 font-medium">
-                            Atenção! Sua capacidade está acima de 90%. Considere ajustar sua disponibilidade.
+                            Atencao! Sua capacidade esta acima de 90%. Considere ajustar sua disponibilidade.
                         </p>
                     </div>
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Capacity Gauge */}
+                    {/* ============================================================= */}
+                    {/* Left Sidebar - Occupancy Gauge & Stats                        */}
+                    {/* ============================================================= */}
                     <div className="lg:col-span-1">
                         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Ocupação Atual</h2>
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Ocupacao Atual</h2>
 
                             {/* Circular Gauge */}
                             <div className="relative w-48 h-48 mx-auto mb-6">
@@ -165,14 +318,14 @@ const CapacityDashboardPage: React.FC = () => {
                                         stroke="currentColor"
                                         strokeWidth="12"
                                         fill="none"
-                                        strokeDasharray={`${capacityPercentage * 5.52} 552`}
+                                        strokeDasharray={`${occupancyPercent * 5.52} 552`}
                                         strokeLinecap="round"
                                         className={getCapacityColor()}
                                     />
                                 </svg>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                                     <span className={`text-4xl font-bold ${getCapacityColor()}`}>
-                                        {capacityPercentage}%
+                                        {occupancyPercent}%
                                     </span>
                                     <span className="text-sm text-gray-500 dark:text-gray-400">ocupado</span>
                                 </div>
@@ -182,37 +335,51 @@ const CapacityDashboardPage: React.FC = () => {
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                                     <div className="flex items-center gap-2">
+                                        <Users className="h-5 w-5 text-gray-400" />
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">Costureiros Ativos</span>
+                                    </div>
+                                    <span className="font-semibold text-gray-900 dark:text-white">
+                                        {config?.activeWorkers ?? '-'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="h-5 w-5 text-gray-400" />
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">Horas/Dia</span>
+                                    </div>
+                                    <span className="font-semibold text-gray-900 dark:text-white">
+                                        {config?.hoursPerDay ?? '-'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                    <div className="flex items-center gap-2">
                                         <Package className="h-5 w-5 text-gray-400" />
                                         <span className="text-sm text-gray-600 dark:text-gray-400">Capacidade Mensal</span>
                                     </div>
                                     <span className="font-semibold text-gray-900 dark:text-white">
-                                        {profile?.profile?.monthlyCapacity?.toLocaleString('pt-BR')} pçs
+                                        {config?.monthlyCapacity != null
+                                            ? minutesToHours(config.monthlyCapacity)
+                                            : '-'}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                                     <div className="flex items-center gap-2">
                                         <TrendingUp className="h-5 w-5 text-gray-400" />
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">Ocupação Atual</span>
-                                    </div>
-                                    <span className="font-semibold text-gray-900 dark:text-white">
-                                        {profile?.profile?.currentOccupancy?.toLocaleString('pt-BR')} pçs
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="h-5 w-5 text-gray-400" />
                                         <span className="text-sm text-gray-600 dark:text-gray-400">Pedidos Ativos</span>
                                     </div>
                                     <span className="font-semibold text-gray-900 dark:text-white">
-                                        {profile?.stats?.activeOrders || 0}
+                                        {uniqueOrderCount}
                                     </span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Calendar */}
-                    <div className="lg:col-span-2">
+                    {/* ============================================================= */}
+                    {/* Right Side - Calendar + Day Detail                            */}
+                    {/* ============================================================= */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Calendar Card */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
                             {/* Calendar Header */}
                             <div className="flex items-center justify-between mb-6">
@@ -221,19 +388,19 @@ const CapacityDashboardPage: React.FC = () => {
                                 </h2>
                                 <div className="flex items-center gap-2">
                                     <button
-                                        onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                                        onClick={goToPrevMonth}
                                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                     >
                                         <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                                     </button>
                                     <button
-                                        onClick={() => setCurrentMonth(new Date())}
+                                        onClick={goToToday}
                                         className="px-3 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg transition-colors"
                                     >
                                         Hoje
                                     </button>
                                     <button
-                                        onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                                        onClick={goToNextMonth}
                                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                     >
                                         <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -244,33 +411,45 @@ const CapacityDashboardPage: React.FC = () => {
                             {/* Calendar Grid */}
                             <div className="grid grid-cols-7 gap-1">
                                 {/* Day Headers */}
-                                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
+                                {dayHeaders.map(day => (
                                     <div key={day} className="py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">
                                         {day}
                                     </div>
                                 ))}
 
-                                {/* Calendar Days */}
-                                {generateCalendarDays().map((date, index) => {
-                                    const isToday = date && date.toDateString() === new Date().toDateString();
-                                    const isSelected = date && selectedDate && date.toDateString() === selectedDate.toDateString();
+                                {/* Calendar Cells */}
+                                {generateCalendarGrid().map((dateStr, index) => {
+                                    const dayData = dateStr ? calendarDayMap.get(dateStr) : undefined;
+                                    const isToday = dateStr === todayStr;
+                                    const isSelected = dateStr != null && selectedDay?.date === dateStr;
+                                    const indicator = getDayIndicator(dayData);
+                                    const isWeekend = dayData?.isWeekend ?? false;
+                                    const dayNum = dateStr ? parseInt(dateStr.split('-')[2], 10) : null;
 
                                     return (
                                         <div
                                             key={index}
-                                            onClick={() => date && setSelectedDate(date)}
+                                            onClick={() => {
+                                                if (dayData) setSelectedDay(dayData);
+                                            }}
                                             className={`
-                        aspect-square p-1 rounded-lg transition-colors cursor-pointer
-                        ${date ? 'hover:bg-gray-100 dark:hover:bg-gray-700' : ''}
-                        ${isToday ? 'bg-brand-50 dark:bg-brand-900/30' : ''}
-                        ${isSelected ? 'ring-2 ring-brand-500' : ''}
-                      `}
+                                                aspect-square p-1 rounded-lg transition-colors
+                                                ${dateStr ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700' : ''}
+                                                ${isWeekend && dateStr ? 'bg-gray-50 dark:bg-gray-800/50' : ''}
+                                                ${isToday ? 'bg-brand-50 dark:bg-brand-900/30' : ''}
+                                                ${isSelected ? 'ring-2 ring-brand-500' : ''}
+                                            `}
                                         >
-                                            {date && (
+                                            {dayNum != null && (
                                                 <div className="h-full flex flex-col">
                                                     <span className={`text-sm ${isToday ? 'font-bold text-brand-600 dark:text-brand-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                                        {date.getDate()}
+                                                        {dayNum}
                                                     </span>
+                                                    {indicator && (
+                                                        <div className="mt-auto flex justify-center pb-0.5">
+                                                            <span className={`w-2 h-2 rounded-full ${indicator}`} />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -281,42 +460,169 @@ const CapacityDashboardPage: React.FC = () => {
                             {/* Legend */}
                             <div className="mt-6 flex items-center gap-6 justify-center text-sm">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 bg-green-500 rounded" />
-                                    <span className="text-gray-600 dark:text-gray-400">Disponível</span>
+                                    <div className="w-3 h-3 bg-green-500 rounded-full" />
+                                    <span className="text-gray-600 dark:text-gray-400">&lt; 50%</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 bg-yellow-500 rounded" />
-                                    <span className="text-gray-600 dark:text-gray-400">Moderado</span>
+                                    <div className="w-3 h-3 bg-yellow-500 rounded-full" />
+                                    <span className="text-gray-600 dark:text-gray-400">50-80%</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 bg-red-500 rounded" />
-                                    <span className="text-gray-600 dark:text-gray-400">Lotado</span>
+                                    <div className="w-3 h-3 bg-red-500 rounded-full" />
+                                    <span className="text-gray-600 dark:text-gray-400">&gt; 80%</span>
                                 </div>
                             </div>
                         </div>
+
+                        {/* ====================================================== */}
+                        {/* Selected Day Detail Panel                              */}
+                        {/* ====================================================== */}
+                        {selectedDay && (
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                        {new Date(selectedDay.date + 'T12:00:00').toLocaleDateString('pt-BR', {
+                                            weekday: 'long',
+                                            day: 'numeric',
+                                            month: 'long',
+                                        })}
+                                    </h3>
+                                    <button
+                                        onClick={() => setSelectedDay(null)}
+                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                    >
+                                        <X className="h-4 w-4 text-gray-500" />
+                                    </button>
+                                </div>
+
+                                {/* Day capacity summary */}
+                                {selectedDay.isWeekend ? (
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Fim de semana - sem capacidade produtiva.</p>
+                                ) : (
+                                    <div className="grid grid-cols-3 gap-4 mb-6">
+                                        <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-center">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
+                                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                                                {minutesToHours(selectedDay.totalCapacityMinutes)}
+                                            </p>
+                                        </div>
+                                        <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-center">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Alocado</p>
+                                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                                                {minutesToHours(selectedDay.allocatedMinutes)}
+                                            </p>
+                                        </div>
+                                        <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-center">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Disponivel</p>
+                                            <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                                                {minutesToHours(selectedDay.availableMinutes)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Orders list */}
+                                {selectedDay.orders.length > 0 ? (
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                                            Pedidos ({selectedDay.orders.length})
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {selectedDay.orders.map((order: CalendarDayOrder) => (
+                                                <div
+                                                    key={order.id}
+                                                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-sm font-mono font-medium text-brand-600 dark:text-brand-400">
+                                                            {order.displayId}
+                                                        </span>
+                                                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                                                            {order.productName}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                                                            {order.quantity.toLocaleString('pt-BR')} pcs
+                                                        </span>
+                                                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                                            {getStatusLabel(order.status)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    !selectedDay.isWeekend && (
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                                            Nenhum pedido alocado neste dia.
+                                        </p>
+                                    )
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
 
-            {/* Edit Capacity Modal */}
+            {/* ================================================================= */}
+            {/* Edit Capacity Modal                                               */}
+            {/* ================================================================= */}
             {isEditingCapacity && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/50" onClick={() => setIsEditingCapacity(false)} />
                     <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Ajustar Capacidade Mensal
+                            Ajustar Capacidade
                         </h3>
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Capacidade (peças/mês)
-                            </label>
-                            <input
-                                type="number"
-                                value={newCapacity}
-                                onChange={(e) => setNewCapacity(Number(e.target.value))}
-                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
-                            />
+
+                        <div className="space-y-4 mb-6">
+                            {/* Active Workers */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Costureiros Ativos
+                                </label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    step={1}
+                                    value={editWorkers}
+                                    onChange={(e) => setEditWorkers(Math.max(1, parseInt(e.target.value) || 1))}
+                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+                                />
+                            </div>
+
+                            {/* Hours per Day */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Horas por Dia
+                                </label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={24}
+                                    step={0.5}
+                                    value={editHours}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (!isNaN(val)) {
+                                            setEditHours(Math.min(24, Math.max(1, val)));
+                                        }
+                                    }}
+                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+                                />
+                            </div>
+
+                            {/* Preview */}
+                            <div className="p-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg">
+                                <p className="text-sm text-brand-700 dark:text-brand-300">
+                                    Capacidade estimada: <strong>{minutesToHours(Math.round(editWorkers * editHours * 60 * 22))}</strong>/mes
+                                    <span className="text-xs ml-1 opacity-75">(22 dias uteis)</span>
+                                </p>
+                            </div>
                         </div>
+
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setIsEditingCapacity(false)}
@@ -326,22 +632,7 @@ const CapacityDashboardPage: React.FC = () => {
                             </button>
                             <button
                                 disabled={isSaving}
-                                onClick={async () => {
-                                    try {
-                                        setIsSaving(true);
-                                        await settingsService.updateCapacitySettings({ monthlyCapacity: newCapacity });
-                                        setProfile(prev => prev ? {
-                                            ...prev,
-                                            profile: { ...prev.profile, monthlyCapacity: newCapacity },
-                                        } : prev);
-                                        success('Capacidade atualizada com sucesso');
-                                        setIsEditingCapacity(false);
-                                    } catch (err) {
-                                        toastError('Erro ao atualizar capacidade. Tente novamente.');
-                                    } finally {
-                                        setIsSaving(false);
-                                    }
-                                }}
+                                onClick={handleSaveCapacity}
                                 className="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
                             >
                                 {isSaving ? 'Salvando...' : 'Salvar'}

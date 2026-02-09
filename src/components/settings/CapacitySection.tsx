@@ -9,6 +9,7 @@ import {
     Check,
     Plus,
     Trash2,
+    Users,
 } from 'lucide-react';
 import { settingsService } from '../../services/settings.service';
 import { CapacitySettings } from '../../types';
@@ -45,6 +46,8 @@ const CapacitySection: React.FC = () => {
     const [success, setSuccess] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
+        activeWorkers: 0,
+        hoursPerDay: 8,
         monthlyCapacity: 0,
         currentOccupancy: 0,
         productTypes: [] as string[],
@@ -63,8 +66,12 @@ const CapacitySection: React.FC = () => {
             setIsLoading(true);
             const capacity = await settingsService.getCapacitySettings();
             setData(capacity);
+            const workers = capacity.activeWorkers || 0;
+            const hours = capacity.hoursPerDay || 8;
             setFormData({
-                monthlyCapacity: capacity.monthlyCapacity || 0,
+                activeWorkers: workers,
+                hoursPerDay: hours,
+                monthlyCapacity: workers > 0 ? workers * hours * 60 * 22 : (capacity.monthlyCapacity || 0),
                 currentOccupancy: capacity.currentOccupancy || 0,
                 productTypes: capacity.productTypes || [],
                 specialties: capacity.specialties || [],
@@ -78,10 +85,24 @@ const CapacitySection: React.FC = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'number' ? parseInt(value) || 0 : value,
-        }));
+        const DECIMAL_FIELDS = ['hoursPerDay'];
+        const numericValue = DECIMAL_FIELDS.includes(name)
+            ? parseFloat(value) || 0
+            : parseInt(value) || 0;
+
+        setFormData(prev => {
+            const updated = {
+                ...prev,
+                [name]: type === 'number' ? numericValue : value,
+            };
+
+            // Auto-calculate monthlyCapacity when workers or hours change
+            if (name === 'activeWorkers' || name === 'hoursPerDay') {
+                updated.monthlyCapacity = updated.activeWorkers * updated.hoursPerDay * 60 * 22;
+            }
+
+            return updated;
+        });
     };
 
     const addProductType = (type: string) => {
@@ -174,22 +195,70 @@ const CapacitySection: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Workers & Hours */}
+                <div>
+                    <h3 className="flex items-center gap-2 text-md font-medium text-gray-900 dark:text-white mb-4">
+                        <Users className="w-4 h-4" />
+                        Equipe de Produção
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Costureiros Ativos
+                            </label>
+                            <input
+                                type="number"
+                                name="activeWorkers"
+                                value={formData.activeWorkers}
+                                onChange={handleChange}
+                                min={1}
+                                max={9999}
+                                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Número de costureiros trabalhando atualmente
+                            </p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Horas por Dia
+                            </label>
+                            <input
+                                type="number"
+                                name="hoursPerDay"
+                                value={formData.hoursPerDay}
+                                onChange={handleChange}
+                                min={1}
+                                max={24}
+                                step={0.5}
+                                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Jornada diária de trabalho por costureiro
+                            </p>
+                        </div>
+                    </div>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-3">
+                        A capacidade mensal é calculada automaticamente: costureiros × horas × 60min × 22 dias úteis
+                    </p>
+                </div>
+
                 {/* Capacity */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Capacidade Mensal (peças)
+                            Capacidade Mensal (minutos)
                         </label>
                         <input
                             type="number"
                             name="monthlyCapacity"
                             value={formData.monthlyCapacity}
-                            onChange={handleChange}
-                            min={0}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                            readOnly
+                            disabled
+                            className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 cursor-not-allowed"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Quantidade máxima de peças que você pode produzir por mês
+                            Calculado automaticamente com base nos costureiros e horas
                         </p>
                     </div>
                     <div>
@@ -218,7 +287,7 @@ const CapacitySection: React.FC = () => {
                             Ocupação: {formData.currentOccupancy}%
                         </span>
                         <span className="text-sm text-gray-600 dark:text-gray-300">
-                            Disponível: {Math.round((100 - formData.currentOccupancy) * formData.monthlyCapacity / 100)} peças
+                            Disponível: {Math.round((100 - formData.currentOccupancy) * formData.monthlyCapacity / 100)} min
                         </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">

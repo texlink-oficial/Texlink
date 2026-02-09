@@ -402,8 +402,37 @@ export interface NotificationSettings {
 export interface CapacitySettings {
   monthlyCapacity: number | null;
   currentOccupancy: number;
+  activeWorkers: number | null;
+  hoursPerDay: number | null;
   productTypes: string[];
   specialties: string[];
+}
+
+export interface CapacityConfig {
+  activeWorkers: number | null;
+  hoursPerDay: number | null;
+  monthlyCapacity: number | null;
+  currentOccupancy: number;
+  productTypes: string[];
+  specialties: string[];
+}
+
+export interface CalendarDayOrder {
+  id: string;
+  displayId: string;
+  productName: string;
+  quantity: number;
+  status: string;
+}
+
+export interface CalendarDay {
+  date: string;
+  dayOfWeek: number;
+  isWeekend: boolean;
+  totalCapacityMinutes: number;
+  allocatedMinutes: number;
+  availableMinutes: number;
+  orders: CalendarDayOrder[];
 }
 
 export interface Suggestion {
