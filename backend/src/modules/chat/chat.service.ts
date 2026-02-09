@@ -270,7 +270,7 @@ export class ChatService {
         },
       });
 
-      // 2. Update order with new values
+      // 2. Update order with new values (include relations for frontend convertApiOrder)
       const updatedOrder = await tx.order.update({
         where: { id: message.orderId },
         data: {
@@ -280,6 +280,10 @@ export class ChatService {
             proposalData.newValues.pricePerUnit *
             proposalData.newValues.quantity,
           deliveryDeadline: new Date(proposalData.newValues.deliveryDeadline),
+        },
+        include: {
+          brand: { select: { id: true, tradeName: true, avgRating: true } },
+          supplier: { select: { id: true, tradeName: true, avgRating: true } },
         },
       });
 

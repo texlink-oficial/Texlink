@@ -124,6 +124,18 @@ export function useChatSocket(
         },
     });
 
+    // Stable refs for callback options (prevents socket reconnection on every render)
+    const onOrderUpdatedRef = useRef(options.onOrderUpdated);
+    const onConnectRef = useRef(options.onConnect);
+    const onDisconnectRef = useRef(options.onDisconnect);
+    const onErrorRef = useRef(options.onError);
+    useEffect(() => {
+        onOrderUpdatedRef.current = options.onOrderUpdated;
+        onConnectRef.current = options.onConnect;
+        onDisconnectRef.current = options.onDisconnect;
+        onErrorRef.current = options.onError;
+    });
+
     // Cleanup old messages on mount
     useEffect(() => {
         cleanupOld();
@@ -172,7 +184,7 @@ export function useChatSocket(
         socket.on('connected', (data: { userId: string; userName: string }) => {
             console.log('Chat socket authenticated:', data.userName);
             setIsConnected(true);
-            options.onConnect?.();
+            onConnectRef.current?.();
 
             // Join order room (now that we're authenticated)
             socket.emit('join-order', { orderId }, (response: any) => {
@@ -180,7 +192,7 @@ export function useChatSocket(
                     setUnreadCount(response.unreadCount || 0);
                 } else {
                     console.error('Failed to join order:', response.error);
-                    options.onError?.(response.error);
+                    onErrorRef.current?.(response.error);
                 }
             });
 
@@ -201,13 +213,13 @@ export function useChatSocket(
         socket.on('disconnect', (reason) => {
             console.log('Chat socket disconnected:', reason);
             setIsConnected(false);
-            options.onDisconnect?.();
+            onDisconnectRef.current?.();
         });
 
         socket.on('connect_error', (error) => {
             console.error('Chat socket connection error:', error.message);
             setIsLoading(false);
-            options.onError?.(error.message);
+            onErrorRef.current?.(error.message);
         });
 
         // Log reconnection attempts
@@ -218,7 +230,7 @@ export function useChatSocket(
         // Handle failed reconnection
         socket.io.on('reconnect_failed', () => {
             console.error('[Chat] All reconnection attempts failed');
-            options.onError?.('Não foi possível reconectar ao servidor. Por favor, recarregue a página.');
+            onErrorRef.current?.('Não foi possível reconectar ao servidor. Por favor, recarregue a página.');
         });
 
         socket.on('error', (error: { message: string; code?: string; retryAfter?: string }) => {
@@ -244,7 +256,7 @@ export function useChatSocket(
                 }, retryAfter * 1000);
             }
 
-            options.onError?.(error.message);
+            onErrorRef.current?.(error.message);
         });
 
         // Message events
@@ -297,7 +309,7 @@ export function useChatSocket(
                 })
             );
             if (updatedOrder && status === 'ACCEPTED') {
-                options.onOrderUpdated?.(updatedOrder);
+                onOrderUpdatedRef.current?.(updatedOrder);
             }
         });
 
@@ -309,7 +321,7 @@ export function useChatSocket(
             socket.disconnect();
             socketRef.current = null;
         };
-    }, [orderId, getToken, options.onConnect, options.onDisconnect, options.onError, options.onOrderUpdated]);
+    }, [orderId, getToken]);
 
     // Process queue when reconnecting
     useEffect(() => {
