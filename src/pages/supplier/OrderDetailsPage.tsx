@@ -343,6 +343,9 @@ const OrderDetailsPage: React.FC = () => {
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     const statusConfig: Record<string, { label: string; color: string }> = {
         LANCADO_PELA_MARCA: { label: 'Novo Pedido', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+        DISPONIVEL_PARA_OUTRAS: { label: 'Disponível', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+        RECUSADO_PELA_FACCAO: { label: 'Recusado', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+        EM_NEGOCIACAO: { label: 'Em Negociação', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
         ACEITO_PELA_FACCAO: { label: 'Aceito', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
         EM_PREPARACAO_SAIDA_MARCA: { label: 'Marca Preparando', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
         EM_TRANSITO_PARA_FACCAO: { label: 'Insumos em Trânsito', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' },
@@ -353,6 +356,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
         EM_REVISAO: { label: 'Em Revisão', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
         PARCIALMENTE_APROVADO: { label: 'Parcialmente Aprovado', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
         REPROVADO: { label: 'Reprovado', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+        AGUARDANDO_RETRABALHO: { label: 'Retrabalho', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
         FINALIZADO: { label: 'Finalizado', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
     };
 

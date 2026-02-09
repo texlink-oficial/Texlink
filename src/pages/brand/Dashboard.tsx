@@ -223,8 +223,20 @@ const QuickActionCard: React.FC<QuickActionCardProps> = ({ title, description, h
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     const statusConfig: Record<string, { label: string; color: string }> = {
         LANCADO_PELA_MARCA: { label: 'Aguardando', color: 'bg-amber-500/20 text-amber-400' },
+        DISPONIVEL_PARA_OUTRAS: { label: 'Disponível', color: 'bg-amber-500/20 text-amber-400' },
+        RECUSADO_PELA_FACCAO: { label: 'Recusado', color: 'bg-red-500/20 text-red-400' },
+        EM_NEGOCIACAO: { label: 'Em Negociação', color: 'bg-indigo-500/20 text-indigo-400' },
         ACEITO_PELA_FACCAO: { label: 'Aceito', color: 'bg-blue-500/20 text-blue-400' },
+        EM_PREPARACAO_SAIDA_MARCA: { label: 'Preparando Envio', color: 'bg-blue-500/20 text-blue-400' },
+        EM_TRANSITO_PARA_FACCAO: { label: 'Trânsito', color: 'bg-cyan-500/20 text-cyan-400' },
+        EM_PREPARACAO_ENTRADA_FACCAO: { label: 'Preparação', color: 'bg-teal-500/20 text-teal-400' },
         EM_PRODUCAO: { label: 'Em Produção', color: 'bg-purple-500/20 text-purple-400' },
+        PRONTO: { label: 'Pronto', color: 'bg-cyan-500/20 text-cyan-400' },
+        EM_TRANSITO_PARA_MARCA: { label: 'Trânsito', color: 'bg-sky-500/20 text-sky-400' },
+        EM_REVISAO: { label: 'Em Revisão', color: 'bg-orange-500/20 text-orange-400' },
+        PARCIALMENTE_APROVADO: { label: 'Parcial', color: 'bg-yellow-500/20 text-yellow-400' },
+        REPROVADO: { label: 'Reprovado', color: 'bg-red-500/20 text-red-400' },
+        AGUARDANDO_RETRABALHO: { label: 'Retrabalho', color: 'bg-orange-500/20 text-orange-400' },
         FINALIZADO: { label: 'Finalizado', color: 'bg-green-500/20 text-green-400' },
     };
 

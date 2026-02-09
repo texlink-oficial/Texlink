@@ -63,12 +63,20 @@ const AdminDashboard: React.FC = () => {
 
         const statusConfig: Record<string, { label: string; color: 'success' | 'warning' | 'error' | 'info' | 'neutral' }> = {
             LANCADO_PELA_MARCA: { label: 'Aguardando', color: 'warning' },
+            DISPONIVEL_PARA_OUTRAS: { label: 'Disponível', color: 'warning' },
+            RECUSADO_PELA_FACCAO: { label: 'Recusado', color: 'error' },
+            EM_NEGOCIACAO: { label: 'Em Negociação', color: 'info' },
             ACEITO_PELA_FACCAO: { label: 'Aceito', color: 'info' },
+            EM_PREPARACAO_SAIDA_MARCA: { label: 'Preparando Envio', color: 'info' },
             EM_PREPARACAO_ENTRADA_FACCAO: { label: 'Preparação', color: 'info' },
             EM_PRODUCAO: { label: 'Produção', color: 'info' },
             PRONTO: { label: 'Pronto', color: 'success' },
             EM_TRANSITO_PARA_FACCAO: { label: 'Trânsito', color: 'info' },
             EM_TRANSITO_PARA_MARCA: { label: 'Trânsito', color: 'info' },
+            EM_REVISAO: { label: 'Em Revisão', color: 'warning' },
+            PARCIALMENTE_APROVADO: { label: 'Parcial', color: 'warning' },
+            REPROVADO: { label: 'Reprovado', color: 'error' },
+            AGUARDANDO_RETRABALHO: { label: 'Retrabalho', color: 'warning' },
             FINALIZADO: { label: 'Finalizado', color: 'success' },
         };
 
