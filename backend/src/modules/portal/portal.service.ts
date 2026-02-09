@@ -471,13 +471,22 @@ export class PortalService {
 
     // Map status to readable names
     const statusNames: Record<string, string> = {
-      FINALIZADO: 'Concluído',
-      EM_PRODUCAO: 'Em Produção',
-      ACEITO_PELA_FACCAO: 'Aceito',
       LANCADO_PELA_MARCA: 'Aguardando',
-      RECUSADO_PELA_FACCAO: 'Recusado',
+      EM_NEGOCIACAO: 'Em Negociação',
+      ACEITO_PELA_FACCAO: 'Aceito',
+      EM_PREPARACAO_SAIDA_MARCA: 'Preparando Envio',
+      EM_TRANSITO_PARA_FACCAO: 'Em Trânsito (Recebimento)',
+      EM_PREPARACAO_ENTRADA_FACCAO: 'Conferindo Insumos',
+      EM_PRODUCAO: 'Em Produção',
       PRONTO: 'Pronto',
-      EM_TRANSITO_PARA_MARCA: 'Em Trânsito',
+      EM_TRANSITO_PARA_MARCA: 'Em Trânsito (Devolução)',
+      EM_REVISAO: 'Em Revisão',
+      PARCIALMENTE_APROVADO: 'Parcialmente Aprovado',
+      REPROVADO: 'Reprovado',
+      AGUARDANDO_RETRABALHO: 'Aguardando Retrabalho',
+      FINALIZADO: 'Concluído',
+      RECUSADO_PELA_FACCAO: 'Recusado',
+      DISPONIVEL_PARA_OUTRAS: 'Disponível',
     };
 
     // Helper to format week dates as labels
