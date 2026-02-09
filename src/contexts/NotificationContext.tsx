@@ -147,12 +147,12 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
             );
             setUnreadCount(0);
 
-            // Update via WebSocket if connected
+            // Always persist via API (reliable)
+            await notificationsService.markAllAsRead();
+
+            // Also notify via WebSocket for real-time count sync
             if (isConnected) {
                 wsMarkAllAsRead();
-            } else {
-                // Fall back to API
-                await notificationsService.markAllAsRead();
             }
 
             // Update IndexedDB
