@@ -90,6 +90,16 @@ const convertApiOrder = (apiOrder: ApiOrder): Order => ({
     observations: '',
     materialsProvided: apiOrder.materialsProvided,
     createdAt: apiOrder.createdAt,
+    op: apiOrder.op,
+    artigo: apiOrder.artigo,
+    techSheetUrl: apiOrder.techSheetUrl,
+    attachments: apiOrder.attachments?.map(a => ({
+        id: a.id,
+        type: (a.type === 'IMAGE' ? 'image' : a.type === 'VIDEO' ? 'video' : a.type === 'TECH_SHEET' ? 'pdf' : 'doc') as 'image' | 'video' | 'pdf' | 'doc',
+        name: a.name,
+        url: a.url,
+        size: a.mimeType,
+    })),
     timeline: [
         { step: 'Pedido Criado', completed: true, date: new Date(apiOrder.createdAt).toLocaleDateString('pt-BR'), icon: 'check' },
         { step: 'Aceite da Facção', completed: ['ACEITO_PELA_FACCAO', 'EM_PREPARACAO_SAIDA_MARCA', 'EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'check' },

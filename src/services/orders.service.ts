@@ -43,6 +43,8 @@ export interface Order {
     op?: string;
     artigo?: string;
     description?: string;
+    observations?: string;
+    techSheetUrl?: string;
     quantity: number;
     pricePerUnit: number;
     totalValue: number;

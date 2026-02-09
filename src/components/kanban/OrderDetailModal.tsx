@@ -368,6 +368,20 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                                 <div>
                                                     <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">{order.type}</span>
                                                     <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">{order.productName}</h3>
+                                                    {(order.op || order.artigo) && (
+                                                        <div className="flex items-center gap-3 mt-1.5">
+                                                            {order.op && (
+                                                                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+                                                                    OP: {order.op}
+                                                                </span>
+                                                            )}
+                                                            {order.artigo && (
+                                                                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+                                                                    Artigo: {order.artigo}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 leading-relaxed bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md border border-gray-100 dark:border-gray-600">
@@ -416,16 +430,16 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                         </h4>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                                             {order.attachments.map((att) => (
-                                                <div key={att.id} className="group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg hover:border-brand-300 dark:hover:border-brand-600 transition-all cursor-pointer">
+                                                <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" download className="group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg hover:border-brand-300 dark:hover:border-brand-600 transition-all cursor-pointer">
                                                     {/* Thumbnail Area */}
                                                     <div className="h-28 w-full relative overflow-hidden">
                                                         {renderThumbnail(att)}
 
                                                         {/* Hover Overlay */}
                                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                            <button className="bg-white text-gray-900 rounded-full p-2 shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                                                            <span className="bg-white text-gray-900 rounded-full p-2 shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform">
                                                                 <Download className="h-4 w-4" />
-                                                            </button>
+                                                            </span>
                                                         </div>
                                                     </div>
 
@@ -439,7 +453,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                                             <span className="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 px-1 rounded">{att.size}</span>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </a>
                                             ))}
                                         </div>
                                     </div>

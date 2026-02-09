@@ -424,6 +424,7 @@ export class OrdersService {
         targetSuppliers: {
           include: { supplier: { select: { id: true, tradeName: true } } },
         },
+        attachments: true,
         _count: { select: { messages: true, attachments: true, ratings: true } },
       },
       orderBy: { createdAt: 'desc' },
