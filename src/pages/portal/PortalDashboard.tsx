@@ -225,6 +225,13 @@ const PortalDashboard: React.FC = () => {
                 />
             </HeroMetrics>
 
+            {/* Quick Actions */}
+            <QuickActionsGrid
+                title="Ações Rápidas"
+                actions={quickActions}
+                columns={4}
+            />
+
             {/* Onboarding Progress Card */}
             {profile && !profile.onboardingComplete && (
                 <div className="relative overflow-hidden bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 text-white dashboard-section">
@@ -336,13 +343,6 @@ const PortalDashboard: React.FC = () => {
                     />
                 </ChartCard>
             </div>
-
-            {/* Quick Actions */}
-            <QuickActionsGrid
-                title="Ações Rápidas"
-                actions={quickActions}
-                columns={4}
-            />
 
             {/* Bank Data Status */}
             {!isBankDataComplete && (

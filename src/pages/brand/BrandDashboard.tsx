@@ -229,6 +229,13 @@ const BrandDashboard: React.FC = () => {
                 />
             </HeroMetrics>
 
+            {/* Quick Actions */}
+            <QuickActionsGrid
+                title="Ações Rápidas"
+                actions={quickActions}
+                columns={4}
+            />
+
             {/* Value Summary Card */}
             <div className="relative overflow-hidden bg-gradient-to-r from-sky-600 to-blue-600 rounded-2xl p-6 text-white dashboard-section">
                 <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
@@ -342,13 +349,6 @@ const BrandDashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Quick Actions */}
-            <QuickActionsGrid
-                title="Ações Rápidas"
-                actions={quickActions}
-                columns={4}
-            />
 
             {/* Footer */}
             <DashboardFooter variant="brand" />
