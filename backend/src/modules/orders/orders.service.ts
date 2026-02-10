@@ -298,7 +298,7 @@ export class OrdersService {
   // Mapa de "quem estamos aguardando" por status
   private readonly WAITING_FOR_MAP: Record<string, { waitingFor: 'BRAND' | 'SUPPLIER'; label: string }> = {
     [OrderStatus.LANCADO_PELA_MARCA]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção aceitar o pedido' },
-    [OrderStatus.EM_NEGOCIACAO]: { waitingFor: 'BRAND', label: 'Em negociação com a facção' },
+    [OrderStatus.EM_NEGOCIACAO]: { waitingFor: 'SUPPLIER', label: 'Em negociação com a facção' },
     [OrderStatus.ACEITO_PELA_FACCAO]: { waitingFor: 'BRAND', label: 'Aguardando a Marca preparar insumos' },
     [OrderStatus.EM_PREPARACAO_SAIDA_MARCA]: { waitingFor: 'BRAND', label: 'Marca preparando insumos para envio' },
     [OrderStatus.EM_TRANSITO_PARA_FACCAO]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção confirmar recebimento' },
@@ -703,7 +703,8 @@ export class OrdersService {
 
     // Check if this supplier can accept
     const canAccept =
-      (order.status === OrderStatus.LANCADO_PELA_MARCA &&
+      ((order.status === OrderStatus.LANCADO_PELA_MARCA ||
+        order.status === OrderStatus.EM_NEGOCIACAO) &&
         (order.supplierId === companyUser.companyId ||
           order.targetSuppliers.some(
             (t) =>
@@ -804,31 +805,45 @@ export class OrdersService {
 
     // For DIRECT orders, make available to others
     if (order.assignmentType === OrderAssignmentType.DIRECT) {
-      const rejected = await this.prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: OrderStatus.DISPONIVEL_PARA_OUTRAS,
-          supplierId: null,
-          rejectionReason: reason,
-          statusHistory: {
-            create: {
-              previousStatus: order.status,
-              newStatus: OrderStatus.DISPONIVEL_PARA_OUTRAS,
-              changedById: userId,
-              notes: reason || 'Order rejected by supplier',
+      const rejected = await this.prisma.$transaction(async (tx) => {
+        const updatedOrder = await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: OrderStatus.DISPONIVEL_PARA_OUTRAS,
+            supplierId: null,
+            rejectionReason: reason,
+            statusHistory: {
+              create: {
+                previousStatus: order.status,
+                newStatus: OrderStatus.DISPONIVEL_PARA_OUTRAS,
+                changedById: userId,
+                notes: reason || 'Order rejected by supplier',
+              },
             },
           },
-        },
-      });
+        });
 
-      // Create a target supplier record so this supplier is excluded from future opportunities
-      await this.prisma.orderTargetSupplier.create({
-        data: {
-          orderId,
-          supplierId: companyUser.companyId,
-          status: OrderTargetStatus.REJECTED,
-          respondedAt: new Date(),
-        },
+        // Create/update target supplier record so this supplier is excluded from future opportunities
+        await tx.orderTargetSupplier.upsert({
+          where: {
+            orderId_supplierId: {
+              orderId,
+              supplierId: companyUser.companyId,
+            },
+          },
+          create: {
+            orderId,
+            supplierId: companyUser.companyId,
+            status: OrderTargetStatus.REJECTED,
+            respondedAt: new Date(),
+          },
+          update: {
+            status: OrderTargetStatus.REJECTED,
+            respondedAt: new Date(),
+          },
+        });
+
+        return updatedOrder;
       });
 
       // Emit order rejected event

@@ -77,6 +77,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             ],
             [OrderStatus.NEGOTIATING]: [
                 { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar após Negociação', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Pedido?', confirmMsg: 'Aceitar o pedido após negociação de condições?' },
+                { targetStatus: OrderStatus.CANCELLED, label: 'Cancelar Pedido', icon: 'advance', color: 'bg-red-600 hover:bg-red-700', confirmTitle: 'Cancelar Pedido?', confirmMsg: 'Tem certeza que deseja cancelar este pedido em negociação?' },
             ],
             [OrderStatus.ACCEPTED]: [
                 { targetStatus: OrderStatus.PRODUCTION_QUEUE, label: 'Enviar para Fila de Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Fila de Produção?', confirmMsg: 'Enviar para a fila de produção sem aguardar insumos da marca?', requiresMaterials: false },

@@ -14,6 +14,7 @@ import {
 import { CompanyType, CompanyStatus, OrderStatus, OrderTargetStatus } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { InvitationNotificationService } from './services/invitation-notification.service';
+import { SUPPLIER_INTEREST_EXPRESSED } from '../notifications/events/notification.events';
 
 @Injectable()
 export class SuppliersService {
@@ -562,7 +563,7 @@ export class SuppliersService {
     }
 
     // Emit event to notify the brand
-    this.eventEmitter.emit('supplier.interest.expressed', {
+    this.eventEmitter.emit(SUPPLIER_INTEREST_EXPRESSED, {
       orderId,
       orderDisplayId: order.displayId,
       brandId: order.brandId,
