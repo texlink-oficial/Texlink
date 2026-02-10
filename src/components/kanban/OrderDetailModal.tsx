@@ -67,19 +67,25 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                 { targetStatus: OrderStatus.IN_REVIEW, label: 'Confirmar Recebimento', icon: 'receipt', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Confirmar Recebimento?', confirmMsg: 'Confirma que o pedido foi recebido e deseja iniciar a revisão de qualidade?' },
             ],
             [OrderStatus.IN_REVIEW]: [], // Handled by OrderReviewModal
+            [OrderStatus.PAYMENT_PROCESS]: [
+                { targetStatus: OrderStatus.FINALIZED, label: 'Confirmar Pagamento', icon: 'advance', color: 'bg-green-600 hover:bg-green-700', confirmTitle: 'Confirmar Pagamento?', confirmMsg: 'Confirma que o pagamento foi realizado e deseja finalizar o pedido?' },
+            ],
         },
         SUPPLIER: {
             [OrderStatus.NEW]: [
                 { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar Pedido', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Pedido?', confirmMsg: 'O pedido entrará em fase de Produção. Certifique-se de que tem capacidade para atender o prazo.' },
             ],
             [OrderStatus.ACCEPTED]: [
-                { targetStatus: OrderStatus.PRODUCTION, label: 'Iniciar Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Iniciar Produção?', confirmMsg: 'Confirma que vai iniciar a produção sem aguardar insumos da marca?', requiresMaterials: false },
+                { targetStatus: OrderStatus.PRODUCTION_QUEUE, label: 'Enviar para Fila de Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Fila de Produção?', confirmMsg: 'Enviar para a fila de produção sem aguardar insumos da marca?', requiresMaterials: false },
             ],
             [OrderStatus.TRANSIT_TO_SUPPLIER]: [
                 { targetStatus: OrderStatus.RECEIVED_SUPPLIER, label: 'Confirmar Recebimento', icon: 'receipt', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Confirmar Recebimento?', confirmMsg: 'Confirma que os insumos foram recebidos na facção?' },
             ],
             [OrderStatus.RECEIVED_SUPPLIER]: [
-                { targetStatus: OrderStatus.PRODUCTION, label: 'Iniciar Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Iniciar Produção?', confirmMsg: 'Confirma que vai iniciar a produção após conferência dos insumos?' },
+                { targetStatus: OrderStatus.PRODUCTION_QUEUE, label: 'Enviar para Fila de Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Fila de Produção?', confirmMsg: 'Enviar para a fila de produção após conferência dos insumos?' },
+            ],
+            [OrderStatus.PRODUCTION_QUEUE]: [
+                { targetStatus: OrderStatus.PRODUCTION, label: 'Iniciar Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Iniciar Produção?', confirmMsg: 'Confirma que vai iniciar a produção deste pedido?' },
             ],
             [OrderStatus.PRODUCTION]: [
                 { targetStatus: OrderStatus.READY_SEND, label: 'Produção Concluída', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Produção Concluída?', confirmMsg: 'Confirma que a produção está concluída e pronta para envio?' },
@@ -104,6 +110,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             [OrderStatus.ACCEPTED]: 'Aguardando a Facção iniciar produção',
             [OrderStatus.TRANSIT_TO_SUPPLIER]: 'Aguardando a Facção confirmar recebimento',
             [OrderStatus.RECEIVED_SUPPLIER]: 'Facção conferindo insumos recebidos',
+            [OrderStatus.PRODUCTION_QUEUE]: 'Aguardando início da produção',
             [OrderStatus.PRODUCTION]: 'Facção em produção',
         },
         SUPPLIER: {
@@ -111,13 +118,14 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             [OrderStatus.ACCEPTED]: 'Aguardando a Marca preparar insumos',
             [OrderStatus.TRANSIT_TO_BRAND]: 'Aguardando a Marca confirmar recebimento',
             [OrderStatus.IN_REVIEW]: 'Marca revisando qualidade',
+            [OrderStatus.PAYMENT_PROCESS]: 'Aguardando confirmação de pagamento',
         },
     };
 
     // Brand IN_REVIEW → opens OrderReviewModal instead of simple confirmation
     const isReviewStatus = userRole === 'BRAND' && order.status === OrderStatus.IN_REVIEW;
     const waitingMessage = !isReviewStatus && currentActions.length === 0 ? (WAITING_MESSAGES[userRole]?.[order.status] || null) : null;
-    const isTerminal = [OrderStatus.FINALIZED, OrderStatus.PARTIALLY_APPROVED, OrderStatus.DISAPPROVED, OrderStatus.REJECTED].includes(order.status);
+    const isTerminal = [OrderStatus.FINALIZED, OrderStatus.PARTIALLY_APPROVED, OrderStatus.DISAPPROVED, OrderStatus.REJECTED, OrderStatus.CANCELLED].includes(order.status);
 
     // State for selected action for confirmation
     const [pendingAction, setPendingAction] = useState<ActionDef | null>(null);
@@ -129,7 +137,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
     const [showReviewModal, setShowReviewModal] = useState(false);
 
     const REVIEW_RESULT_TO_STATUS: Record<string, OrderStatus> = {
-        APPROVED: OrderStatus.FINALIZED,
+        APPROVED: OrderStatus.PAYMENT_PROCESS,
         PARTIAL: OrderStatus.PARTIALLY_APPROVED,
         REJECTED: OrderStatus.DISAPPROVED,
     };
@@ -186,6 +194,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
         switch (status) {
             case OrderStatus.NEW: return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
             case OrderStatus.NEGOTIATING: return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300';
+            case OrderStatus.PRODUCTION_QUEUE: return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
             case OrderStatus.PRODUCTION: return 'bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300';
             case OrderStatus.ACCEPTED: return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
             case OrderStatus.PREPARING_BRAND: return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
@@ -197,7 +206,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             case OrderStatus.PARTIALLY_APPROVED: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
             case OrderStatus.DISAPPROVED: return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
             case OrderStatus.AWAITING_REWORK: return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+            case OrderStatus.PAYMENT_PROCESS: return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300';
             case OrderStatus.FINALIZED: return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+            case OrderStatus.CANCELLED: return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
             case OrderStatus.REJECTED: return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
             case OrderStatus.AVAILABLE_FOR_OTHERS: return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
             default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
@@ -212,6 +223,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             case OrderStatus.PREPARING_BRAND: return 'Preparando Envio';
             case OrderStatus.TRANSIT_TO_SUPPLIER: return 'Em Trânsito';
             case OrderStatus.RECEIVED_SUPPLIER: return 'Conferindo Insumos';
+            case OrderStatus.PRODUCTION_QUEUE: return 'Fila de Produção';
             case OrderStatus.PRODUCTION: return 'Em Produção';
             case OrderStatus.READY_SEND: return 'Pronto';
             case OrderStatus.TRANSIT_TO_BRAND: return 'Em Trânsito';
@@ -219,7 +231,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             case OrderStatus.PARTIALLY_APPROVED: return 'Parcialmente Aprovado';
             case OrderStatus.DISAPPROVED: return 'Reprovado';
             case OrderStatus.AWAITING_REWORK: return 'Aguardando Retrabalho';
+            case OrderStatus.PAYMENT_PROCESS: return 'Processo de Pagamento';
             case OrderStatus.FINALIZED: return 'Concluído';
+            case OrderStatus.CANCELLED: return 'Cancelado';
             case OrderStatus.REJECTED: return 'Recusado';
             case OrderStatus.AVAILABLE_FOR_OTHERS: return 'Disponível';
             default: return status;
@@ -493,13 +507,13 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                             <div className={`w-full py-4 border text-sm font-medium rounded-lg text-center ${
                                                 order.status === OrderStatus.FINALIZED
                                                     ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-900/50 text-green-600 dark:text-green-400'
-                                                    : order.status === OrderStatus.REJECTED
+                                                    : (order.status === OrderStatus.REJECTED || order.status === OrderStatus.CANCELLED)
                                                     ? 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400'
                                                     : 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-900/50 text-amber-600 dark:text-amber-400'
                                             }`}>
                                                 <div className="flex flex-col items-center gap-1">
                                                     {order.status === OrderStatus.FINALIZED ? <CheckCircle className="h-6 w-6 mb-1" /> : <X className="h-6 w-6 mb-1" />}
-                                                    <span>{order.status === OrderStatus.FINALIZED ? 'Pedido Finalizado' : order.status === OrderStatus.REJECTED ? 'Pedido Recusado' : order.status === OrderStatus.PARTIALLY_APPROVED ? 'Parcialmente Aprovado' : 'Reprovado'}</span>
+                                                    <span>{order.status === OrderStatus.FINALIZED ? 'Pedido Finalizado' : order.status === OrderStatus.REJECTED ? 'Pedido Recusado' : order.status === OrderStatus.CANCELLED ? 'Pedido Cancelado' : order.status === OrderStatus.PARTIALLY_APPROVED ? 'Parcialmente Aprovado' : 'Reprovado'}</span>
                                                 </div>
                                             </div>
                                         ) : isReviewStatus ? (

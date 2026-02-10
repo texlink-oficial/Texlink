@@ -9,6 +9,7 @@ export type OrderStatus =
     | 'EM_PREPARACAO_SAIDA_MARCA'
     | 'EM_TRANSITO_PARA_FACCAO'
     | 'EM_PREPARACAO_ENTRADA_FACCAO'
+    | 'FILA_DE_PRODUCAO'
     | 'EM_PRODUCAO'
     | 'PRONTO'
     | 'EM_TRANSITO_PARA_MARCA'
@@ -16,7 +17,9 @@ export type OrderStatus =
     | 'PARCIALMENTE_APROVADO'
     | 'REPROVADO'
     | 'AGUARDANDO_RETRABALHO'
+    | 'EM_PROCESSO_PAGAMENTO'
     | 'FINALIZADO'
+    | 'CANCELADO'
     | 'RECUSADO_PELA_FACCAO'
     | 'DISPONIVEL_PARA_OUTRAS';
 
@@ -487,7 +490,7 @@ export const ordersService = {
                 ],
                 ACEITO_PELA_FACCAO: [
                     { nextStatus: 'EM_PREPARACAO_SAIDA_MARCA', allowedRoles: ['BRAND'], requiresMaterials: true, label: 'Preparar Insumos', description: 'Iniciar preparação dos insumos para envio à facção', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
-                    { nextStatus: 'EM_PRODUCAO', allowedRoles: ['SUPPLIER'], requiresMaterials: false, label: 'Iniciar Produção', description: 'Iniciar produção sem aguardar insumos da marca', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
+                    { nextStatus: 'FILA_DE_PRODUCAO', allowedRoles: ['SUPPLIER'], requiresMaterials: false, label: 'Enviar para Fila de Produção', description: 'Enviar para a fila de produção sem aguardar insumos da marca', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
                 ],
                 EM_PREPARACAO_SAIDA_MARCA: [
                     { nextStatus: 'EM_TRANSITO_PARA_FACCAO', allowedRoles: ['BRAND'], label: 'Despachar Insumos', description: 'Confirmar que os insumos foram despachados para a facção', requiresConfirmation: true, requiresNotes: true, requiresReview: false },
@@ -496,7 +499,10 @@ export const ordersService = {
                     { nextStatus: 'EM_PREPARACAO_ENTRADA_FACCAO', allowedRoles: ['SUPPLIER'], label: 'Confirmar Recebimento', description: 'Confirmar que os insumos foram recebidos na facção', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
                 ],
                 EM_PREPARACAO_ENTRADA_FACCAO: [
-                    { nextStatus: 'EM_PRODUCAO', allowedRoles: ['SUPPLIER'], label: 'Iniciar Produção', description: 'Iniciar a produção após conferência dos insumos', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
+                    { nextStatus: 'FILA_DE_PRODUCAO', allowedRoles: ['SUPPLIER'], label: 'Enviar para Fila de Produção', description: 'Enviar para a fila de produção após conferência dos insumos', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
+                ],
+                FILA_DE_PRODUCAO: [
+                    { nextStatus: 'EM_PRODUCAO', allowedRoles: ['SUPPLIER'], label: 'Iniciar Produção', description: 'Iniciar a produção deste pedido', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
                 ],
                 EM_PRODUCAO: [
                     { nextStatus: 'PRONTO', allowedRoles: ['SUPPLIER'], label: 'Produção Concluída', description: 'Marcar a produção como concluída e pronta para envio', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
@@ -512,6 +518,9 @@ export const ordersService = {
                     { nextStatus: 'PARCIALMENTE_APROVADO', allowedRoles: ['BRAND'], label: 'Aprovação Parcial', description: 'Aprovar parcialmente com itens rejeitados ou segunda qualidade', requiresConfirmation: true, requiresNotes: true, requiresReview: true },
                     { nextStatus: 'REPROVADO', allowedRoles: ['BRAND'], label: 'Reprovar', description: 'Reprovar o pedido por problemas de qualidade', requiresConfirmation: true, requiresNotes: true, requiresReview: true },
                 ],
+                EM_PROCESSO_PAGAMENTO: [
+                    { nextStatus: 'FINALIZADO', allowedRoles: ['BRAND', 'SUPPLIER'], label: 'Confirmar Pagamento', description: 'Confirmar que o pagamento foi realizado e finalizar o pedido', requiresConfirmation: true, requiresNotes: false, requiresReview: false },
+                ],
             };
 
             // Waiting for map
@@ -524,6 +533,8 @@ export const ordersService = {
                 PRONTO: { waitingFor: 'BRAND', label: 'Pronto para despacho' },
                 EM_TRANSITO_PARA_MARCA: { waitingFor: 'BRAND', label: 'Aguardando a Marca confirmar recebimento' },
                 EM_REVISAO: { waitingFor: 'BRAND', label: 'Marca revisando qualidade' },
+                FILA_DE_PRODUCAO: { waitingFor: 'SUPPLIER', label: 'Aguardando início da produção' },
+                EM_PROCESSO_PAGAMENTO: { waitingFor: 'BRAND', label: 'Aguardando confirmação de pagamento' },
             };
 
             const allTransitions = STATUS_TRANSITIONS[order.status] || [];

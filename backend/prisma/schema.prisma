@@ -111,6 +111,7 @@ enum OrderStatus {
   EM_PREPARACAO_SAIDA_MARCA
   EM_TRANSITO_PARA_FACCAO
   EM_PREPARACAO_ENTRADA_FACCAO
+  FILA_DE_PRODUCAO // Fila de produção (aguardando início)
   EM_PRODUCAO
   PRONTO
   EM_TRANSITO_PARA_MARCA
@@ -118,7 +119,9 @@ enum OrderStatus {
   PARCIALMENTE_APROVADO // Parte aprovada, parte com problemas
   REPROVADO // Totalmente reprovado
   AGUARDANDO_RETRABALHO // Aguardando pedido filho ser aceito
+  EM_PROCESSO_PAGAMENTO // Em processo de pagamento (após aprovação total)
   FINALIZADO
+  CANCELADO // Pedido cancelado no meio do processo
   RECUSADO_PELA_FACCAO
   DISPONIVEL_PARA_OUTRAS
 }

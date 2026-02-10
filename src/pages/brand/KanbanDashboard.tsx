@@ -12,42 +12,31 @@ import { OrderFiltersDropdown } from '../../components/kanban/OrderFiltersDropdo
 import { RatingModal } from '../../components/ratings/RatingModal';
 import { Filter, LayoutGrid, List, Loader2, Plus, Search } from 'lucide-react';
 
-// Status mapping from API to Kanban UI (Brand perspective)
-const STATUS_MAP: Record<ApiOrderStatus, OrderStatus> = {
-    'LANCADO_PELA_MARCA': OrderStatus.NEW,
-    'EM_NEGOCIACAO': OrderStatus.NEGOTIATING,
-    'ACEITO_PELA_FACCAO': OrderStatus.ACCEPTED,
-    'EM_PREPARACAO_SAIDA_MARCA': OrderStatus.PREPARING_BRAND,
-    'EM_TRANSITO_PARA_FACCAO': OrderStatus.TRANSIT_TO_SUPPLIER,
-    'EM_PREPARACAO_ENTRADA_FACCAO': OrderStatus.RECEIVED_SUPPLIER,
-    'EM_PRODUCAO': OrderStatus.PRODUCTION,
-    'PRONTO': OrderStatus.READY_SEND,
-    'EM_TRANSITO_PARA_MARCA': OrderStatus.TRANSIT_TO_BRAND,
-    'EM_REVISAO': OrderStatus.IN_REVIEW,
-    'PARCIALMENTE_APROVADO': OrderStatus.PARTIALLY_APPROVED,
-    'REPROVADO': OrderStatus.DISAPPROVED,
-    'AGUARDANDO_RETRABALHO': OrderStatus.AWAITING_REWORK,
-    'FINALIZADO': OrderStatus.FINALIZED,
-    'RECUSADO_PELA_FACCAO': OrderStatus.REJECTED,
-    'DISPONIVEL_PARA_OUTRAS': OrderStatus.NEW,
-};
-
-const STATUS_COLUMNS = [
-    { id: OrderStatus.NEW, label: '▪ Aguardando Facção' },
-    { id: OrderStatus.NEGOTIATING, label: '▪ Em Negociação' },
-    { id: OrderStatus.ACCEPTED, label: '▪ Aceito' },
-    { id: OrderStatus.PREPARING_BRAND, label: '▪ Preparando Envio' },
-    { id: OrderStatus.TRANSIT_TO_SUPPLIER, label: '▪ Trânsito → Facção' },
-    { id: OrderStatus.RECEIVED_SUPPLIER, label: '▪ Recebido' },
-    { id: OrderStatus.PRODUCTION, label: '▪ Em Produção' },
-    { id: OrderStatus.READY_SEND, label: '▪ Pronto / Envio' },
-    { id: OrderStatus.TRANSIT_TO_BRAND, label: '▪ Trânsito → Marca' },
-    { id: OrderStatus.IN_REVIEW, label: '▪ Em Revisão' },
-    { id: OrderStatus.PARTIALLY_APPROVED, label: '▪ Parc. Aprovado' },
-    { id: OrderStatus.DISAPPROVED, label: '▪ Reprovado' },
-    { id: OrderStatus.AWAITING_REWORK, label: '▪ Aguard. Retrabalho' },
-    { id: OrderStatus.FINALIZED, label: '▪ Finalizados' },
+// Kanban column definitions with grouped statuses (Brand perspective)
+const KANBAN_COLUMNS = [
+    { id: 'waiting_supplier', label: 'Aguardando Facção', statuses: [OrderStatus.NEW, OrderStatus.AVAILABLE_FOR_OTHERS] },
+    { id: 'negotiation', label: 'Em Análise/Negociação', statuses: [OrderStatus.NEGOTIATING] },
+    { id: 'sending_materials', label: 'Enviando Insumos', statuses: [OrderStatus.ACCEPTED, OrderStatus.PREPARING_BRAND, OrderStatus.TRANSIT_TO_SUPPLIER, OrderStatus.RECEIVED_SUPPLIER] },
+    { id: 'production_queue', label: 'Fila de Produção', statuses: [OrderStatus.PRODUCTION_QUEUE] },
+    { id: 'production', label: 'Em Produção', statuses: [OrderStatus.PRODUCTION] },
+    { id: 'transit', label: 'Em Trânsito', statuses: [OrderStatus.READY_SEND, OrderStatus.TRANSIT_TO_BRAND] },
+    { id: 'approval', label: 'Em Aprovação', statuses: [OrderStatus.IN_REVIEW, OrderStatus.PARTIALLY_APPROVED, OrderStatus.DISAPPROVED, OrderStatus.AWAITING_REWORK] },
+    { id: 'payment', label: 'Processo de Pagamento', statuses: [OrderStatus.PAYMENT_PROCESS] },
+    { id: 'finalized', label: 'Finalizados', statuses: [OrderStatus.FINALIZED] },
+    { id: 'cancelled', label: 'Cancelados', statuses: [OrderStatus.CANCELLED] },
 ];
+
+// Map each column's first status to all statuses in that column (for filter expansion)
+const STATUS_GROUP_MAP: Record<string, OrderStatus[]> = {};
+KANBAN_COLUMNS.forEach(col => {
+    STATUS_GROUP_MAP[col.statuses[0]] = col.statuses;
+});
+
+// For filter dropdown compatibility
+const STATUS_COLUMNS = KANBAN_COLUMNS.map(col => ({
+    id: col.statuses[0],
+    label: `▪ ${col.label}`,
+}));
 
 // Convert API order to Kanban order format (Brand perspective - uses supplier info)
 const convertApiOrder = (apiOrder: ApiOrder): Order => ({
@@ -66,7 +55,7 @@ const convertApiOrder = (apiOrder: ApiOrder): Order => ({
     pricePerUnit: Number(apiOrder.pricePerUnit),
     totalValue: Number(apiOrder.totalValue),
     deliveryDeadline: apiOrder.deliveryDeadline,
-    status: STATUS_MAP[apiOrder.status] || OrderStatus.NEW,
+    status: (apiOrder.status as unknown as OrderStatus) || OrderStatus.NEW,
     paymentTerms: apiOrder.paymentTerms || '50% adiantado',
     paymentStatus: 'pending',
     description: apiOrder.description || '',
@@ -85,15 +74,14 @@ const convertApiOrder = (apiOrder: ApiOrder): Order => ({
     })),
     timeline: [
         { step: 'Pedido Criado', completed: true, date: new Date(apiOrder.createdAt).toLocaleDateString('pt-BR'), icon: 'check' },
-        { step: 'Aceite da Facção', completed: ['ACEITO_PELA_FACCAO', 'EM_PREPARACAO_SAIDA_MARCA', 'EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'check' },
-        { step: 'Preparação (Marca)', completed: ['EM_PREPARACAO_SAIDA_MARCA', 'EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'box' },
-        { step: 'Em Trânsito → Facção', completed: ['EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'truck' },
-        { step: 'Recebimento na Facção', completed: ['EM_PREPARACAO_ENTRADA_FACCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'box' },
-        { step: 'Em Produção', completed: ['EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'scissors' },
-        { step: 'Pronto p/ Envio', completed: ['PRONTO', 'EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'box' },
-        { step: 'Em Trânsito → Marca', completed: ['EM_TRANSITO_PARA_MARCA', 'FINALIZADO'].includes(apiOrder.status), icon: 'truck' },
-        { step: 'Entrega / Finalização', completed: apiOrder.status === 'FINALIZADO', icon: 'check' },
-        { step: 'Avaliação', completed: false, icon: 'check' }
+        { step: 'Aceite da Facção', completed: ['ACEITO_PELA_FACCAO', 'EM_PREPARACAO_SAIDA_MARCA', 'EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'FILA_DE_PRODUCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'EM_REVISAO', 'EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'check' },
+        { step: 'Preparação (Marca)', completed: ['EM_PREPARACAO_SAIDA_MARCA', 'EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'FILA_DE_PRODUCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'EM_REVISAO', 'EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'box' },
+        { step: 'Fila de Produção', completed: ['FILA_DE_PRODUCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'EM_REVISAO', 'EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'clock' },
+        { step: 'Em Produção', completed: ['EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'EM_REVISAO', 'EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'scissors' },
+        { step: 'Em Trânsito → Marca', completed: ['EM_TRANSITO_PARA_MARCA', 'EM_REVISAO', 'EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'truck' },
+        { step: 'Aprovação', completed: ['EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'check' },
+        { step: 'Pagamento', completed: apiOrder.status === 'FINALIZADO', icon: 'check' },
+        { step: 'Finalizado', completed: apiOrder.status === 'FINALIZADO', icon: 'check' },
     ],
 });
 
@@ -172,7 +160,12 @@ const BrandKanbanDashboard: React.FC = () => {
                 }
             }
 
-            const matchesStatus = statusFilter.length === 0 || statusFilter.includes(order.status);
+            // Expand status filter to include all statuses in the same column group
+            let matchesStatus = statusFilter.length === 0;
+            if (!matchesStatus) {
+                const expandedStatuses = statusFilter.flatMap(s => STATUS_GROUP_MAP[s] || [s]);
+                matchesStatus = expandedStatuses.includes(order.status);
+            }
             const matchesPartner = partnerFilter === '' || order.brand.id === partnerFilter;
             const matchesProductType = productTypeFilter === '' || order.type === productTypeFilter;
 
@@ -198,10 +191,10 @@ const BrandKanbanDashboard: React.FC = () => {
         setProductTypeFilter('');
     };
 
-    const ordersByStatus = useMemo(() => {
+    const ordersByColumn = useMemo(() => {
         const grouped: Record<string, Order[]> = {};
-        Object.values(OrderStatus).forEach(status => {
-            grouped[status] = filteredOrders.filter(o => o.status === status);
+        KANBAN_COLUMNS.forEach(col => {
+            grouped[col.id] = filteredOrders.filter(o => col.statuses.includes(o.status));
         });
         return grouped;
     }, [filteredOrders]);
@@ -241,7 +234,7 @@ const BrandKanbanDashboard: React.FC = () => {
     // Stats for brand
     const stats = {
         totalOrders: orders.length,
-        activeOrders: orders.filter(o => !['FINALIZADO', 'RECUSADO'].includes(o.status as string)).length,
+        activeOrders: orders.filter(o => !['FINALIZADO', 'RECUSADO', 'CANCELADO'].includes(o.status as string)).length,
         completedOrders: orders.filter(o => o.status === OrderStatus.FINALIZED).length,
         totalSpent: orders
             .filter(o => o.status === OrderStatus.FINALIZED)
@@ -331,17 +324,17 @@ const BrandKanbanDashboard: React.FC = () => {
                         <div className="h-full flex-1">
                             {viewMode === 'kanban' ? (
                                 <div className="flex gap-3 overflow-x-auto pb-4 h-full items-start kanban-scroll snap-x snap-mandatory md:snap-none">
-                                    {STATUS_COLUMNS.map(col => (
+                                    {KANBAN_COLUMNS.map(col => (
                                         <div
                                             key={col.id}
                                             className="min-w-[240px] w-[240px] md:min-w-[260px] md:w-[260px] flex flex-col h-full bg-gray-100/50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex-shrink-0 snap-start"
                                         >
                                             <div className="p-3 rounded-t-xl border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-between items-center sticky top-0 z-10">
                                                 <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-200">{col.label}</h3>
-                                                <span className="text-xs font-bold text-gray-400 bg-gray-50 dark:bg-gray-700 px-2 py-0.5 rounded-full">{ordersByStatus[col.id]?.length || 0}</span>
+                                                <span className="text-xs font-bold text-gray-400 bg-gray-50 dark:bg-gray-700 px-2 py-0.5 rounded-full">{ordersByColumn[col.id]?.length || 0}</span>
                                             </div>
                                             <div className="p-1.5 space-y-2">
-                                                {ordersByStatus[col.id]?.map(order => (
+                                                {ordersByColumn[col.id]?.map(order => (
                                                     <OrderCard
                                                         key={order.id}
                                                         order={order}

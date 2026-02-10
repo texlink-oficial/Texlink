@@ -71,6 +71,17 @@ export class OrdersService {
         requiresReview: false,
       },
     ],
+    [OrderStatus.EM_NEGOCIACAO]: [
+      {
+        nextStatus: OrderStatus.CANCELADO,
+        allowedRoles: ['BRAND', 'SUPPLIER'],
+        label: 'Cancelar Pedido',
+        description: 'Cancelar este pedido',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
+    ],
     [OrderStatus.ACEITO_PELA_FACCAO]: [
       {
         nextStatus: OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
@@ -83,13 +94,22 @@ export class OrdersService {
         requiresReview: false,
       },
       {
-        nextStatus: OrderStatus.EM_PRODUCAO,
+        nextStatus: OrderStatus.FILA_DE_PRODUCAO,
         allowedRoles: ['SUPPLIER'],
         requiresMaterials: false,
-        label: 'Iniciar Produção',
-        description: 'Iniciar produção sem aguardar insumos da marca',
+        label: 'Enviar para Fila de Produção',
+        description: 'Enviar para a fila de produção sem aguardar insumos da marca',
         requiresConfirmation: true,
         requiresNotes: false,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.CANCELADO,
+        allowedRoles: ['BRAND', 'SUPPLIER'],
+        label: 'Cancelar Pedido',
+        description: 'Cancelar este pedido',
+        requiresConfirmation: true,
+        requiresNotes: true,
         requiresReview: false,
       },
     ],
@@ -99,6 +119,15 @@ export class OrdersService {
         allowedRoles: ['BRAND'],
         label: 'Despachar Insumos',
         description: 'Confirmar que os insumos foram despachados para a facção',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.CANCELADO,
+        allowedRoles: ['BRAND', 'SUPPLIER'],
+        label: 'Cancelar Pedido',
+        description: 'Cancelar este pedido',
         requiresConfirmation: true,
         requiresNotes: true,
         requiresReview: false,
@@ -114,15 +143,53 @@ export class OrdersService {
         requiresNotes: false,
         requiresReview: false,
       },
+      {
+        nextStatus: OrderStatus.CANCELADO,
+        allowedRoles: ['BRAND', 'SUPPLIER'],
+        label: 'Cancelar Pedido',
+        description: 'Cancelar este pedido',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
     ],
     [OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO]: [
+      {
+        nextStatus: OrderStatus.FILA_DE_PRODUCAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Enviar para Fila de Produção',
+        description: 'Enviar para a fila de produção após conferência dos insumos',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.CANCELADO,
+        allowedRoles: ['BRAND', 'SUPPLIER'],
+        label: 'Cancelar Pedido',
+        description: 'Cancelar este pedido',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.FILA_DE_PRODUCAO]: [
       {
         nextStatus: OrderStatus.EM_PRODUCAO,
         allowedRoles: ['SUPPLIER'],
         label: 'Iniciar Produção',
-        description: 'Iniciar a produção após conferência dos insumos',
+        description: 'Iniciar a produção deste pedido',
         requiresConfirmation: true,
         requiresNotes: false,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.CANCELADO,
+        allowedRoles: ['BRAND', 'SUPPLIER'],
+        label: 'Cancelar Pedido',
+        description: 'Cancelar este pedido',
+        requiresConfirmation: true,
+        requiresNotes: true,
         requiresReview: false,
       },
     ],
@@ -134,6 +201,15 @@ export class OrdersService {
         description: 'Marcar a produção como concluída e pronta para envio',
         requiresConfirmation: true,
         requiresNotes: false,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.CANCELADO,
+        allowedRoles: ['BRAND', 'SUPPLIER'],
+        label: 'Cancelar Pedido',
+        description: 'Cancelar este pedido',
+        requiresConfirmation: true,
+        requiresNotes: true,
         requiresReview: false,
       },
     ],
@@ -188,6 +264,17 @@ export class OrdersService {
         requiresReview: true,
       },
     ],
+    [OrderStatus.EM_PROCESSO_PAGAMENTO]: [
+      {
+        nextStatus: OrderStatus.FINALIZADO,
+        allowedRoles: ['BRAND', 'SUPPLIER'],
+        label: 'Confirmar Pagamento',
+        description: 'Confirmar que o pagamento foi realizado e finalizar o pedido',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+    ],
   };
 
   // Mapa de "quem estamos aguardando" por status
@@ -201,6 +288,8 @@ export class OrdersService {
     [OrderStatus.PRONTO]: { waitingFor: 'BRAND', label: 'Pronto para despacho' },
     [OrderStatus.EM_TRANSITO_PARA_MARCA]: { waitingFor: 'BRAND', label: 'Aguardando a Marca confirmar recebimento' },
     [OrderStatus.EM_REVISAO]: { waitingFor: 'BRAND', label: 'Marca revisando qualidade' },
+    [OrderStatus.FILA_DE_PRODUCAO]: { waitingFor: 'SUPPLIER', label: 'Aguardando início da produção' },
+    [OrderStatus.EM_PROCESSO_PAGAMENTO]: { waitingFor: 'BRAND', label: 'Aguardando confirmação de pagamento' },
   };
 
   constructor(
@@ -1018,7 +1107,7 @@ export class OrdersService {
     let newStatus: OrderStatus;
     switch (result) {
       case ReviewResult.APPROVED:
-        newStatus = OrderStatus.FINALIZADO;
+        newStatus = OrderStatus.EM_PROCESSO_PAGAMENTO;
         break;
       case ReviewResult.PARTIAL:
         newStatus = OrderStatus.PARCIALMENTE_APROVADO;
@@ -1436,7 +1525,10 @@ export class OrdersService {
       PARCIALMENTE_APROVADO: 'Parcialmente Aprovado',
       REPROVADO: 'Reprovado',
       AGUARDANDO_RETRABALHO: 'Aguardando Retrabalho',
+      FILA_DE_PRODUCAO: 'Fila de Produção',
+      EM_PROCESSO_PAGAMENTO: 'Em Processo de Pagamento',
       FINALIZADO: 'Concluído',
+      CANCELADO: 'Cancelado',
       RECUSADO_PELA_FACCAO: 'Recusado',
       DISPONIVEL_PARA_OUTRAS: 'Disponível',
     };

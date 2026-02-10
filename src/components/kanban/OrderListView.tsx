@@ -139,6 +139,7 @@ export const OrderListView: React.FC<OrderListViewProps> = ({ orders, onOrderCli
       case OrderStatus.PREPARING_BRAND: return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
       case OrderStatus.TRANSIT_TO_SUPPLIER: return 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800';
       case OrderStatus.RECEIVED_SUPPLIER: return 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800';
+      case OrderStatus.PRODUCTION_QUEUE: return 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
       case OrderStatus.PRODUCTION: return 'bg-brand-100 text-brand-700 border-brand-200 dark:bg-brand-900/30 dark:text-brand-300 dark:border-brand-800';
       case OrderStatus.READY_SEND: return 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800';
       case OrderStatus.TRANSIT_TO_BRAND: return 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800';
@@ -146,7 +147,9 @@ export const OrderListView: React.FC<OrderListViewProps> = ({ orders, onOrderCli
       case OrderStatus.PARTIALLY_APPROVED: return 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
       case OrderStatus.DISAPPROVED: return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
       case OrderStatus.AWAITING_REWORK: return 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800';
+      case OrderStatus.PAYMENT_PROCESS: return 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800';
       case OrderStatus.FINALIZED: return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
+      case OrderStatus.CANCELLED: return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
       default: return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
     }
   };
@@ -161,6 +164,7 @@ export const OrderListView: React.FC<OrderListViewProps> = ({ orders, onOrderCli
       case OrderStatus.PREPARING_BRAND: return 'Preparando';
       case OrderStatus.TRANSIT_TO_SUPPLIER: return 'Trânsito';
       case OrderStatus.RECEIVED_SUPPLIER: return 'Preparação';
+      case OrderStatus.PRODUCTION_QUEUE: return 'Fila Produção';
       case OrderStatus.PRODUCTION: return 'Produção';
       case OrderStatus.READY_SEND: return 'Pronto/Envio';
       case OrderStatus.TRANSIT_TO_BRAND: return 'Trânsito';
@@ -168,7 +172,9 @@ export const OrderListView: React.FC<OrderListViewProps> = ({ orders, onOrderCli
       case OrderStatus.PARTIALLY_APPROVED: return 'Parcial';
       case OrderStatus.DISAPPROVED: return 'Reprovado';
       case OrderStatus.AWAITING_REWORK: return 'Retrabalho';
+      case OrderStatus.PAYMENT_PROCESS: return 'Pagamento';
       case OrderStatus.FINALIZED: return 'Finalizado';
+      case OrderStatus.CANCELLED: return 'Cancelado';
       default: return status;
     }
   };

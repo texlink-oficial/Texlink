@@ -139,10 +139,6 @@ export class CapacityService {
 
     // Statuses that count as "active production" for calendar allocation
     const activeStatuses: OrderStatus[] = [
-      OrderStatus.ACEITO_PELA_FACCAO,
-      OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
-      OrderStatus.EM_TRANSITO_PARA_FACCAO,
-      OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO,
       OrderStatus.EM_PRODUCAO,
     ];
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import {
     Package, CheckCircle, Box, Truck, Scissors,
-    PackageCheck, ClipboardCheck, CheckCircle2, Clock
+    PackageCheck, ClipboardCheck, CheckCircle2, Clock, ListOrdered, CreditCard
 } from 'lucide-react';
 import { Order, OrderStatus, StatusHistoryEntry } from '../../services/orders.service';
 
@@ -18,29 +18,34 @@ const FULL_FLOW_STEPS: TimelineStep[] = [
     { label: 'Insumos em Preparação', status: 'EM_PREPARACAO_SAIDA_MARCA', icon: Box, responsible: 'Marca' },
     { label: 'Insumos em Trânsito', status: 'EM_TRANSITO_PARA_FACCAO', icon: Truck, responsible: 'Marca' },
     { label: 'Recebido pela Facção', status: 'EM_PREPARACAO_ENTRADA_FACCAO', icon: PackageCheck, responsible: 'Facção' },
+    { label: 'Fila de Produção', status: 'FILA_DE_PRODUCAO', icon: ListOrdered, responsible: 'Facção' },
     { label: 'Em Produção', status: 'EM_PRODUCAO', icon: Scissors, responsible: 'Facção' },
     { label: 'Produção Concluída', status: 'PRONTO', icon: PackageCheck, responsible: 'Facção' },
     { label: 'Em Trânsito → Marca', status: 'EM_TRANSITO_PARA_MARCA', icon: Truck, responsible: 'Ambos' },
     { label: 'Em Revisão', status: 'EM_REVISAO', icon: ClipboardCheck, responsible: 'Marca' },
+    { label: 'Em Processo de Pagamento', status: 'EM_PROCESSO_PAGAMENTO', icon: CreditCard, responsible: 'Marca' },
     { label: 'Finalizado', status: 'FINALIZADO', icon: CheckCircle2, responsible: 'Marca' },
 ];
 
 const SIMPLE_FLOW_STEPS: TimelineStep[] = [
     { label: 'Pedido Criado', status: 'LANCADO_PELA_MARCA', icon: Package, responsible: 'Marca' },
     { label: 'Aceito pela Facção', status: 'ACEITO_PELA_FACCAO', icon: CheckCircle, responsible: 'Facção' },
+    { label: 'Fila de Produção', status: 'FILA_DE_PRODUCAO', icon: ListOrdered, responsible: 'Facção' },
     { label: 'Em Produção', status: 'EM_PRODUCAO', icon: Scissors, responsible: 'Facção' },
     { label: 'Produção Concluída', status: 'PRONTO', icon: PackageCheck, responsible: 'Facção' },
     { label: 'Em Trânsito → Marca', status: 'EM_TRANSITO_PARA_MARCA', icon: Truck, responsible: 'Ambos' },
     { label: 'Em Revisão', status: 'EM_REVISAO', icon: ClipboardCheck, responsible: 'Marca' },
+    { label: 'Em Processo de Pagamento', status: 'EM_PROCESSO_PAGAMENTO', icon: CreditCard, responsible: 'Marca' },
     { label: 'Finalizado', status: 'FINALIZADO', icon: CheckCircle2, responsible: 'Marca' },
 ];
 
 // Terminal statuses that map to the "Finalizado" step position
-const TERMINAL_STATUSES: OrderStatus[] = ['FINALIZADO', 'PARCIALMENTE_APROVADO', 'REPROVADO'];
+const TERMINAL_STATUSES: OrderStatus[] = ['FINALIZADO', 'PARCIALMENTE_APROVADO', 'REPROVADO', 'CANCELADO'];
 const TERMINAL_LABELS: Record<string, string> = {
     FINALIZADO: 'Finalizado',
     PARCIALMENTE_APROVADO: 'Parcialmente Aprovado',
     REPROVADO: 'Reprovado',
+    CANCELADO: 'Cancelado',
 };
 
 // All statuses in order for index comparison
@@ -50,13 +55,16 @@ const STATUS_ORDER: OrderStatus[] = [
     'EM_PREPARACAO_SAIDA_MARCA',
     'EM_TRANSITO_PARA_FACCAO',
     'EM_PREPARACAO_ENTRADA_FACCAO',
+    'FILA_DE_PRODUCAO',
     'EM_PRODUCAO',
     'PRONTO',
     'EM_TRANSITO_PARA_MARCA',
     'EM_REVISAO',
+    'EM_PROCESSO_PAGAMENTO',
     'FINALIZADO',
     'PARCIALMENTE_APROVADO',
     'REPROVADO',
+    'CANCELADO',
 ];
 
 function getStatusIndex(status: OrderStatus): number {

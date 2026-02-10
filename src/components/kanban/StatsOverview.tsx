@@ -15,7 +15,7 @@ interface StatsOverviewProps {
 
 export const StatsOverview: React.FC<StatsOverviewProps> = ({ orders }) => {
   // Calculate active orders dynamically (excluding Finalized)
-  const activeOrdersCount = orders.filter(o => o.status !== OrderStatus.FINALIZED).length;
+  const activeOrdersCount = orders.filter(o => o.status !== OrderStatus.FINALIZED && o.status !== OrderStatus.CANCELLED).length;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

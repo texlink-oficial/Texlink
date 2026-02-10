@@ -496,11 +496,13 @@ export const MOCK_ORDERS: Order[] = [
 
 export const STATUS_COLUMNS = [
   { id: OrderStatus.NEW, label: 'Novos Pedidos', color: 'bg-slate-100 text-slate-800 border-slate-200' },
-  { id: OrderStatus.ACCEPTED, label: 'Aceitos', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-  { id: OrderStatus.PREPARING_BRAND, label: 'Preparação (Marca)', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-  { id: OrderStatus.TRANSIT_TO_SUPPLIER, label: 'Em Trânsito → Facção', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-  { id: OrderStatus.RECEIVED_SUPPLIER, label: 'Recebido na Facção', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
+  { id: OrderStatus.NEGOTIATING, label: 'Em Negociação', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
+  { id: OrderStatus.ACCEPTED, label: 'Aguardando Insumos', color: 'bg-amber-100 text-amber-800 border-amber-200' },
+  { id: OrderStatus.PRODUCTION_QUEUE, label: 'Fila de Produção', color: 'bg-purple-100 text-purple-800 border-purple-200' },
   { id: OrderStatus.PRODUCTION, label: 'Em Produção', color: 'bg-brand-100 text-brand-800 border-brand-200' },
-  { id: OrderStatus.READY_SEND, label: 'Pronto / Envio', color: 'bg-teal-100 text-teal-800 border-teal-200' },
-  { id: OrderStatus.FINALIZED, label: 'Finalizados', color: 'bg-green-100 text-green-800 border-green-200' }
+  { id: OrderStatus.READY_SEND, label: 'Em Trânsito', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+  { id: OrderStatus.IN_REVIEW, label: 'Em Aprovação', color: 'bg-orange-100 text-orange-800 border-orange-200' },
+  { id: OrderStatus.PAYMENT_PROCESS, label: 'Processo de Pagamento', color: 'bg-cyan-100 text-cyan-800 border-cyan-200' },
+  { id: OrderStatus.FINALIZED, label: 'Finalizados', color: 'bg-green-100 text-green-800 border-green-200' },
+  { id: OrderStatus.CANCELLED, label: 'Cancelados', color: 'bg-red-100 text-red-800 border-red-200' },
 ];
