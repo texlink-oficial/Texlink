@@ -53,6 +53,9 @@ export const PARTNERSHIP_REQUEST_ACCEPTED = 'partnership.request.accepted';
 export const PARTNERSHIP_REQUEST_REJECTED = 'partnership.request.rejected';
 export const PARTNERSHIP_REQUEST_CANCELLED = 'partnership.request.cancelled';
 
+// Supplier Interest Events
+export const SUPPLIER_INTEREST_EXPRESSED = 'supplier.interest.expressed';
+
 // Rating Events
 export const RATING_RECEIVED = 'rating.received';
 
@@ -284,6 +287,15 @@ export interface RelationshipStatusChangedEvent {
   previousStatus: string;
   newStatus: string;
   changedById: string;
+}
+
+export interface SupplierInterestExpressedEvent {
+  orderId: string;
+  orderDisplayId: string;
+  brandId: string;
+  supplierId: string;
+  supplierName: string;
+  message?: string;
 }
 
 export interface RatingReceivedEvent {

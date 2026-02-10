@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { NotificationsService } from '../notifications.service';
-import { SUPPLIER_STATUS_CHANGED } from '../events/notification.events';
-import type { SupplierStatusChangedEvent } from '../events/notification.events';
+import { SUPPLIER_STATUS_CHANGED, SUPPLIER_INTEREST_EXPRESSED } from '../events/notification.events';
+import type { SupplierStatusChangedEvent, SupplierInterestExpressedEvent } from '../events/notification.events';
 import {
   NotificationType,
   NotificationPriority,
@@ -80,6 +80,62 @@ export class SupplierEventsHandler {
     } catch (error) {
       this.logger.error(
         `Error handling supplier.status.changed: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Handle supplier interest expressed event
+   * Notify brand users that a supplier is interested in their order
+   */
+  @OnEvent(SUPPLIER_INTEREST_EXPRESSED)
+  async handleSupplierInterestExpressed(payload: Record<string, unknown>) {
+    const event = payload as unknown as SupplierInterestExpressedEvent;
+    this.logger.log(
+      `Handling supplier.interest.expressed for order ${event.orderDisplayId} by supplier ${event.supplierName}`,
+    );
+
+    try {
+      // Get all users from the brand company
+      const brandUsers = await this.prisma.companyUser.findMany({
+        where: {
+          companyId: event.brandId,
+          role: { in: ['OWNER', 'MANAGER'] },
+        },
+        select: { userId: true },
+      });
+
+      if (brandUsers.length === 0) {
+        this.logger.warn(
+          `No brand users found for company ${event.brandId} to notify`,
+        );
+        return;
+      }
+
+      const title = 'Interesse em Pedido';
+      const body = `A facção "${event.supplierName}" demonstrou interesse no pedido ${event.orderDisplayId}.${event.message ? ` Mensagem: ${event.message}` : ''}`;
+
+      for (const user of brandUsers) {
+        await this.notificationsService.notify({
+          type: NotificationType.SUPPLIER_INTEREST_EXPRESSED,
+          priority: NotificationPriority.NORMAL,
+          recipientId: user.userId,
+          companyId: event.brandId,
+          title,
+          body,
+          data: event as any,
+          actionUrl: `/brand/pedidos/${event.orderId}`,
+          entityType: 'order',
+          entityId: event.orderId,
+        });
+      }
+
+      this.logger.log(
+        `Sent ${brandUsers.length} notifications for supplier interest in order ${event.orderDisplayId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error handling supplier.interest.expressed: ${error.message}`,
       );
     }
   }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { Order, OrderStatus } from '../../types';
 import { ChatInterface } from './ChatInterface';
 import { OrderReviewModal } from '../orders/OrderReviewModal';
@@ -16,6 +17,7 @@ interface OrderDetailModalProps {
 
 export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onStatusChange, onTimelineStepToggle, onOrderUpdated }) => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [isChatOpen, setIsChatOpen] = useState(false);
 
     const handleDuplicateOrder = () => {
@@ -40,11 +42,8 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
 
     if (!order) return null;
 
-    // Detect user role from localStorage
-    const storedUser = localStorage.getItem('user');
-    const userRole: 'BRAND' | 'SUPPLIER' = storedUser
-        ? (JSON.parse(storedUser).role === 'SUPPLIER' ? 'SUPPLIER' : 'BRAND')
-        : 'BRAND';
+    // Detect user role from auth context
+    const userRole: 'BRAND' | 'SUPPLIER' = user?.role === 'SUPPLIER' ? 'SUPPLIER' : 'BRAND';
 
     // Transition map: what actions each role can take per status
     type ActionDef = { targetStatus: OrderStatus; label: string; icon: string; color: string; confirmTitle: string; confirmMsg: string; requiresMaterials?: boolean };
@@ -74,6 +73,10 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
         SUPPLIER: {
             [OrderStatus.NEW]: [
                 { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar Pedido', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Pedido?', confirmMsg: 'O pedido entrará em fase de Produção. Certifique-se de que tem capacidade para atender o prazo.' },
+                { targetStatus: OrderStatus.NEGOTIATING, label: 'Negociar', icon: 'advance', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Negociar Pedido?', confirmMsg: 'Deseja iniciar uma negociação de condições com a marca?' },
+            ],
+            [OrderStatus.NEGOTIATING]: [
+                { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar após Negociação', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Pedido?', confirmMsg: 'Aceitar o pedido após negociação de condições?' },
             ],
             [OrderStatus.ACCEPTED]: [
                 { targetStatus: OrderStatus.PRODUCTION_QUEUE, label: 'Enviar para Fila de Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Fila de Produção?', confirmMsg: 'Enviar para a fila de produção sem aguardar insumos da marca?', requiresMaterials: false },
@@ -107,6 +110,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
     const WAITING_MESSAGES: Record<string, Record<string, string>> = {
         BRAND: {
             [OrderStatus.NEW]: 'Aguardando a Facção aceitar o pedido',
+            [OrderStatus.NEGOTIATING]: 'Em negociação com a Facção',
             [OrderStatus.ACCEPTED]: 'Aguardando a Facção iniciar produção',
             [OrderStatus.TRANSIT_TO_SUPPLIER]: 'Aguardando a Facção confirmar recebimento',
             [OrderStatus.RECEIVED_SUPPLIER]: 'Facção conferindo insumos recebidos',
@@ -358,7 +362,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                         className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-brand-50 dark:bg-brand-900/30 hover:bg-brand-100 dark:hover:bg-brand-900/50 border border-brand-200 dark:border-brand-800/50 rounded-lg text-sm font-semibold text-brand-700 dark:text-brand-300 transition-colors"
                                     >
                                         <MessageCircle className="h-4 w-4" />
-                                        Chat com a Marca
+                                        {userRole === 'SUPPLIER' ? 'Chat com a Marca' : 'Chat com a Facção'}
                                     </button>
                                 </div>
 

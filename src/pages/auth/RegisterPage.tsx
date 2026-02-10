@@ -13,9 +13,24 @@ const RegisterPage: React.FC = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    const validatePassword = (pwd: string): string | null => {
+        if (pwd.length < 8) return 'A senha deve ter pelo menos 8 caracteres';
+        if (!/[A-Z]/.test(pwd)) return 'A senha deve conter pelo menos uma letra maiúscula';
+        if (!/[a-z]/.test(pwd)) return 'A senha deve conter pelo menos uma letra minúscula';
+        if (!/\d/.test(pwd)) return 'A senha deve conter pelo menos um número';
+        return null;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+            setError(passwordError);
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -27,7 +42,8 @@ const RegisterPage: React.FC = () => {
                 navigate('/dashboard');
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Erro ao criar conta');
+            const msg = err.response?.data?.message;
+            setError(Array.isArray(msg) ? msg.join('. ') : msg || 'Erro ao criar conta');
         } finally {
             setIsLoading(false);
         }
@@ -148,8 +164,8 @@ const RegisterPage: React.FC = () => {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                                    placeholder="Mínimo 6 caracteres"
-                                    minLength={6}
+                                    placeholder="Mínimo 8 caracteres (maiúscula, minúscula e número)"
+                                    minLength={8}
                                     required
                                 />
                             </div>

@@ -2,7 +2,9 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   OnboardingPhase2Dto,
@@ -15,8 +17,11 @@ import { InvitationNotificationService } from './services/invitation-notificatio
 
 @Injectable()
 export class SuppliersService {
+  private readonly logger = new Logger(SuppliersService.name);
+
   constructor(
     private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
     private invitationNotificationService: InvitationNotificationService,
   ) { }
 
@@ -461,9 +466,17 @@ export class SuppliersService {
                 },
                 status: OrderStatus.LANCADO_PELA_MARCA,
               },
-              // Orders available to all (after rejection)
+              // Orders available to all (after rejection), excluding those this supplier already rejected
               {
                 status: OrderStatus.DISPONIVEL_PARA_OUTRAS,
+                NOT: {
+                  targetSuppliers: {
+                    some: {
+                      supplierId: company.id,
+                      status: OrderTargetStatus.REJECTED,
+                    },
+                  },
+                },
               },
             ],
           },
@@ -547,6 +560,17 @@ export class SuppliersService {
         },
       });
     }
+
+    // Emit event to notify the brand
+    this.eventEmitter.emit('supplier.interest.expressed', {
+      orderId,
+      orderDisplayId: order.displayId,
+      brandId: order.brandId,
+      supplierId: company.id,
+      supplierName: company.tradeName || company.legalName || 'Facção',
+      message: message || undefined,
+    });
+    this.logger.log(`Emitted supplier.interest.expressed for order ${order.displayId}`);
 
     return {
       success: true,

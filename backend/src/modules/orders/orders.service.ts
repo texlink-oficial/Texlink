@@ -70,8 +70,26 @@ export class OrdersService {
         requiresNotes: false,
         requiresReview: false,
       },
+      {
+        nextStatus: OrderStatus.EM_NEGOCIACAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Negociar Pedido',
+        description: 'Iniciar negociação de condições com a marca',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
     ],
     [OrderStatus.EM_NEGOCIACAO]: [
+      {
+        nextStatus: OrderStatus.ACEITO_PELA_FACCAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Aceitar após Negociação',
+        description: 'Aceitar o pedido após negociação de condições',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
       {
         nextStatus: OrderStatus.CANCELADO,
         allowedRoles: ['BRAND', 'SUPPLIER'],
@@ -280,6 +298,7 @@ export class OrdersService {
   // Mapa de "quem estamos aguardando" por status
   private readonly WAITING_FOR_MAP: Record<string, { waitingFor: 'BRAND' | 'SUPPLIER'; label: string }> = {
     [OrderStatus.LANCADO_PELA_MARCA]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção aceitar o pedido' },
+    [OrderStatus.EM_NEGOCIACAO]: { waitingFor: 'BRAND', label: 'Em negociação com a facção' },
     [OrderStatus.ACEITO_PELA_FACCAO]: { waitingFor: 'BRAND', label: 'Aguardando a Marca preparar insumos' },
     [OrderStatus.EM_PREPARACAO_SAIDA_MARCA]: { waitingFor: 'BRAND', label: 'Marca preparando insumos para envio' },
     [OrderStatus.EM_TRANSITO_PARA_FACCAO]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção confirmar recebimento' },
@@ -689,7 +708,7 @@ export class OrdersService {
           order.targetSuppliers.some(
             (t) =>
               t.supplierId === companyUser.companyId &&
-              t.status === OrderTargetStatus.PENDING,
+              (t.status === OrderTargetStatus.PENDING || t.status === OrderTargetStatus.INTERESTED),
           ))) ||
       order.status === OrderStatus.DISPONIVEL_PARA_OUTRAS;
 
@@ -799,6 +818,16 @@ export class OrdersService {
               notes: reason || 'Order rejected by supplier',
             },
           },
+        },
+      });
+
+      // Create a target supplier record so this supplier is excluded from future opportunities
+      await this.prisma.orderTargetSupplier.create({
+        data: {
+          orderId,
+          supplierId: companyUser.companyId,
+          status: OrderTargetStatus.REJECTED,
+          respondedAt: new Date(),
         },
       });
 
