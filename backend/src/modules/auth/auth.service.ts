@@ -60,7 +60,7 @@ export class AuthService {
       },
     });
 
-    // For SUPPLIER: Create Company and SupplierProfile
+    // Create Company and Profile for both SUPPLIER and BRAND
     let company: { id: string } | null = null;
     if (dto.role === 'SUPPLIER') {
       company = await this.prisma.company.create({
@@ -73,11 +73,10 @@ export class AuthService {
           state: dto.state || '',
           phone: dto.phone,
           email: dto.email,
-          status: 'PENDING', // PENDENTE_QUALIFICACAO
+          status: 'PENDING',
         },
       });
 
-      // Link user to company
       await this.prisma.companyUser.create({
         data: {
           userId: user.id,
@@ -86,8 +85,37 @@ export class AuthService {
         },
       });
 
-      // Create supplier profile for onboarding
       await this.prisma.supplierProfile.create({
+        data: {
+          companyId: company.id,
+          onboardingPhase: 1,
+          onboardingComplete: false,
+        },
+      });
+    } else if (dto.role === 'BRAND') {
+      company = await this.prisma.company.create({
+        data: {
+          legalName: dto.companyName || dto.name,
+          tradeName: dto.companyName || dto.name,
+          document: dto.document || `PENDING_${user.id}`,
+          type: 'BRAND',
+          city: dto.city || '',
+          state: dto.state || '',
+          phone: dto.phone,
+          email: dto.email,
+          status: 'PENDING',
+        },
+      });
+
+      await this.prisma.companyUser.create({
+        data: {
+          userId: user.id,
+          companyId: company.id,
+          role: 'OWNER',
+        },
+      });
+
+      await this.prisma.brandProfile.create({
         data: {
           companyId: company.id,
           onboardingPhase: 1,
@@ -103,7 +131,7 @@ export class AuthService {
       user,
       company,
       accessToken: token,
-      needsOnboarding: dto.role === 'SUPPLIER',
+      needsOnboarding: dto.role === 'SUPPLIER' || dto.role === 'BRAND',
     };
   }
 

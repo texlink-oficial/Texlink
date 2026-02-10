@@ -106,6 +106,10 @@ const OnboardingLayout = React.lazy(() => import('./components/onboarding/Onboar
 const OnboardingIndexPage = React.lazy(() => import('./pages/onboarding/OnboardingIndexPage'));
 const OnboardingBusinessPage = React.lazy(() => import('./pages/onboarding/OnboardingBusinessPage'));
 const OnboardingCapacityPage = React.lazy(() => import('./pages/onboarding/OnboardingCapacityPage'));
+const BrandOnboardingLayout = React.lazy(() => import('./components/onboarding/BrandOnboardingLayout'));
+const BrandOnboardingIndexPage = React.lazy(() => import('./pages/onboarding/BrandOnboardingIndexPage'));
+const BrandOnboardingBusinessPage = React.lazy(() => import('./pages/onboarding/BrandOnboardingBusinessPage'));
+const BrandOnboardingProductsPage = React.lazy(() => import('./pages/onboarding/BrandOnboardingProductsPage'));
 
 
 const queryClient = new QueryClient({
@@ -146,6 +150,13 @@ const App: React.FC = () => {
                                                 <Route index element={<OnboardingIndexPage />} />
                                                 <Route path="qualificacao" element={<OnboardingBusinessPage />} />
                                                 <Route path="capacidade" element={<OnboardingCapacityPage />} />
+                                            </Route>
+
+                                            {/* Brand onboarding routes (protected, brand only) */}
+                                            <Route path="/brand-onboarding" element={<ProtectedRoute allowedRoles={['BRAND']}><BrandOnboardingLayout /></ProtectedRoute>}>
+                                                <Route index element={<BrandOnboardingIndexPage />} />
+                                                <Route path="qualificacao" element={<BrandOnboardingBusinessPage />} />
+                                                <Route path="produtos" element={<BrandOnboardingProductsPage />} />
                                             </Route>
 
                                             {/* Dashboard redirect */}

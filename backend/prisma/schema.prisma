@@ -518,6 +518,7 @@ model Company {
   // Relations
   companyUsers     CompanyUser[]
   supplierProfile  SupplierProfile?
+  brandProfile     BrandProfile?
   documents        Document[]
   ordersAsBrand    Order[]               @relation("BrandOrders")
   ordersAsSupplier Order[]               @relation("SupplierOrders")
@@ -647,6 +648,30 @@ model SupplierProfile {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("supplier_profiles")
+}
+
+model BrandProfile {
+  id                 String  @id @default(uuid())
+  companyId          String  @unique
+  onboardingPhase    Int     @default(1) // 1, 2, or 3
+  onboardingComplete Boolean @default(false)
+
+  // Phase 2: Business Qualification
+  businessQualification Json? // { objetivo, volumeMensal, maturidadeGestao, qtdColaboradores, tempoMercado }
+
+  // Phase 3: Product Needs
+  productNeeds    Json?    // { segmentos, necessidades }
+  productTypes    String[] // e.g., ["Infantil", "Adulto Feminino", "Fitness"]
+  specialties     String[] // e.g., ["Jeans", "Malha", "Tricô"]
+  monthlyVolume   Int?     // peças/mês desejado
+  desiredRevenue  Decimal? @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("brand_profiles")
 }
 
 model Document {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { ordersService, Order, MonthlyStats } from '../../services';
+import { brandOnboardingService, BrandProfile } from '../../services/brandOnboarding.service';
 import {
     DashboardShell,
     HeroMetrics,
@@ -18,7 +19,7 @@ import type { OrderTableItem, QuickActionItem } from '../../components/dashboard
 import {
     Package, DollarSign, Factory, Clock, Users,
     TrendingUp, Loader2, AlertCircle,
-    CheckCircle, Truck, Plus, FileText
+    CheckCircle, CheckCircle2, Truck, Plus, FileText, ArrowRight
 } from 'lucide-react';
 
 const BrandDashboard: React.FC = () => {
@@ -26,6 +27,7 @@ const BrandDashboard: React.FC = () => {
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
+    const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -35,12 +37,14 @@ const BrandDashboard: React.FC = () => {
     const loadData = async () => {
         try {
             setIsLoading(true);
-            const [ordersData, statsData] = await Promise.all([
+            const [ordersData, statsData, profileData] = await Promise.all([
                 ordersService.getBrandOrders(),
                 ordersService.getMonthlyStatsBrand(6).catch(() => null),
+                brandOnboardingService.getProfile().catch(() => null),
             ]);
             setOrders(ordersData);
             setMonthlyStats(statsData);
+            setBrandProfile(profileData);
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
@@ -235,6 +239,72 @@ const BrandDashboard: React.FC = () => {
                 actions={quickActions}
                 columns={4}
             />
+
+            {/* Onboarding Progress Card */}
+            {brandProfile && !brandProfile.onboardingComplete && (
+                <div className="relative overflow-hidden bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 text-white dashboard-section">
+                    <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                    <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-orange-300/20 rounded-full blur-2xl" />
+
+                    <div className="relative z-10 flex items-start justify-between">
+                        <div className="flex-1">
+                            <h3 className="text-lg font-semibold mb-2">Complete seu cadastro</h3>
+                            <p className="text-amber-100 text-sm mb-4">
+                                Finalize as etapas para começar a criar pedidos na plataforma.
+                            </p>
+                            <div className="flex items-center gap-3 mb-4">
+                                {[1, 2].map((step) => (
+                                    <div key={step} className="flex items-center gap-2">
+                                        <div
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${step < (brandProfile.onboardingPhase || 1) + 1
+                                                ? 'bg-white text-amber-600 shadow-lg shadow-amber-600/20'
+                                                : step === (brandProfile.onboardingPhase || 1) + 1
+                                                    ? 'bg-white/30 text-white ring-2 ring-white'
+                                                    : 'bg-white/20 text-white/60'
+                                                }`}
+                                        >
+                                            {step < (brandProfile.onboardingPhase || 1) + 1 ? (
+                                                <CheckCircle2 className="w-5 h-5" />
+                                            ) : (
+                                                <span className="text-sm font-bold">{step}</span>
+                                            )}
+                                        </div>
+                                        {step < 2 && (
+                                            <div className={`w-8 h-0.5 transition-all ${step < (brandProfile.onboardingPhase || 1) + 1 ? 'bg-white' : 'bg-white/30'}`} />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex gap-2">
+                                <Link
+                                    to="/brand-onboarding"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-amber-600 rounded-lg font-medium hover:bg-amber-50 transition-all hover:-translate-y-0.5 shadow-lg shadow-amber-600/20"
+                                >
+                                    Continuar cadastro
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            await brandOnboardingService.completeOnboarding();
+                                            setBrandProfile(prev => prev ? { ...prev, onboardingComplete: true } : null);
+                                        } catch (e) {
+                                            console.error('Error completing onboarding:', e);
+                                        }
+                                    }}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg font-medium hover:bg-white/30 transition-colors"
+                                >
+                                    <CheckCircle className="h-4 w-4" />
+                                    Já completei
+                                </button>
+                            </div>
+                        </div>
+                        <div className="text-amber-200 text-5xl font-bold opacity-30">
+                            {brandProfile.onboardingPhase || 1}/2
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Value Summary Card */}
             <div className="relative overflow-hidden bg-gradient-to-r from-sky-600 to-blue-600 rounded-2xl p-6 text-white dashboard-section">
