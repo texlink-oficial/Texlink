@@ -35,8 +35,8 @@ const RegisterPage: React.FC = () => {
 
         try {
             await register(email, password, name, role);
-            // Redirect based on role
-            navigate('/dashboard');
+            // Redirect based on role - suppliers go to onboarding, brands to dashboard
+            navigate(role === 'SUPPLIER' ? '/onboarding' : '/dashboard');
         } catch (err: any) {
             const msg = err.response?.data?.message;
             setError(Array.isArray(msg) ? msg.join('. ') : msg || 'Erro ao criar conta');

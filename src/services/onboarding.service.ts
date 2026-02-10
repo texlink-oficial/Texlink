@@ -178,6 +178,48 @@ export const onboardingService = {
         return response.data.supplierProfile;
     },
 
+    async updatePhase2(data: {
+        interesse?: string;
+        faturamentoDesejado?: number;
+        maturidadeGestao?: string;
+        qtdColaboradores?: number;
+        tempoMercado?: string;
+    }): Promise<SupplierProfile> {
+        if (MOCK_MODE) {
+            await simulateDelay(500);
+            mockProfile = {
+                ...mockProfile,
+                onboardingPhase: 2,
+                businessQualification: data,
+            };
+            return mockProfile;
+        }
+        const response = await api.patch<SupplierProfile>('/suppliers/onboarding/phase2', data);
+        return response.data;
+    },
+
+    async updatePhase3(data: {
+        productTypes: string[];
+        specialties?: string[];
+        monthlyCapacity: number;
+        currentOccupancy?: number;
+    }): Promise<SupplierProfile> {
+        if (MOCK_MODE) {
+            await simulateDelay(500);
+            mockProfile = {
+                ...mockProfile,
+                onboardingPhase: 3,
+                productTypes: data.productTypes,
+                specialties: data.specialties,
+                monthlyCapacity: data.monthlyCapacity,
+                currentOccupancy: data.currentOccupancy,
+            };
+            return mockProfile;
+        }
+        const response = await api.patch<SupplierProfile>('/suppliers/onboarding/phase3', data);
+        return response.data;
+    },
+
     async completeOnboarding(): Promise<SupplierProfile> {
         if (MOCK_MODE) {
             await simulateDelay(500);

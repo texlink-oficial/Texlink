@@ -1,16 +1,17 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { CheckCircle2, Circle, Factory } from 'lucide-react';
+import { CheckCircle2, Factory } from 'lucide-react';
 
 const steps = [
-    { id: 1, name: 'Dados da Empresa', path: '/onboarding/company' },
+    { id: 1, name: 'Qualificação', path: '/onboarding/qualificacao' },
+    { id: 2, name: 'Capacidade Produtiva', path: '/onboarding/capacidade' },
 ];
 
 const OnboardingLayout: React.FC = () => {
     const location = useLocation();
 
     const getCurrentStep = () => {
-        if (location.pathname.includes('company')) return 1;
+        if (location.pathname.includes('capacidade')) return 2;
         return 1;
     };
 
