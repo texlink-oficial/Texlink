@@ -269,7 +269,7 @@ const PortalDashboard: React.FC = () => {
                             </div>
                             <div className="flex gap-2">
                                 <Link
-                                    to={`/onboarding/phase${Math.min((profile.onboardingPhase || 1) + 1, 3)}`}
+                                    to="/onboarding"
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-white text-amber-600 rounded-lg font-medium hover:bg-amber-50 transition-all hover:-translate-y-0.5 shadow-lg shadow-amber-600/20"
                                 >
                                     Continuar cadastro
