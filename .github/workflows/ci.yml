@@ -65,7 +65,7 @@ jobs:
         run: npm run build
         env:
           VITE_MOCK_MODE: 'false'
-          VITE_API_URL: 'https://api.texlink.com.br'
+          VITE_API_URL: 'https://app.texlink.com.br'
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -229,7 +229,7 @@ jobs:
           push: false
           tags: texlink-frontend:${{ github.sha }}
           build-args: |
-            VITE_API_URL=https://api.texlink.com.br
+            VITE_API_URL=https://app.texlink.com.br
             VITE_MOCK_MODE=false
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -309,7 +309,7 @@ jobs:
   #     - name: Verify Production Deployment
   #       run: |
   #         sleep 30
-  #         curl -f https://api.texlink.com.br/api/health || exit 1
+  #         curl -f https://app.texlink.com.br/api/health || exit 1
   #         echo "Production deployment successful"
   #
   #     - name: Create Deployment Tag

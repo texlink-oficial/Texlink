@@ -65,7 +65,7 @@ npm run start:prod
 
 ```bash
 # Criar arquivo .env.production.local
-VITE_API_URL=https://api.texlink.com.br
+VITE_API_URL=https://app.texlink.com.br
 VITE_MOCK_MODE=false
 ```
 
@@ -91,13 +91,13 @@ Configure os webhooks nos painéis:
 
 **SendGrid:**
 1. Acesse: https://app.sendgrid.com/settings/mail_settings/event_webhooks
-2. URL: `https://api.texlink.com.br/api/webhooks/sendgrid`
+2. URL: `https://app.texlink.com.br/api/webhooks/sendgrid`
 3. Selecione eventos: Delivered, Opened, Clicked, Bounce, Dropped
 4. Habilite assinatura e copie a public key para `SENDGRID_WEBHOOK_PUBLIC_KEY`
 
 **Twilio:**
 1. Acesse: https://console.twilio.com/
-2. Configure Status Callback URL: `https://api.texlink.com.br/api/webhooks/twilio`
+2. Configure Status Callback URL: `https://app.texlink.com.br/api/webhooks/twilio`
 3. Habilite validação de assinatura
 
 ### 3.2 SSL/TLS
@@ -123,7 +123,7 @@ docker build -t texlink-backend .
 
 # Frontend
 docker build -t texlink-frontend \
-  --build-arg VITE_API_URL=https://api.texlink.com.br \
+  --build-arg VITE_API_URL=https://app.texlink.com.br \
   --build-arg VITE_MOCK_MODE=false \
   .
 ```
@@ -157,8 +157,8 @@ docker-compose -f docker-compose.prod.yml up -d
 ### 6.1 Health Check
 
 ```bash
-curl https://api.texlink.com.br/api/health
-curl https://api.texlink.com.br/api/health/db
+curl https://app.texlink.com.br/api/health
+curl https://app.texlink.com.br/api/health/db
 ```
 
 ### 6.2 Sentry (Opcional)

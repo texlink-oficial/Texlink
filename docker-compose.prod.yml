@@ -78,7 +78,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-https://api.texlink.com.br}
+        VITE_API_URL: ${VITE_API_URL:-https://app.texlink.com.br}
         VITE_MOCK_MODE: "false"
         VITE_APP_NAME: Texlink
     container_name: texlink-frontend

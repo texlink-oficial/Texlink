@@ -52,7 +52,8 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Create startup script that substitutes PORT and starts nginx
 RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
     echo 'export PORT=${PORT:-8080}' >> /docker-entrypoint.sh && \
-    echo 'envsubst "\$PORT" < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf' >> /docker-entrypoint.sh && \
+    echo 'export BACKEND_URL=${BACKEND_URL:-http://localhost:3000}' >> /docker-entrypoint.sh && \
+    echo 'envsubst "\$PORT \$BACKEND_URL" < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf' >> /docker-entrypoint.sh && \
     echo 'exec nginx -g "daemon off;"' >> /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh
 
