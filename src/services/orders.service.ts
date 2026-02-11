@@ -64,8 +64,8 @@ export interface Order {
     secondQualityCount?: number;
     // Relações
     createdAt: string;
-    brand?: { id: string; tradeName: string; avgRating?: number };
-    supplier?: { id: string; tradeName: string; avgRating?: number };
+    brand?: { id: string; tradeName: string; avgRating?: number; logoUrl?: string | null };
+    supplier?: { id: string; tradeName: string; avgRating?: number; logoUrl?: string | null };
     attachments?: Attachment[];
     childOrders?: OrderChild[];
     reviews?: OrderReview[];

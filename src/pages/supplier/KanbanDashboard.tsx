@@ -46,7 +46,7 @@ const convertApiOrder = (apiOrder: ApiOrder): Order => ({
         name: apiOrder.brand?.tradeName || 'Marca',
         rating: Number(apiOrder.brand?.avgRating) || 4.5,
         location: 'Brasil',
-        image: `https://ui-avatars.com/api/?name=${encodeURIComponent(apiOrder.brand?.tradeName || 'M')}&background=3b82f6&color=fff`,
+        image: apiOrder.brand?.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(apiOrder.brand?.tradeName || 'M')}&background=3b82f6&color=fff`,
     },
     type: apiOrder.productType?.includes('Infantil') ? 'Infantil' : 'Adulto',
     productName: apiOrder.productName,

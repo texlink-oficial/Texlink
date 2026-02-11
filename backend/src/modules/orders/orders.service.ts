@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   NotFoundException,
   ForbiddenException,
   BadRequestException,
@@ -34,6 +35,8 @@ import {
   OrderRejectedEvent,
   OrderStatusChangedEvent,
 } from '../notifications/events/notification.events';
+import type { StorageProvider } from '../upload/storage.provider';
+import { STORAGE_PROVIDER } from '../upload/storage.provider';
 
 @Injectable()
 export class OrdersService {
@@ -314,7 +317,23 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
+    @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
+
+  private async resolveOrderLogos<T extends { brand?: { logoUrl?: string | null } | null; supplier?: { logoUrl?: string | null } | null }>(order: T): Promise<T> {
+    const resolved = { ...order };
+    if (resolved.brand?.logoUrl) {
+      resolved.brand = { ...resolved.brand, logoUrl: await this.storage.resolveUrl?.(resolved.brand.logoUrl) ?? resolved.brand.logoUrl };
+    }
+    if (resolved.supplier?.logoUrl) {
+      resolved.supplier = { ...resolved.supplier, logoUrl: await this.storage.resolveUrl?.(resolved.supplier.logoUrl) ?? resolved.supplier.logoUrl };
+    }
+    return resolved;
+  }
+
+  private async resolveOrdersLogos<T extends { brand?: { logoUrl?: string | null } | null; supplier?: { logoUrl?: string | null } | null }>(orders: T[]): Promise<T[]> {
+    return Promise.all(orders.map((o) => this.resolveOrderLogos(o)));
+  }
 
   private shouldProtectTechSheet(order: any, isSupplier: boolean): boolean {
     return (
@@ -454,8 +473,8 @@ export class OrdersService {
     const order = await this.prisma.order.create({
       data: orderData,
       include: {
-        brand: { select: { id: true, tradeName: true } },
-        supplier: { select: { id: true, tradeName: true } },
+        brand: { select: { id: true, tradeName: true, logoUrl: true } },
+        supplier: { select: { id: true, tradeName: true, logoUrl: true } },
         targetSuppliers: true,
         statusHistory: true,
       },
@@ -478,7 +497,7 @@ export class OrdersService {
     this.eventEmitter.emit(ORDER_CREATED, event);
     this.logger.log(`Emitted order.created event for ${order.displayId}`);
 
-    return order;
+    return this.resolveOrderLogos(order);
   }
 
   // Get my orders (Brand or Supplier)
@@ -527,10 +546,10 @@ export class OrdersService {
     const orders = await this.prisma.order.findMany({
       where: whereClause,
       include: {
-        brand: { select: { id: true, tradeName: true } },
-        supplier: { select: { id: true, tradeName: true } },
+        brand: { select: { id: true, tradeName: true, logoUrl: true } },
+        supplier: { select: { id: true, tradeName: true, logoUrl: true } },
         targetSuppliers: {
-          include: { supplier: { select: { id: true, tradeName: true } } },
+          include: { supplier: { select: { id: true, tradeName: true, logoUrl: true } } },
         },
         attachments: true,
         _count: { select: { messages: true, attachments: true, ratings: true } },
@@ -540,7 +559,7 @@ export class OrdersService {
 
     // Financial Privacy Masking + Tech Sheet Protection for Supplier
     if (role === 'SUPPLIER') {
-      return orders.map((order) => {
+      const masked = orders.map((order) => {
         let result = {
           ...order,
           totalValue: order.netValue || order.totalValue,
@@ -553,9 +572,10 @@ export class OrdersService {
 
         return result;
       });
+      return this.resolveOrdersLogos(masked);
     }
 
-    return orders;
+    return this.resolveOrdersLogos(orders);
   }
 
   /**
@@ -581,7 +601,7 @@ export class OrdersService {
           include: { changedBy: { select: { name: true } } },
         },
         targetSuppliers: {
-          include: { supplier: { select: { id: true, tradeName: true } } },
+          include: { supplier: { select: { id: true, tradeName: true, logoUrl: true } } },
         },
         payments: true,
         ratings: true,
@@ -673,10 +693,10 @@ export class OrdersService {
         result = { ...result, ...this.applyTechSheetProtection(result) };
       }
 
-      return result;
+      return this.resolveOrderLogos(result);
     }
 
-    return order;
+    return this.resolveOrderLogos(order);
   }
 
   // Accept order (Supplier)
@@ -735,8 +755,8 @@ export class OrdersService {
         },
       },
       include: {
-        brand: { select: { id: true, tradeName: true } },
-        supplier: { select: { id: true, tradeName: true } },
+        brand: { select: { id: true, tradeName: true, logoUrl: true } },
+        supplier: { select: { id: true, tradeName: true, logoUrl: true } },
       },
     });
 
@@ -778,7 +798,7 @@ export class OrdersService {
     this.eventEmitter.emit(ORDER_ACCEPTED, acceptedEvent);
     this.logger.log(`Emitted order.accepted event for ${updated.displayId}`);
 
-    return updated;
+    return this.resolveOrderLogos(updated);
   }
 
   // Reject order (Supplier)
@@ -1020,8 +1040,8 @@ export class OrdersService {
         },
       },
       include: {
-        brand: { select: { id: true, tradeName: true } },
-        supplier: { select: { id: true, tradeName: true } },
+        brand: { select: { id: true, tradeName: true, logoUrl: true } },
+        supplier: { select: { id: true, tradeName: true, logoUrl: true } },
         statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
     });
@@ -1049,16 +1069,16 @@ export class OrdersService {
       );
     }
 
-    return updated;
+    return this.resolveOrderLogos(updated);
   }
 
   // Get all orders (Admin)
   async getAllOrders(status?: OrderStatus) {
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: status ? { status } : undefined,
       include: {
-        brand: { select: { id: true, tradeName: true } },
-        supplier: { select: { id: true, tradeName: true } },
+        brand: { select: { id: true, tradeName: true, logoUrl: true } },
+        supplier: { select: { id: true, tradeName: true, logoUrl: true } },
         parentOrder: { select: { id: true, displayId: true } },
         _count: {
           select: { messages: true, attachments: true, childOrders: true },
@@ -1066,6 +1086,7 @@ export class OrdersService {
       },
       orderBy: { createdAt: 'desc' },
     });
+    return this.resolveOrdersLogos(orders);
   }
 
   // ==================== ORDER REVIEW METHODS ====================
@@ -1272,8 +1293,8 @@ export class OrdersService {
         },
       },
       include: {
-        brand: { select: { id: true, tradeName: true } },
-        supplier: { select: { id: true, tradeName: true } },
+        brand: { select: { id: true, tradeName: true, logoUrl: true } },
+        supplier: { select: { id: true, tradeName: true, logoUrl: true } },
         parentOrder: { select: { id: true, displayId: true } },
       },
     });
@@ -1294,7 +1315,7 @@ export class OrdersService {
       },
     });
 
-    return childOrder;
+    return this.resolveOrderLogos(childOrder);
   }
 
   // Get order hierarchy (parent + all children)
@@ -1302,8 +1323,8 @@ export class OrdersService {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        brand: { select: { id: true, tradeName: true } },
-        supplier: { select: { id: true, tradeName: true } },
+        brand: { select: { id: true, tradeName: true, logoUrl: true } },
+        supplier: { select: { id: true, tradeName: true, logoUrl: true } },
         parentOrder: {
           select: {
             id: true,
@@ -1365,8 +1386,10 @@ export class OrdersService {
       }
     }
 
+    const resolvedOrder = await this.resolveOrderLogos(order);
+
     return {
-      currentOrder: order,
+      currentOrder: resolvedOrder,
       rootOrder: rootOrder.id !== order.id ? rootOrder : null,
       hierarchy: {
         parent: order.parentOrder,

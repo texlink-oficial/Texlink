@@ -47,7 +47,7 @@ const convertApiOrder = (apiOrder: ApiOrder): Order => ({
         name: apiOrder.supplier?.tradeName || 'Aguardando Facção',
         rating: Number(apiOrder.supplier?.avgRating) || 0,
         location: 'Brasil',
-        image: `https://ui-avatars.com/api/?name=${encodeURIComponent(apiOrder.supplier?.tradeName || 'AF')}&background=10b981&color=fff`,
+        image: apiOrder.supplier?.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(apiOrder.supplier?.tradeName || 'AF')}&background=10b981&color=fff`,
     },
     type: apiOrder.productType?.includes('Infantil') ? 'Infantil' : 'Adulto',
     productName: apiOrder.productName,
