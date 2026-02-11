@@ -13,11 +13,7 @@ const OnboardingIndexPage: React.FC = () => {
                 const profile = await onboardingService.getProfile();
                 if (!profile || profile.onboardingComplete) {
                     setRedirectTo('/portal/inicio');
-                } else if (profile.onboardingPhase >= 2) {
-                    // Phase 2 done, go to capacity
-                    setRedirectTo('/onboarding/capacidade');
                 } else {
-                    // Phase 1 (basic), go to business qualification
                     setRedirectTo('/onboarding/qualificacao');
                 }
             } catch {

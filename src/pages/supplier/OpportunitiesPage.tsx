@@ -7,7 +7,7 @@ import {
     Calendar, Building2, Loader2,
     Target, CheckCircle, Eye, Search,
     SlidersHorizontal, X, ArrowUpDown,
-    HandHeart, MessageSquare
+    HandHeart, MessageSquare, Scale
 } from 'lucide-react';
 
 // ==================== TYPES ====================
@@ -48,8 +48,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 const OpportunitiesPage: React.FC = () => {
     const [opportunities, setOpportunities] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [acceptingId, setAcceptingId] = useState<string | null>(null);
-    const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
+const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
     const [showFilters, setShowFilters] = useState(false);
 
     // Express Interest modal state
@@ -62,6 +61,12 @@ const OpportunitiesPage: React.FC = () => {
 
     // Track orders where interest was already expressed (locally)
     const [expressedInterest, setExpressedInterest] = useState<Set<string>>(new Set());
+
+    // Negotiation modal state
+    const [negotiateModal, setNegotiateModal] = useState<{ open: boolean; orderId: string; orderName: string }>({
+        open: false, orderId: '', orderName: ''
+    });
+    const [negotiateLoading, setNegotiateLoading] = useState<'negotiate' | 'accept' | null>(null);
 
     const loadOpportunities = useCallback(async () => {
         try {
@@ -107,15 +112,31 @@ const OpportunitiesPage: React.FC = () => {
         return () => clearTimeout(debounce);
     }, [loadOpportunities]);
 
-    const handleAccept = async (orderId: string) => {
+    const handleNegotiate = async () => {
+        if (!negotiateModal.orderId) return;
         try {
-            setAcceptingId(orderId);
-            await ordersService.accept(orderId);
-            setOpportunities(prev => prev.filter(o => o.id !== orderId));
+            setNegotiateLoading('negotiate');
+            await ordersService.updateStatus(negotiateModal.orderId, 'EM_NEGOCIACAO');
+            setOpportunities(prev => prev.filter(o => o.id !== negotiateModal.orderId));
+            setNegotiateModal({ open: false, orderId: '', orderName: '' });
+        } catch (error) {
+            console.error('Error starting negotiation:', error);
+        } finally {
+            setNegotiateLoading(null);
+        }
+    };
+
+    const handleAcceptDirect = async () => {
+        if (!negotiateModal.orderId) return;
+        try {
+            setNegotiateLoading('accept');
+            await ordersService.accept(negotiateModal.orderId);
+            setOpportunities(prev => prev.filter(o => o.id !== negotiateModal.orderId));
+            setNegotiateModal({ open: false, orderId: '', orderName: '' });
         } catch (error) {
             console.error('Error accepting order:', error);
         } finally {
-            setAcceptingId(null);
+            setNegotiateLoading(null);
         }
     };
 
@@ -491,15 +512,10 @@ const OpportunitiesPage: React.FC = () => {
                                     </div>
                                 ) : (
                                     <button
-                                        onClick={() => handleAccept(order.id)}
-                                        disabled={acceptingId === order.id}
-                                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-500 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+                                        onClick={() => setNegotiateModal({ open: true, orderId: order.id, orderName: order.productName })}
+                                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-500 text-white font-medium rounded-xl transition-colors"
                                     >
-                                        {acceptingId === order.id ? (
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                        ) : (
-                                            <CheckCircle className="w-5 h-5" />
-                                        )}
+                                        <CheckCircle className="w-5 h-5" />
                                         Aceitar Pedido
                                     </button>
                                 )}
@@ -513,6 +529,73 @@ const OpportunitiesPage: React.FC = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Negotiation Confirmation Modal */}
+            {negotiateModal.open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/50"
+                        onClick={() => {
+                            if (!negotiateLoading) {
+                                setNegotiateModal({ open: false, orderId: '', orderName: '' });
+                            }
+                        }}
+                    />
+                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+                                <Scale className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    Deseja negociar os termos do pedido?
+                                </h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    {negotiateModal.orderName}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                            Você pode negociar prazos, valores e condições com a marca antes de aceitar, ou aceitar o pedido diretamente com os termos atuais.
+                        </p>
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={handleNegotiate}
+                                disabled={!!negotiateLoading}
+                                className="flex items-center justify-center gap-2 py-3 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors disabled:opacity-50"
+                            >
+                                {negotiateLoading === 'negotiate' ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Scale className="w-4 h-4" />
+                                )}
+                                Sim, negociar
+                            </button>
+                            <button
+                                onClick={handleAcceptDirect}
+                                disabled={!!negotiateLoading}
+                                className="flex items-center justify-center gap-2 py-3 text-sm font-medium text-white bg-green-600 hover:bg-green-500 rounded-xl transition-colors disabled:opacity-50"
+                            >
+                                {negotiateLoading === 'accept' ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <CheckCircle className="w-4 h-4" />
+                                )}
+                                Nao, aceitar direto
+                            </button>
+                            <button
+                                onClick={() => setNegotiateModal({ open: false, orderId: '', orderName: '' })}
+                                disabled={!!negotiateLoading}
+                                className="py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 

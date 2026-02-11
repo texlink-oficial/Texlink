@@ -1,21 +1,52 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { onboardingService } from '../../services/onboarding.service';
-import { Briefcase, Users, Clock, DollarSign, Building2, Loader2, ArrowRight } from 'lucide-react';
+import { Package, Users, Clock, Building2, Loader2, CheckCircle, ArrowLeft, Wrench } from 'lucide-react';
 
-const interestOptions = [
-    'Aumentar faturamento',
-    'Diversificar clientes',
-    'Otimizar capacidade ociosa',
-    'Crescer o negócio',
-    'Outros',
+const productTypeOptions = [
+    'Tecido Plano',
+    'Malha',
+    'Alfaiataria',
+    'Acessorios',
+    'Moda Praia',
+    'Fitness',
+    'Jeanswear',
+    'Moda Intima',
+    'Moda Infantil',
+    'Uniforme',
+    'Outro',
 ];
 
-const maturityOptions = [
-    { value: 'iniciante', label: 'Iniciante - Começando a estruturar' },
-    { value: 'basico', label: 'Básico - Processos informais' },
-    { value: 'intermediario', label: 'Intermediário - Processos definidos' },
-    { value: 'avancado', label: 'Avançado - Processos otimizados' },
+const machineOptions = [
+    'Bordadeira',
+    'Botoneira',
+    'Caseadeira',
+    'Catraca',
+    'Cilindrica',
+    'Cobertura/Galoneira',
+    'Coluna',
+    'Elastiqueira',
+    'Enfestadeira',
+    'Fechadeira',
+    'Interloque',
+    'Maquina de pregar botao',
+    'Maquina de rebite',
+    'Overloque',
+    'Maquina de corte a quente',
+    'Maquina de corte (faca/vertical)',
+    'Maquina de ilhos',
+    'Maquina de ultrassom',
+    'Mesa de succao',
+    'Passadoria industrial',
+    'Plotter de risco',
+    'Ponto conjugado',
+    'Refiladeira',
+    'Reta industrial',
+    'Reta domestica',
+    'Travete',
+    'Type',
+    'Vaporizador',
+    'Zig-zag',
 ];
 
 const timeInMarketOptions = [
@@ -26,19 +57,10 @@ const timeInMarketOptions = [
     'Mais de 10 anos',
 ];
 
-const revenueOptions = [
-    { value: 10000, label: 'Até R$ 10.000/mês' },
-    { value: 30000, label: 'R$ 10.000 - R$ 30.000/mês' },
-    { value: 50000, label: 'R$ 30.000 - R$ 50.000/mês' },
-    { value: 100000, label: 'R$ 50.000 - R$ 100.000/mês' },
-    { value: 200000, label: 'Mais de R$ 100.000/mês' },
-];
-
 interface FormData {
-    interesse: string;
-    faturamentoDesejado?: number;
-    maturidadeGestao: string;
-    qtdColaboradores?: number;
+    productTypes: string[];
+    machines: string[];
+    qtdCostureiras?: number;
     tempoMercado: string;
 }
 
@@ -48,26 +70,43 @@ const OnboardingBusinessPage: React.FC = () => {
     const [error, setError] = useState('');
 
     const [formData, setFormData] = useState<FormData>({
-        interesse: '',
-        faturamentoDesejado: undefined,
-        maturidadeGestao: '',
-        qtdColaboradores: undefined,
+        productTypes: [],
+        machines: [],
+        qtdCostureiras: undefined,
         tempoMercado: '',
     });
 
     const isFormValid =
-        formData.interesse &&
-        formData.maturidadeGestao &&
-        formData.tempoMercado &&
-        formData.qtdColaboradores &&
-        formData.faturamentoDesejado;
+        formData.productTypes.length > 0 &&
+        formData.machines.length > 0 &&
+        formData.qtdCostureiras &&
+        formData.qtdCostureiras >= 1 &&
+        formData.tempoMercado;
+
+    const toggleProductType = (type: string) => {
+        setFormData((prev) => ({
+            ...prev,
+            productTypes: prev.productTypes.includes(type)
+                ? prev.productTypes.filter((t) => t !== type)
+                : [...prev.productTypes, type],
+        }));
+    };
+
+    const toggleMachine = (machine: string) => {
+        setFormData((prev) => ({
+            ...prev,
+            machines: prev.machines.includes(machine)
+                ? prev.machines.filter((m) => m !== machine)
+                : [...prev.machines, machine],
+        }));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
         if (!isFormValid) {
-            setError('Por favor, preencha todos os campos');
+            setError('Por favor, preencha todos os campos obrigatorios');
             return;
         }
 
@@ -75,13 +114,16 @@ const OnboardingBusinessPage: React.FC = () => {
 
         try {
             await onboardingService.updatePhase2({
-                interesse: formData.interesse,
-                faturamentoDesejado: formData.faturamentoDesejado,
-                maturidadeGestao: formData.maturidadeGestao,
-                qtdColaboradores: formData.qtdColaboradores,
+                qtdColaboradores: formData.qtdCostureiras,
                 tempoMercado: formData.tempoMercado,
             });
-            navigate('/onboarding/capacidade');
+            await onboardingService.updatePhase3({
+                productTypes: formData.productTypes,
+                specialties: formData.machines,
+                monthlyCapacity: (formData.qtdCostureiras || 1) * 8 * 60 * 22,
+            });
+            await onboardingService.completeOnboarding();
+            navigate('/portal/inicio');
         } catch (err: any) {
             const msg = err.response?.data?.message;
             setError(Array.isArray(msg) ? msg.join('. ') : msg || 'Erro ao salvar dados da empresa');
@@ -97,10 +139,10 @@ const OnboardingBusinessPage: React.FC = () => {
                     <Building2 className="w-8 h-8 text-brand-400" />
                 </div>
                 <h2 className="text-2xl font-bold text-white mb-2">
-                    Qualificação do Negócio
+                    Qualificacao do Negocio
                 </h2>
                 <p className="text-brand-300">
-                    Conte-nos mais sobre sua facção para entendermos melhor seu perfil
+                    Conte-nos mais sobre sua faccao para entendermos melhor seu perfil
                 </p>
             </div>
 
@@ -111,55 +153,89 @@ const OnboardingBusinessPage: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Interesse */}
+                {/* O que voce produz */}
                 <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
-                        <Briefcase className="w-4 h-4" />
-                        Por que deseja se cadastrar na plataforma?
+                        <Package className="w-4 h-4" />
+                        O que voce produz? (selecione todos que se aplicam)
                     </label>
                     <div className="flex flex-wrap gap-2">
-                        {interestOptions.map((option) => (
+                        {productTypeOptions.map((type) => (
                             <button
-                                key={option}
+                                key={type}
                                 type="button"
-                                onClick={() => setFormData({ ...formData, interesse: option })}
-                                className={`px-4 py-2 rounded-full text-sm transition-all ${formData.interesse === option
+                                onClick={() => toggleProductType(type)}
+                                className={`px-4 py-2 rounded-full text-sm transition-all ${formData.productTypes.includes(type)
                                     ? 'bg-brand-500 text-white'
                                     : 'bg-white/10 text-brand-300 border border-white/20 hover:border-brand-500/50'
                                     }`}
                             >
-                                {option}
+                                {type}
                             </button>
                         ))}
                     </div>
+                    {formData.productTypes.length > 0 && (
+                        <p className="text-sm text-brand-400 mt-2">
+                            {formData.productTypes.length} tipo(s) selecionado(s)
+                        </p>
+                    )}
                 </div>
 
-                {/* Maturidade de Gestão */}
+                {/* Quais maquinas possui */}
                 <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
-                        <Clock className="w-4 h-4" />
-                        Nível de maturidade na gestão
+                        <Wrench className="w-4 h-4" />
+                        Quais maquinas possui? (selecione todas que se aplicam)
                     </label>
-                    <select
-                        value={formData.maturidadeGestao}
-                        onChange={(e) => setFormData({ ...formData, maturidadeGestao: e.target.value })}
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                        required
-                    >
-                        <option value="" className="bg-brand-900">Selecione...</option>
-                        {maturityOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value} className="bg-brand-900">
-                                {opt.label}
-                            </option>
+                    <div className="flex flex-wrap gap-2">
+                        {machineOptions.map((machine) => (
+                            <button
+                                key={machine}
+                                type="button"
+                                onClick={() => toggleMachine(machine)}
+                                className={`px-4 py-2 rounded-full text-sm transition-all ${formData.machines.includes(machine)
+                                    ? 'bg-teal-500 text-white'
+                                    : 'bg-white/10 text-brand-300 border border-white/20 hover:border-teal-500/50'
+                                    }`}
+                            >
+                                {machine}
+                            </button>
                         ))}
-                    </select>
+                    </div>
+                    {formData.machines.length > 0 && (
+                        <p className="text-sm text-brand-400 mt-2">
+                            {formData.machines.length} maquina(s) selecionada(s)
+                        </p>
+                    )}
+                </div>
+
+                {/* Numero de Costureiras */}
+                <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
+                        <Users className="w-4 h-4" />
+                        Numero de Costureiras
+                    </label>
+                    <input
+                        type="number"
+                        min="1"
+                        value={formData.qtdCostureiras || ''}
+                        onChange={(e) =>
+                            setFormData({
+                                ...formData,
+                                qtdCostureiras: parseInt(e.target.value) || undefined,
+                            })
+                        }
+                        placeholder="Ex: 15"
+                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                        required
+                    />
                 </div>
 
                 {/* Tempo no Mercado */}
                 <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
                         <Clock className="w-4 h-4" />
-                        Tempo de atuação no mercado
+                        Tempo de atuacao no mercado
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {timeInMarketOptions.map((option) => (
@@ -178,73 +254,38 @@ const OnboardingBusinessPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Colaboradores */}
-                <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
-                        <Users className="w-4 h-4" />
-                        Número de colaboradores
-                    </label>
-                    <input
-                        type="number"
-                        min="1"
-                        value={formData.qtdColaboradores || ''}
-                        onChange={(e) =>
-                            setFormData({
-                                ...formData,
-                                qtdColaboradores: parseInt(e.target.value) || undefined,
-                            })
-                        }
-                        placeholder="Ex: 15"
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                        required
-                    />
+                {/* Buttons */}
+                <div className="flex gap-3">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/register')}
+                        className="px-6 py-3 bg-white/10 border border-white/20 text-brand-300 font-medium rounded-xl hover:bg-white/20 transition-all flex items-center gap-2"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                        Voltar
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={!isFormValid || isSubmitting}
+                        className="flex-1 py-3 px-6 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSubmitting ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                            <>
+                                <CheckCircle className="w-5 h-5" />
+                                Concluir Cadastro
+                            </>
+                        )}
+                    </button>
                 </div>
-
-                {/* Faturamento Desejado */}
-                <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
-                        <DollarSign className="w-4 h-4" />
-                        Faturamento mensal desejado
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {revenueOptions.map((opt) => (
-                            <button
-                                key={opt.value}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, faturamentoDesejado: opt.value })}
-                                className={`px-4 py-3 rounded-lg text-sm text-left transition-all ${formData.faturamentoDesejado === opt.value
-                                    ? 'bg-brand-500 text-white'
-                                    : 'bg-white/10 text-brand-300 border border-white/20 hover:border-brand-500/50'
-                                    }`}
-                            >
-                                {opt.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Submit */}
-                <button
-                    type="submit"
-                    disabled={!isFormValid || isSubmitting}
-                    className="w-full py-3 px-6 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {isSubmitting ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                        <>
-                            Salvar e Continuar
-                            <ArrowRight className="w-5 h-5" />
-                        </>
-                    )}
-                </button>
             </form>
 
             <div className="mt-6 bg-brand-500/10 border border-brand-500/20 rounded-lg p-4">
                 <p className="text-sm text-brand-300">
-                    <strong className="text-brand-200">Dica:</strong> Estas informações ajudam as marcas a
+                    <strong className="text-brand-200">Dica:</strong> Estas informacoes ajudam as marcas a
                     entenderem melhor seu perfil e a oferecerem oportunidades adequadas
-                    ao seu negócio.
+                    ao seu negocio.
                 </p>
             </div>
         </div>

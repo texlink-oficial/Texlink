@@ -40,6 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           include: {
             company: true,
           },
+          orderBy: { createdAt: 'asc' },
         },
       },
     });
@@ -48,9 +49,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    // Extract companyId from companyUsers for easier access in controllers
-    const companyId = user.companyUsers?.[0]?.companyId || null;
-    const company = user.companyUsers?.[0]?.company || null;
+    // Extract companyId matching user role; fall back to first association
+    const matchingCompanyUser =
+      user.companyUsers?.find(
+        (cu) => cu.company?.type === user.role,
+      ) || user.companyUsers?.[0];
+    const companyId = matchingCompanyUser?.companyId || null;
+    const company = matchingCompanyUser?.company || null;
     const companyType = company?.type;
 
     return {

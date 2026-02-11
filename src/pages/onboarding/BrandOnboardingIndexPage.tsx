@@ -13,8 +13,6 @@ const BrandOnboardingIndexPage: React.FC = () => {
                 const profile = await brandOnboardingService.getProfile();
                 if (!profile || profile.onboardingComplete) {
                     setRedirectTo('/brand/inicio');
-                } else if (profile.onboardingPhase >= 2) {
-                    setRedirectTo('/brand-onboarding/produtos');
                 } else {
                     setRedirectTo('/brand-onboarding/qualificacao');
                 }

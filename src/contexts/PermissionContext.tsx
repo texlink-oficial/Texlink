@@ -30,8 +30,11 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Determinar o companyId a usar
-  const effectiveCompanyId = companyId || user?.companyUsers?.[0]?.company?.id;
+  // Determinar o companyId a usar: prefer company matching user role
+  const matchingCompanyUser =
+    user?.companyUsers?.find((cu) => cu.company?.type === user?.role) ||
+    user?.companyUsers?.[0];
+  const effectiveCompanyId = companyId || matchingCompanyUser?.company?.id;
 
   const loadPermissions = useCallback(async () => {
     if (!isAuthenticated || !effectiveCompanyId) {
@@ -57,7 +60,7 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
 
       // Em caso de erro, definir permissões padrão baseado no tipo de usuário
       // Isso é útil para modo demo ou quando o backend não está disponível
-      if (user?.companyUsers?.[0]?.role === 'OWNER') {
+      if (matchingCompanyUser?.role === 'OWNER') {
         setPermissions(ALL_PERMISSIONS);
         setCompanyRole('ADMIN');
         setIsCompanyAdmin(true);

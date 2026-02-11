@@ -39,8 +39,11 @@ const BrandsPage: React.FC = () => {
     } | null>(null);
     const [showAcceptModal, setShowAcceptModal] = useState(false);
 
-    // Get supplierId from auth context - check multiple possible locations
-    const supplierId = (user as any)?.supplierId || (user as any)?.companyId || (user as any)?.companyUsers?.[0]?.company?.id;
+    // Get supplierId from auth context - prefer role-matched company, then convenience aliases
+    const matchingCompanyUser =
+        user?.companyUsers?.find((cu) => cu.company?.type === user?.role) ||
+        user?.companyUsers?.[0];
+    const supplierId = (user as any)?.supplierId || (user as any)?.companyId || matchingCompanyUser?.company?.id;
 
     const loadPendingDocs = useCallback(async (rels: SupplierBrandRelationship[]) => {
         const docsMap: Record<string, DocumentWithAcceptance[]> = {};

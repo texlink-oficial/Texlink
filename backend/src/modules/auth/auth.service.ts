@@ -30,8 +30,8 @@ export class AuthService {
       throw new ConflictException('Email already registered');
     }
 
-    // Check if document already exists (for SUPPLIER)
-    if (dto.role === 'SUPPLIER' && dto.document) {
+    // Check if document already exists (for SUPPLIER and BRAND)
+    if (dto.document) {
       const existingCompany = await this.prisma.company.findUnique({
         where: { document: dto.document },
       });
@@ -163,6 +163,7 @@ export class AuthService {
               },
             },
           },
+          orderBy: { createdAt: 'asc' },
         },
       },
     });
@@ -193,8 +194,11 @@ export class AuthService {
     // Generate token
     const token = this.generateToken(user.id, user.email, user.role);
 
-    // Get company ID based on role
-    const companyUser = user.companyUsers?.[0];
+    // Get company matching user role; fall back to first association
+    const companyUser =
+      user.companyUsers?.find(
+        (cu) => cu.company?.type === user.role,
+      ) || user.companyUsers?.[0];
     const companyId = companyUser?.company?.id;
     const companyName = companyUser?.company?.tradeName || companyUser?.company?.legalName;
     const companyType = companyUser?.company?.type;
@@ -239,6 +243,7 @@ export class AuthService {
               },
             },
           },
+          orderBy: { createdAt: 'asc' },
         },
       },
     });
@@ -247,8 +252,11 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    // Extract primary company info for convenience
-    const companyUser = user.companyUsers?.[0];
+    // Extract primary company matching user role; fall back to first association
+    const companyUser =
+      user.companyUsers?.find(
+        (cu) => cu.company?.type === user.role,
+      ) || user.companyUsers?.[0];
     const companyId = companyUser?.company?.id;
     const companyName = companyUser?.company?.tradeName || companyUser?.company?.legalName;
     const companyType = companyUser?.company?.type;

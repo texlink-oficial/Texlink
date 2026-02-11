@@ -12,6 +12,8 @@ export interface RegisterDto {
     password: string;
     name: string;
     role: 'ADMIN' | 'BRAND' | 'SUPPLIER';
+    document?: string;
+    phone?: string;
 }
 
 export interface AuthResponse {

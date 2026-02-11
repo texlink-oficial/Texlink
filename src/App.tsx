@@ -68,9 +68,11 @@ const BrandContractDetailsPage = React.lazy(() => import('./pages/brand/contract
 const BrandCreateContractPage = React.lazy(() => import('./pages/brand/contracts/CreateContractPage'));
 const SupplierContractsListPage = React.lazy(() => import('./pages/supplier/contracts/ContractsListPage'));
 const SupplierContractDetailsPage = React.lazy(() => import('./pages/supplier/contracts/ContractDetailsPage'));
-const SupplierProfile = React.lazy(() => import('./pages/supplier/ProfilePage'));
 const BrandSettings = React.lazy(() => import('./pages/brand/BrandSettingsPage'));
-const BrandProfile = React.lazy(() => import('./pages/brand/ProfilePage'));
+
+// Profile pages - eagerly imported to avoid lazy-loading issues with React Router v7
+import SupplierProfilePage from './pages/supplier/ProfilePage';
+import BrandProfilePage from './pages/brand/ProfilePage';
 
 const AdminLayout = React.lazy(() => import('./components/admin/AdminLayout'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
@@ -105,11 +107,9 @@ const SupplierPartnershipRequestsPage = React.lazy(() => import('./pages/supplie
 const OnboardingLayout = React.lazy(() => import('./components/onboarding/OnboardingLayout'));
 const OnboardingIndexPage = React.lazy(() => import('./pages/onboarding/OnboardingIndexPage'));
 const OnboardingBusinessPage = React.lazy(() => import('./pages/onboarding/OnboardingBusinessPage'));
-const OnboardingCapacityPage = React.lazy(() => import('./pages/onboarding/OnboardingCapacityPage'));
 const BrandOnboardingLayout = React.lazy(() => import('./components/onboarding/BrandOnboardingLayout'));
 const BrandOnboardingIndexPage = React.lazy(() => import('./pages/onboarding/BrandOnboardingIndexPage'));
 const BrandOnboardingBusinessPage = React.lazy(() => import('./pages/onboarding/BrandOnboardingBusinessPage'));
-const BrandOnboardingProductsPage = React.lazy(() => import('./pages/onboarding/BrandOnboardingProductsPage'));
 
 
 const queryClient = new QueryClient({
@@ -149,14 +149,12 @@ const App: React.FC = () => {
                                             <Route path="/onboarding" element={<ProtectedRoute allowedRoles={['SUPPLIER']}><OnboardingLayout /></ProtectedRoute>}>
                                                 <Route index element={<OnboardingIndexPage />} />
                                                 <Route path="qualificacao" element={<OnboardingBusinessPage />} />
-                                                <Route path="capacidade" element={<OnboardingCapacityPage />} />
                                             </Route>
 
                                             {/* Brand onboarding routes (protected, brand only) */}
                                             <Route path="/brand-onboarding" element={<ProtectedRoute allowedRoles={['BRAND']}><BrandOnboardingLayout /></ProtectedRoute>}>
                                                 <Route index element={<BrandOnboardingIndexPage />} />
                                                 <Route path="qualificacao" element={<BrandOnboardingBusinessPage />} />
-                                                <Route path="produtos" element={<BrandOnboardingProductsPage />} />
                                             </Route>
 
                                             {/* Dashboard redirect */}
@@ -199,7 +197,7 @@ const App: React.FC = () => {
                                                 {/* Configurações */}
                                                 <Route path="equipe" element={<TeamPage />} />
                                                 <Route path="configuracoes" element={<SupplierSettings />} />
-                                                <Route path="perfil" element={<SupplierProfile />} />
+                                                <Route path="perfil" element={<SupplierProfilePage />} />
                                                 <Route path="notificacoes" element={<NotificationsPage />} />
                                             </Route>
 
@@ -258,7 +256,7 @@ const App: React.FC = () => {
                                                 {/* Configurações */}
                                                 <Route path="equipe" element={<TeamPage />} />
                                                 <Route path="configuracoes" element={<BrandSettings />} />
-                                                <Route path="perfil" element={<BrandProfile />} />
+                                                <Route path="perfil" element={<BrandProfilePage />} />
                                                 <Route path="notificacoes" element={<NotificationsPage />} />
                                             </Route>
 

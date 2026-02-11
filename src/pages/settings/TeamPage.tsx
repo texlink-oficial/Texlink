@@ -34,7 +34,11 @@ import EditPermissionsModal from '../../components/team/EditPermissionsModal';
 
 const TeamPage: React.FC = () => {
   const { user } = useAuth();
-  const companyId = user?.companyUsers?.[0]?.company?.id || '';
+  // Pick the company matching user role; fall back to first association
+  const matchingCompanyUser =
+    user?.companyUsers?.find((cu) => cu.company?.type === user?.role) ||
+    user?.companyUsers?.[0];
+  const companyId = matchingCompanyUser?.company?.id || '';
 
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);

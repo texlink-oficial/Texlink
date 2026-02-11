@@ -30,9 +30,26 @@ export class SettingsService {
   ) {}
 
   // Get company for any user (BRAND or SUPPLIER)
+  // Filters by matching company type to user role to avoid returning a wrong company
   private async getUserCompanyId(userId: string): Promise<string> {
+    // First get the user's role to filter by matching company type
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    // Build where clause: filter by company type matching user role when applicable
+    const companyTypeFilter =
+      user?.role === 'BRAND' || user?.role === 'SUPPLIER'
+        ? { company: { type: user.role as CompanyType } }
+        : {};
+
     const companyUser = await this.prisma.companyUser.findFirst({
-      where: { userId },
+      where: {
+        userId,
+        ...companyTypeFilter,
+      },
+      orderBy: { createdAt: 'asc' },
     });
 
     if (!companyUser) {

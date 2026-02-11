@@ -1,7 +1,33 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { UserPlus, Mail, Lock, User, Building2, Factory, Loader2 } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Building2, Factory, Loader2, Eye, EyeOff, Phone } from 'lucide-react';
+
+const formatCNPJ = (value: string): string => {
+    const digits = value.replace(/\D/g, '').slice(0, 14);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+    if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+    if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+};
+
+const formatPhone = (value: string): string => {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 2) return digits.length > 0 ? `(${digits}` : '';
+    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
+const isValidCNPJ = (value: string): boolean => {
+    const digits = value.replace(/\D/g, '');
+    return digits.length === 14;
+};
+
+const isValidPhone = (value: string): boolean => {
+    const digits = value.replace(/\D/g, '');
+    return digits.length === 10 || digits.length === 11;
+};
 
 const RegisterPage: React.FC = () => {
     const navigate = useNavigate();
@@ -9,21 +35,34 @@ const RegisterPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
+    const [cnpj, setCnpj] = useState('');
+    const [phone, setPhone] = useState('');
     const [role, setRole] = useState<'BRAND' | 'SUPPLIER'>('SUPPLIER');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const validatePassword = (pwd: string): string | null => {
         if (pwd.length < 8) return 'A senha deve ter pelo menos 8 caracteres';
-        if (!/[A-Z]/.test(pwd)) return 'A senha deve conter pelo menos uma letra maiúscula';
-        if (!/[a-z]/.test(pwd)) return 'A senha deve conter pelo menos uma letra minúscula';
-        if (!/\d/.test(pwd)) return 'A senha deve conter pelo menos um número';
+        if (!/[A-Z]/.test(pwd)) return 'A senha deve conter pelo menos uma letra maiuscula';
+        if (!/[a-z]/.test(pwd)) return 'A senha deve conter pelo menos uma letra minuscula';
+        if (!/\d/.test(pwd)) return 'A senha deve conter pelo menos um numero';
         return null;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        if (!isValidCNPJ(cnpj)) {
+            setError('CNPJ invalido. Informe os 14 digitos.');
+            return;
+        }
+
+        if (!isValidPhone(phone)) {
+            setError('Celular invalido. Informe o numero com DDD.');
+            return;
+        }
 
         const passwordError = validatePassword(password);
         if (passwordError) {
@@ -34,7 +73,10 @@ const RegisterPage: React.FC = () => {
         setIsLoading(true);
 
         try {
-            await register(email, password, name, role);
+            await register(email, password, name, role, {
+                document: cnpj.replace(/\D/g, ''),
+                phone: phone.replace(/\D/g, ''),
+            });
             // Redirect to onboarding based on role
             navigate(role === 'SUPPLIER' ? '/onboarding' : '/brand-onboarding');
         } catch (err: any) {
@@ -99,7 +141,7 @@ const RegisterPage: React.FC = () => {
                                         }`}
                                 >
                                     <Factory className="w-6 h-6 mx-auto mb-2" />
-                                    <span className="text-sm font-medium">Facção</span>
+                                    <span className="text-sm font-medium">Faccao</span>
                                 </button>
                                 <button
                                     type="button"
@@ -115,9 +157,10 @@ const RegisterPage: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* Nome */}
                         <div>
                             <label className="block text-sm font-medium text-brand-200 mb-2">
-                                Nome Completo
+                                Nome
                             </label>
                             <div className="relative">
                                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
@@ -132,9 +175,31 @@ const RegisterPage: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* CNPJ */}
                         <div>
                             <label className="block text-sm font-medium text-brand-200 mb-2">
-                                Email
+                                CNPJ
+                            </label>
+                            <div className="relative">
+                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
+                                <input
+                                    type="text"
+                                    value={cnpj}
+                                    onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
+                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    placeholder="XX.XXX.XXX/XXXX-XX"
+                                    required
+                                />
+                            </div>
+                            <p className="text-xs text-brand-400 mt-1">
+                                A unicidade do CNPJ sera validada no servidor.
+                            </p>
+                        </div>
+
+                        {/* E-mail */}
+                        <div>
+                            <label className="block text-sm font-medium text-brand-200 mb-2">
+                                E-mail
                             </label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
@@ -149,6 +214,25 @@ const RegisterPage: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* Celular */}
+                        <div>
+                            <label className="block text-sm font-medium text-brand-200 mb-2">
+                                Celular
+                            </label>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
+                                <input
+                                    type="text"
+                                    value={phone}
+                                    onChange={(e) => setPhone(formatPhone(e.target.value))}
+                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    placeholder="(XX) XXXXX-XXXX"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        {/* Senha */}
                         <div>
                             <label className="block text-sm font-medium text-brand-200 mb-2">
                                 Senha
@@ -156,14 +240,26 @@ const RegisterPage: React.FC = () => {
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
                                 <input
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                                    placeholder="Mínimo 8 caracteres (maiúscula, minúscula e número)"
+                                    className="w-full pl-11 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    placeholder="Minimo 8 caracteres (maiuscula, minuscula e numero)"
                                     minLength={8}
                                     required
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-400 hover:text-brand-300 transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="w-5 h-5" />
+                                    ) : (
+                                        <Eye className="w-5 h-5" />
+                                    )}
+                                </button>
                             </div>
                         </div>
 
@@ -185,7 +281,7 @@ const RegisterPage: React.FC = () => {
 
                     <div className="mt-6 text-center">
                         <p className="text-brand-300 text-sm">
-                            Já tem conta?{' '}
+                            Ja tem conta?{' '}
                             <Link to="/login" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
                                 Entrar
                             </Link>

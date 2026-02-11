@@ -7,7 +7,7 @@ interface AuthContextType {
     isLoading: boolean;
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<void>;
-    register: (email: string, password: string, name: string, role: 'BRAND' | 'SUPPLIER') => Promise<void>;
+    register: (email: string, password: string, name: string, role: 'BRAND' | 'SUPPLIER', extra?: { cnpj?: string; phone?: string }) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
 }
@@ -49,8 +49,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(profile);
     };
 
-    const register = async (email: string, password: string, name: string, role: 'BRAND' | 'SUPPLIER') => {
-        await authService.register({ email, password, name, role });
+    const register = async (email: string, password: string, name: string, role: 'BRAND' | 'SUPPLIER', extra?: { document?: string; phone?: string }) => {
+        await authService.register({ email, password, name, role, ...extra });
         const profile = await authService.getProfile();
         setUser(profile);
     };

@@ -98,14 +98,18 @@ export class PermissionsGuard implements CanActivate {
       return request.query.companyId;
     }
 
-    // Do usuário autenticado (primeira empresa)
-    if (request.user?.companyUsers?.[0]?.company?.id) {
-      return request.user.companyUsers[0].company.id;
-    }
-
-    // Se o usuário está associado a apenas uma empresa, usa ela
+    // Do usuário autenticado (role-matched companyId from JWT strategy)
     if (request.user?.companyId) {
       return request.user.companyId;
+    }
+
+    // Fallback: role-matched company from companyUsers array
+    const matchingCu =
+      request.user?.companyUsers?.find(
+        (cu: any) => cu.company?.type === request.user?.role,
+      ) || request.user?.companyUsers?.[0];
+    if (matchingCu?.company?.id) {
+      return matchingCu.company.id;
     }
 
     return undefined;

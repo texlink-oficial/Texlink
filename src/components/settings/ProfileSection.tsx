@@ -29,7 +29,11 @@ const ProfileSection: React.FC = () => {
 
     if (!user) return null;
 
-    const companyUser = user.companyUsers?.[0];
+    // Pick the companyUser whose company type matches the user's role;
+    // fall back to first association for ADMIN or single-company users
+    const companyUser =
+        user.companyUsers?.find((cu) => cu.company?.type === user.role) ||
+        user.companyUsers?.[0];
     const company = companyUser?.company;
     const initials = user.name
         .split(' ')
