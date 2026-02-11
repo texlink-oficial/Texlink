@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { MOCK_MODE } from './mockMode';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -23,8 +22,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // In mock mode, don't redirect on 401 - let services handle with mock data
-        if (error.response?.status === 401 && !MOCK_MODE) {
+        if (error.response?.status === 401) {
             sessionStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/login';

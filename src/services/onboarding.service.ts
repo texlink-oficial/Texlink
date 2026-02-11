@@ -1,5 +1,4 @@
 import api from './api';
-import { MOCK_MODE, simulateDelay } from './mockMode';
 
 export interface SupplierProfile {
     id: string;
@@ -23,21 +22,6 @@ interface CompanyWithProfile {
     id: string;
     supplierProfile: SupplierProfile | null;
 }
-
-// Mock state
-let mockProfile: SupplierProfile = {
-    id: 'profile-001',
-    companyId: 'company-supplier-001',
-    onboardingPhase: 2,
-    onboardingComplete: false,
-    businessQualification: {
-        interesse: 'Alta capacidade produtiva',
-        faturamentoDesejado: 50000,
-        maturidadeGestao: 'Intermediária',
-        qtdColaboradores: 15,
-        tempoMercado: '5-10 anos'
-    }
-};
 
 // Interfaces para wizard de onboarding (Fase 3)
 export interface OnboardingInvitation {
@@ -102,78 +86,30 @@ export interface OnboardingDocument {
 
 export const onboardingService = {
     /**
-     * Valida token de convite (público)
+     * Valida token de convite (publico)
      */
     async validateToken(token: string): Promise<OnboardingInvitation> {
-        if (MOCK_MODE) {
-            await simulateDelay(300);
-            return {
-                valid: true,
-                token,
-                brand: {
-                    name: 'Marca Exemplo',
-                    logo: 'https://via.placeholder.com/150',
-                    location: 'São Paulo, SP',
-                },
-                supplier: {
-                    cnpj: '12.345.678/0001-90',
-                    tradeName: 'Facção Teste',
-                    legalName: 'Facção Teste Ltda',
-                    contactName: 'João Silva',
-                    contactEmail: 'joao@teste.com',
-                    contactPhone: '(11) 98765-4321',
-                },
-                invitation: {
-                    type: 'EMAIL',
-                    sentAt: new Date().toISOString(),
-                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                    daysRemaining: 7,
-                },
-                status: 'INVITATION_SENT',
-                hasOnboarding: false,
-            };
-        }
         const response = await api.get<OnboardingInvitation>(`/onboarding/validate-token/${token}`);
         return response.data;
     },
 
     /**
-     * Inicia processo de onboarding (público)
+     * Inicia processo de onboarding (publico)
      */
     async startOnboarding(token: string, deviceInfo?: any): Promise<{ onboardingId: string; resumed: boolean; currentStep: number }> {
-        if (MOCK_MODE) {
-            await simulateDelay(300);
-            return { onboardingId: 'onb-001', resumed: false, currentStep: 1 };
-        }
         const response = await api.post(`/onboarding/start/${token}`, { deviceInfo });
         return response.data;
     },
 
     /**
-     * Busca progresso do onboarding (público)
+     * Busca progresso do onboarding (publico)
      */
     async getProgress(token: string): Promise<OnboardingProgress | null> {
-        if (MOCK_MODE) {
-            await simulateDelay(300);
-            return {
-                id: 'onb-001',
-                credentialId: 'cred-001',
-                currentStep: 1,
-                totalSteps: 6,
-                completedSteps: [],
-                lastActivityAt: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-            };
-        }
         const response = await api.get<OnboardingProgress>(`/onboarding/progress/${token}`);
         return response.data;
     },
 
     async getProfile(): Promise<SupplierProfile | null> {
-        if (MOCK_MODE) {
-            await simulateDelay(300);
-            return mockProfile;
-        }
         const response = await api.get<CompanyWithProfile>('/suppliers/profile');
         return response.data.supplierProfile;
     },
@@ -185,15 +121,6 @@ export const onboardingService = {
         qtdColaboradores?: number;
         tempoMercado?: string;
     }): Promise<SupplierProfile> {
-        if (MOCK_MODE) {
-            await simulateDelay(500);
-            mockProfile = {
-                ...mockProfile,
-                onboardingPhase: 2,
-                businessQualification: data,
-            };
-            return mockProfile;
-        }
         const response = await api.patch<SupplierProfile>('/suppliers/onboarding/phase2', data);
         return response.data;
     },
@@ -204,37 +131,17 @@ export const onboardingService = {
         monthlyCapacity: number;
         currentOccupancy?: number;
     }): Promise<SupplierProfile> {
-        if (MOCK_MODE) {
-            await simulateDelay(500);
-            mockProfile = {
-                ...mockProfile,
-                onboardingPhase: 3,
-                productTypes: data.productTypes,
-                specialties: data.specialties,
-                monthlyCapacity: data.monthlyCapacity,
-                currentOccupancy: data.currentOccupancy,
-            };
-            return mockProfile;
-        }
         const response = await api.patch<SupplierProfile>('/suppliers/onboarding/phase3', data);
         return response.data;
     },
 
     async completeOnboarding(): Promise<SupplierProfile> {
-        if (MOCK_MODE) {
-            await simulateDelay(500);
-            mockProfile = {
-                ...mockProfile,
-                onboardingComplete: true
-            };
-            return mockProfile;
-        }
         const response = await api.patch<SupplierProfile>('/suppliers/onboarding/complete');
         return response.data;
     },
 
     /**
-     * Upload documento do onboarding (público)
+     * Upload documento do onboarding (publico)
      */
     async uploadDocument(
         token: string,
@@ -242,22 +149,6 @@ export const onboardingService = {
         type: string,
         name?: string
     ): Promise<OnboardingDocument> {
-        if (MOCK_MODE) {
-            await simulateDelay(1000);
-            return {
-                id: `doc-${Date.now()}`,
-                onboardingId: 'onb-001',
-                type,
-                name: name || type,
-                fileName: file.name,
-                fileUrl: `/uploads/onboarding/mock/${file.name}`,
-                fileSize: file.size,
-                mimeType: file.type,
-                isValid: null,
-                createdAt: new Date().toISOString(),
-            };
-        }
-
         const formData = new FormData();
         formData.append('file', file);
         formData.append('type', type);
@@ -278,42 +169,30 @@ export const onboardingService = {
     },
 
     /**
-     * Listar documentos do onboarding (público)
+     * Listar documentos do onboarding (publico)
      */
     async getDocuments(token: string): Promise<OnboardingDocument[]> {
-        if (MOCK_MODE) {
-            await simulateDelay(300);
-            return [];
-        }
         const response = await api.get<OnboardingDocument[]>(`/onboarding/${token}/documents`);
         return response.data;
     },
 
     /**
-     * Remover documento do onboarding (público)
+     * Remover documento do onboarding (publico)
      */
     async deleteDocument(token: string, documentId: string): Promise<void> {
-        if (MOCK_MODE) {
-            await simulateDelay(300);
-            return;
-        }
         await api.delete(`/onboarding/${token}/documents/${documentId}`);
     },
 
     /**
-     * Step 2: Criar senha do usuário (público)
+     * Step 2: Criar senha do usuario (publico)
      */
     async createPassword(token: string, password: string): Promise<{ success: boolean; userId: string }> {
-        if (MOCK_MODE) {
-            await simulateDelay(500);
-            return { success: true, userId: 'mock-user-001' };
-        }
         const response = await api.post(`/onboarding/${token}/password`, { password });
         return response.data;
     },
 
     /**
-     * Step 3: Salvar dados da empresa (público)
+     * Step 3: Salvar dados da empresa (publico)
      */
     async saveCompanyData(
         token: string,
@@ -325,16 +204,12 @@ export const onboardingService = {
             tempoMercado: string;
         }
     ): Promise<{ success: boolean; onboardingId: string; currentStep: number }> {
-        if (MOCK_MODE) {
-            await simulateDelay(500);
-            return { success: true, onboardingId: 'onb-001', currentStep: 4 };
-        }
         const response = await api.post(`/onboarding/${token}/company-data`, data);
         return response.data;
     },
 
     /**
-     * Step 5: Salvar capacidades produtivas (público)
+     * Step 5: Salvar capacidades produtivas (publico)
      */
     async saveCapabilities(
         token: string,
@@ -347,30 +222,17 @@ export const onboardingService = {
             currentOccupancy?: number;
         }
     ): Promise<{ success: boolean; onboardingId: string; currentStep: number }> {
-        if (MOCK_MODE) {
-            await simulateDelay(500);
-            return { success: true, onboardingId: 'onb-001', currentStep: 6 };
-        }
         const response = await api.post(`/onboarding/${token}/capabilities`, data);
         return response.data;
     },
 
     /**
-     * Atualizar progresso de um step específico
+     * Atualizar progresso de um step especifico
      */
     async updateStepProgress(
         token: string,
         stepNumber: number
     ): Promise<{ success: boolean; currentStep: number; completedSteps: number[]; isComplete: boolean }> {
-        if (MOCK_MODE) {
-            await simulateDelay(300);
-            return {
-                success: true,
-                currentStep: stepNumber + 1,
-                completedSteps: Array.from({ length: stepNumber }, (_, i) => i + 1),
-                isComplete: stepNumber >= 6,
-            };
-        }
         const response = await api.post(`/onboarding/${token}/step/${stepNumber}`);
         return response.data;
     },

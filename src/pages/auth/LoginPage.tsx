@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LogIn, Mail, Lock, Loader2, Users, Building2, Shield } from 'lucide-react';
-import { MOCK_MODE, DEMO_CREDENTIALS } from '../../services/mockMode';
+import { DEMO_CREDENTIALS } from '../../services/mockMode';
 
 const LoginPage: React.FC = () => {
     const navigate = useNavigate();
@@ -61,11 +61,11 @@ const LoginPage: React.FC = () => {
                     <p className="text-brand-300">Conectando marcas e facções</p>
                 </div>
 
-                {/* Demo Mode Banner */}
-                {MOCK_MODE && (
+                {/* Demo Quick Access - only visible in development */}
+                {import.meta.env.DEV && (
                     <div className="bg-amber-500/20 border border-amber-500/50 rounded-xl p-4 mb-4 backdrop-blur-sm">
                         <p className="text-amber-200 text-sm font-medium text-center mb-3">
-                            🎭 Modo Demonstração Ativo
+                            Acesso Rápido (Dev)
                         </p>
                         <div className="grid grid-cols-3 gap-2">
                             <button
