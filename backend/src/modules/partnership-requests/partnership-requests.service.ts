@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
@@ -24,13 +25,23 @@ import {
   PARTNERSHIP_REQUEST_REJECTED,
   PARTNERSHIP_REQUEST_CANCELLED,
 } from '../notifications/events/notification.events';
+import type { StorageProvider } from '../upload/storage.provider';
+import { STORAGE_PROVIDER } from '../upload/storage.provider';
 
 @Injectable()
 export class PartnershipRequestsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
+    @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
+
+  private async resolveCompanyLogos<T extends { logoUrl?: string | null }>(company: T): Promise<T> {
+    if (company?.logoUrl) {
+      return { ...company, logoUrl: await this.storage.resolveUrl?.(company.logoUrl) ?? company.logoUrl };
+    }
+    return company;
+  }
 
   /**
    * Create a new partnership request from brand to supplier
@@ -184,8 +195,15 @@ export class PartnershipRequestsService {
       this.prisma.partnershipRequest.count({ where }),
     ]);
 
+    const resolvedRequests = await Promise.all(
+      requests.map(async (r) => ({
+        ...r,
+        supplier: await this.resolveCompanyLogos(r.supplier),
+      })),
+    );
+
     return {
-      data: requests,
+      data: resolvedRequests,
       meta: {
         total,
         page,
@@ -243,8 +261,15 @@ export class PartnershipRequestsService {
       this.prisma.partnershipRequest.count({ where }),
     ]);
 
+    const resolvedRequests = await Promise.all(
+      requests.map(async (r) => ({
+        ...r,
+        brand: await this.resolveCompanyLogos(r.brand),
+      })),
+    );
+
     return {
-      data: requests,
+      data: resolvedRequests,
       meta: {
         total,
         page,
@@ -307,7 +332,11 @@ export class PartnershipRequestsService {
       throw new ForbiddenException('Você não tem acesso a esta solicitação');
     }
 
-    return request;
+    return {
+      ...request,
+      brand: await this.resolveCompanyLogos(request.brand),
+      supplier: await this.resolveCompanyLogos(request.supplier),
+    };
   }
 
   /**

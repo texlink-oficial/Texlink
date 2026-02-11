@@ -108,7 +108,10 @@ export class SettingsService {
       throw new NotFoundException('Empresa não encontrada');
     }
 
-    return company;
+    return {
+      ...company,
+      logoUrl: await this.storage.resolveUrl?.(company.logoUrl) ?? company.logoUrl,
+    };
   }
 
   async updateCompanyData(userId: string, dto: UpdateCompanyDataDto) {
@@ -119,7 +122,7 @@ export class SettingsService {
       dto.zipCode = dto.zipCode.replace(/\D/g, '');
     }
 
-    return this.prisma.company.update({
+    const updated = await this.prisma.company.update({
       where: { id: companyId },
       data: dto,
       select: {
@@ -139,6 +142,11 @@ export class SettingsService {
         zipCode: true,
       },
     });
+
+    return {
+      ...updated,
+      logoUrl: await this.storage.resolveUrl?.(updated.logoUrl) ?? updated.logoUrl,
+    };
   }
 
   async uploadLogo(userId: string, file: UploadedFile) {
@@ -182,7 +190,8 @@ export class SettingsService {
       data: { logoUrl: url },
     });
 
-    return { logoUrl: url };
+    const resolvedUrl = await this.storage.resolveUrl?.(url) ?? url;
+    return { logoUrl: resolvedUrl };
   }
 
   // ==================== BANK ACCOUNT ====================

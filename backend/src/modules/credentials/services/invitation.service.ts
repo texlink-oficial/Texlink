@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -15,6 +16,8 @@ import {
 } from '../dto';
 import { SupplierCredentialStatus, InvitationType } from '@prisma/client';
 import { randomBytes } from 'crypto';
+import type { StorageProvider } from '../../upload/storage.provider';
+import { STORAGE_PROVIDER } from '../../upload/storage.provider';
 
 interface AuthUser {
   id: string;
@@ -56,6 +59,7 @@ export class InvitationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly integrationService: IntegrationService,
+    @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
 
   // ==================== SEND INVITATION ====================
@@ -453,10 +457,21 @@ export class InvitationService {
       }
     }
 
+    const resolvedLogoUrl = await this.storage.resolveUrl?.(invitation.credential.brand?.logoUrl) ?? invitation.credential.brand?.logoUrl;
+
     return {
       valid: true,
-      credential: invitation.credential,
-      brand: invitation.credential.brand,
+      credential: {
+        ...invitation.credential,
+        brand: {
+          ...invitation.credential.brand,
+          logoUrl: resolvedLogoUrl,
+        },
+      },
+      brand: {
+        ...invitation.credential.brand,
+        logoUrl: resolvedLogoUrl,
+      },
       invitationType: invitation.type,
       expiresAt: invitation.expiresAt,
     };

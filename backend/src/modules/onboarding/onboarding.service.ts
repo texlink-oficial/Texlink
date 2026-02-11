@@ -166,7 +166,7 @@ export class OnboardingService {
         name:
           invitation.credential.brand.tradeName ||
           invitation.credential.brand.legalName,
-        logo: invitation.credential.brand.logoUrl,
+        logo: await this.storage.resolveUrl?.(invitation.credential.brand.logoUrl) ?? invitation.credential.brand.logoUrl,
         location: `${invitation.credential.brand.city}, ${invitation.credential.brand.state}`,
       },
       supplier: {

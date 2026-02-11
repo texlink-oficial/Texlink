@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -15,6 +16,8 @@ import { CompanyType, CompanyStatus, OrderStatus, OrderTargetStatus } from '@pri
 import { Prisma } from '@prisma/client';
 import { InvitationNotificationService } from './services/invitation-notification.service';
 import { SUPPLIER_INTEREST_EXPRESSED } from '../notifications/events/notification.events';
+import type { StorageProvider } from '../upload/storage.provider';
+import { STORAGE_PROVIDER } from '../upload/storage.provider';
 
 @Injectable()
 export class SuppliersService {
@@ -24,6 +27,7 @@ export class SuppliersService {
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
     private invitationNotificationService: InvitationNotificationService,
+    @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) { }
 
   // Get supplier profile for current user
@@ -1155,7 +1159,7 @@ export class SuppliersService {
           : 'VALID',
       brand: {
         name: invitation.credential.brand.tradeName || invitation.credential.brand.legalName,
-        logoUrl: invitation.credential.brand.logoUrl,
+        logoUrl: await this.storage.resolveUrl?.(invitation.credential.brand.logoUrl) ?? invitation.credential.brand.logoUrl,
       },
       supplier: {
         legalName: invitation.credential.legalName,

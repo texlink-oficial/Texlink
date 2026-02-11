@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bull';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UploadModule } from '../upload/upload.module';
 import { QUEUE_NAMES } from '../../config/bull.config';
 
 // Main service and controller
@@ -33,6 +34,7 @@ import { CnpjValidationProcessor } from './processors/cnpj-validation.processor'
   imports: [
     PrismaModule,
     IntegrationsModule,
+    UploadModule,
     forwardRef(() => NotificationsModule),
     CacheModule.register({
       ttl: 30 * 24 * 60 * 60 * 1000, // 30 dias em ms

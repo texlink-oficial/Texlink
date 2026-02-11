@@ -30,6 +30,7 @@ export interface StorageProvider {
   delete(key: string): Promise<void>;
   getUrl(key: string): string;
   getPresignedUrl?(key: string, expiresIn?: number): Promise<string>;
+  resolveUrl?(url: string | null | undefined, expiresIn?: number): Promise<string | null>;
 }
 
 // Token for dependency injection
@@ -77,6 +78,11 @@ export class LocalStorageProvider implements StorageProvider {
   async getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {
     // Local storage doesn't need presigned URLs, return direct URL
     return this.getUrl(key);
+  }
+
+  async resolveUrl(url: string | null | undefined, expiresIn = 3600): Promise<string | null> {
+    if (!url) return null;
+    return url;
   }
 }
 
@@ -190,6 +196,34 @@ export class S3StorageProvider implements StorageProvider {
     });
 
     return presignedUrl;
+  }
+
+  async resolveUrl(url: string | null | undefined, expiresIn = 3600): Promise<string | null> {
+    if (!url) return null;
+
+    // Extract key from S3 URL or CloudFront URL
+    const key = this.extractKeyFromUrl(url);
+    if (!key) return url;
+
+    return this.getPresignedUrl(key, expiresIn);
+  }
+
+  private extractKeyFromUrl(url: string): string | null {
+    // S3: https://bucket.s3.region.amazonaws.com/key
+    const s3Match = url.match(/^https?:\/\/[^/]+\.s3\.[^/]+\.amazonaws\.com\/(.+)$/);
+    if (s3Match) return s3Match[1];
+
+    // CloudFront: https://domain/key
+    if (this.cloudFrontDomain && url.includes(this.cloudFrontDomain)) {
+      const cfMatch = url.match(/^https?:\/\/[^/]+\/(.+)$/);
+      if (cfMatch) return cfMatch[1];
+    }
+
+    // Local: http://localhost:3000/uploads/key
+    const localMatch = url.match(/\/uploads\/(.+)$/);
+    if (localMatch) return localMatch[1];
+
+    return null;
   }
 
   /**
