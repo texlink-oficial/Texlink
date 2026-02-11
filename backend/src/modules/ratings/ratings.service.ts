@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   NotFoundException,
   ForbiddenException,
   BadRequestException,
@@ -7,10 +8,15 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRatingDto } from './dto';
 import { OrderStatus } from '@prisma/client';
+import type { StorageProvider } from '../upload/storage.provider';
+import { STORAGE_PROVIDER } from '../upload/storage.provider';
 
 @Injectable()
 export class RatingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
+  ) {}
 
   // Create a rating for an order
   async create(orderId: string, userId: string, dto: CreateRatingDto) {
@@ -134,25 +140,31 @@ export class RatingsService {
         },
       },
       include: {
-        brand: { select: { id: true, tradeName: true } },
-        supplier: { select: { id: true, tradeName: true } },
+        brand: { select: { id: true, tradeName: true, logoUrl: true } },
+        supplier: { select: { id: true, tradeName: true, logoUrl: true } },
       },
       orderBy: { updatedAt: 'desc' },
     });
 
     // Transform to PendingRating shape expected by frontend
-    return orders.map((order) => {
-      const isBrand = companyIds.includes(order.brandId);
-      const partner = isBrand ? order.supplier : order.brand;
+    return Promise.all(
+      orders.map(async (order) => {
+        const isBrand = companyIds.includes(order.brandId);
+        const partner = isBrand ? order.supplier : order.brand;
+        const partnerImage = partner?.logoUrl
+          ? (await this.storage.resolveUrl?.(partner.logoUrl)) ?? partner.logoUrl
+          : undefined;
 
-      return {
-        orderId: order.id,
-        orderDisplayId: order.displayId,
-        partnerCompanyId: partner?.id || '',
-        partnerName: partner?.tradeName || '',
-        completedAt: order.updatedAt.toISOString(),
-      };
-    });
+        return {
+          orderId: order.id,
+          orderDisplayId: order.displayId,
+          partnerCompanyId: partner?.id || '',
+          partnerName: partner?.tradeName || '',
+          partnerImage,
+          completedAt: order.updatedAt.toISOString(),
+        };
+      }),
+    );
   }
 
   private async updateAverageRating(companyId: string) {

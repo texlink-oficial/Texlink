@@ -52,7 +52,7 @@ const MessagesPage: React.FC = () => {
                     orderId: order.id,
                     displayId: order.displayId,
                     supplierName: order.supplier?.tradeName || 'Facção',
-                    supplierImage: (order.supplier as any)?.logo,
+                    supplierImage: order.supplier?.logoUrl,
                     productName: order.productName,
                     lastMessage: undefined,
                     unreadCount: order._count?.messages || 0,
