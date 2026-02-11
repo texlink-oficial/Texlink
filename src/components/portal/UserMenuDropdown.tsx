@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { User, Users, Settings, ChevronDown, LogOut } from 'lucide-react';
 
 interface UserMenuDropdownProps {
-  user: { name: string; email: string } | null;
+  user: { name: string; email: string; companyUsers?: { company: { logoUrl?: string | null } }[] } | null;
   collapsed: boolean;
   onNavigate?: () => void;
   onLogout: () => void;
@@ -67,9 +67,17 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
           collapsed ? 'justify-center' : 'gap-3'
         } px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors`}
       >
-        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-          <User className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-hidden="true" />
-        </div>
+        {user?.companyUsers?.[0]?.company?.logoUrl ? (
+          <img
+            src={user.companyUsers[0].company.logoUrl}
+            alt=""
+            className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-gray-200 dark:border-gray-600"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+            <User className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-hidden="true" />
+          </div>
+        )}
         {!collapsed && (
           <>
             <div className="flex-1 text-left min-w-0">

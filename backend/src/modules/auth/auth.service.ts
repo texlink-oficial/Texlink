@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -8,6 +9,8 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
 import { RegisterDto, LoginDto, UpdateProfileDto } from './dto';
+import type { StorageProvider } from '../upload/storage.provider';
+import { STORAGE_PROVIDER } from '../upload/storage.provider';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_SECONDS = 900; // 15 minutes
@@ -18,6 +21,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private cache: CacheService,
+    @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -160,6 +164,7 @@ export class AuthService {
                 legalName: true,
                 type: true,
                 status: true,
+                logoUrl: true,
               },
             },
           },
@@ -240,6 +245,7 @@ export class AuthService {
                 type: true,
                 status: true,
                 avgRating: true,
+                logoUrl: true,
               },
             },
           },
@@ -261,8 +267,22 @@ export class AuthService {
     const companyName = companyUser?.company?.tradeName || companyUser?.company?.legalName;
     const companyType = companyUser?.company?.type;
 
+    // Resolve logoUrls to presigned URLs
+    const resolvedCompanyUsers = await Promise.all(
+      (user.companyUsers || []).map(async (cu) => ({
+        ...cu,
+        company: cu.company
+          ? {
+              ...cu.company,
+              logoUrl: await this.storage.resolveUrl?.(cu.company.logoUrl) ?? cu.company.logoUrl,
+            }
+          : cu.company,
+      })),
+    );
+
     return {
       ...user,
+      companyUsers: resolvedCompanyUsers,
       companyId,
       companyName,
       companyType,

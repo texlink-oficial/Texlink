@@ -38,6 +38,7 @@ export interface User {
             tradeName: string;
             type: string;
             status: string;
+            logoUrl?: string | null;
         };
     }[];
 }

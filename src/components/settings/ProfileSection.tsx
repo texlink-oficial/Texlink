@@ -113,9 +113,17 @@ const ProfileSection: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-6">
                 {/* Avatar */}
                 <div className="flex flex-col items-center gap-2">
-                    <div className="w-20 h-20 rounded-full bg-brand-600 dark:bg-brand-500 flex items-center justify-center text-white text-2xl font-bold">
-                        {initials}
-                    </div>
+                    {company?.logoUrl ? (
+                        <img
+                            src={company.logoUrl}
+                            alt={company.tradeName || ''}
+                            className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                        />
+                    ) : (
+                        <div className="w-20 h-20 rounded-full bg-brand-600 dark:bg-brand-500 flex items-center justify-center text-white text-2xl font-bold">
+                            {initials}
+                        </div>
+                    )}
                     <span className="text-xs text-gray-500 dark:text-gray-400">{user.role}</span>
                 </div>
 
