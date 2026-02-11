@@ -1,10 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { adminService } from '../../services';
+import React, { useEffect, useState, useRef } from 'react';
+import { adminService } from '../../services/admin.service';
 import {
     Building2, Search, Filter, Package,
-    CheckCircle, Clock, XCircle, Loader2, ChevronRight,
-    Mail, Phone, MapPin
+    CheckCircle, Clock, XCircle, Loader2,
+    Mail, Phone, MapPin, MoreVertical,
+    Eye, Edit3, Power, Trash2
 } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
+import CompanyDetailsModal from '../../components/admin/CompanyDetailsModal';
+import EditCompanyModal from '../../components/admin/EditCompanyModal';
+import ConfirmActionModal from '../../components/admin/ConfirmActionModal';
 
 interface Brand {
     id: string;
@@ -28,10 +33,31 @@ const BrandsPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [openActionId, setOpenActionId] = useState<string | null>(null);
+    const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
+    const [showDetails, setShowDetails] = useState(false);
+    const [showEdit, setShowEdit] = useState(false);
+    const [showStatusConfirm, setShowStatusConfirm] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    const toast = useToast();
 
     useEffect(() => {
         loadBrands();
     }, [filter]);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setOpenActionId(null);
+            }
+        };
+        if (openActionId) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [openActionId]);
 
     const loadBrands = async () => {
         try {
@@ -42,6 +68,33 @@ const BrandsPage: React.FC = () => {
             console.error('Error loading brands:', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleStatusChange = async (reason?: string) => {
+        if (!selectedBrand) return;
+        const newStatus = selectedBrand.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+        try {
+            await adminService.updateCompanyStatus(selectedBrand.id, newStatus, reason);
+            toast.success('Status atualizado', `Marca ${newStatus === 'ACTIVE' ? 'ativada' : 'suspensa'} com sucesso`);
+            setShowStatusConfirm(false);
+            setSelectedBrand(null);
+            loadBrands();
+        } catch (error) {
+            toast.error('Erro', 'Não foi possível atualizar o status');
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!selectedBrand) return;
+        try {
+            await adminService.deleteCompany(selectedBrand.id);
+            toast.success('Marca excluída', 'Marca excluída com sucesso');
+            setShowDeleteConfirm(false);
+            setSelectedBrand(null);
+            loadBrands();
+        } catch (error) {
+            toast.error('Erro', 'Não foi possível excluir a marca');
         }
     };
 
@@ -195,7 +248,7 @@ const BrandsPage: React.FC = () => {
                                                 <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-gray-100 dark:bg-white/[0.05] border border-gray-200 dark:border-white/[0.08] rounded-lg">
                                                     <Package className="w-3.5 h-3.5 text-sky-500" />
                                                     <span className="font-bold text-gray-900 dark:text-white text-xs">
-                                                        {brand._count?.ordersAsBrand || brand.ordersCount || 0}
+                                                        {brand._count?.ordersAsBrand || 0}
                                                     </span>
                                                 </div>
                                             </td>
@@ -203,12 +256,66 @@ const BrandsPage: React.FC = () => {
                                                 <StatusBadge status={brand.status} />
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button
-                                                    className="p-2 text-gray-400 hover:text-sky-500 hover:bg-sky-500/10 rounded-xl transition-all"
-                                                    title="Ver detalhes"
-                                                >
-                                                    <ChevronRight className="w-5 h-5" />
-                                                </button>
+                                                <div className="relative inline-block" ref={openActionId === brand.id ? menuRef : undefined}>
+                                                    <button
+                                                        onClick={() => setOpenActionId(openActionId === brand.id ? null : brand.id)}
+                                                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition-colors"
+                                                    >
+                                                        <MoreVertical className="w-4 h-4" />
+                                                    </button>
+                                                    {openActionId === brand.id && (
+                                                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl shadow-xl z-20 overflow-hidden">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedBrand(brand);
+                                                                    setShowDetails(true);
+                                                                    setOpenActionId(null);
+                                                                }}
+                                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
+                                                            >
+                                                                <Eye className="w-4 h-4" />
+                                                                Ver Detalhes
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedBrand(brand);
+                                                                    setShowEdit(true);
+                                                                    setOpenActionId(null);
+                                                                }}
+                                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
+                                                            >
+                                                                <Edit3 className="w-4 h-4" />
+                                                                Editar
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedBrand(brand);
+                                                                    setShowStatusConfirm(true);
+                                                                    setOpenActionId(null);
+                                                                }}
+                                                                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                                                                    brand.status === 'ACTIVE'
+                                                                        ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                                                                        : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
+                                                                }`}
+                                                            >
+                                                                <Power className="w-4 h-4" />
+                                                                {brand.status === 'ACTIVE' ? 'Suspender' : 'Ativar'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedBrand(brand);
+                                                                    setShowDeleteConfirm(true);
+                                                                    setOpenActionId(null);
+                                                                }}
+                                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                                Excluir
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -218,6 +325,43 @@ const BrandsPage: React.FC = () => {
                     </div>
                 )}
             </main>
+
+            {/* Modals */}
+            {showDetails && selectedBrand && (
+                <CompanyDetailsModal
+                    company={{ ...selectedBrand, type: 'BRAND' }}
+                    onClose={() => { setShowDetails(false); setSelectedBrand(null); }}
+                />
+            )}
+            {showEdit && selectedBrand && (
+                <EditCompanyModal
+                    company={selectedBrand}
+                    onClose={() => { setShowEdit(false); setSelectedBrand(null); }}
+                    onSuccess={() => { setShowEdit(false); setSelectedBrand(null); loadBrands(); }}
+                />
+            )}
+            {showStatusConfirm && selectedBrand && (
+                <ConfirmActionModal
+                    title={selectedBrand.status === 'ACTIVE' ? 'Suspender Marca' : 'Ativar Marca'}
+                    message={`Tem certeza que deseja ${selectedBrand.status === 'ACTIVE' ? 'suspender' : 'ativar'} a marca "${selectedBrand.tradeName || selectedBrand.legalName}"?`}
+                    confirmLabel={selectedBrand.status === 'ACTIVE' ? 'Suspender' : 'Ativar'}
+                    confirmColor={selectedBrand.status === 'ACTIVE' ? 'amber' : undefined}
+                    showReasonField={selectedBrand.status === 'ACTIVE'}
+                    reasonLabel="Motivo da suspensão"
+                    onConfirm={handleStatusChange}
+                    onClose={() => { setShowStatusConfirm(false); setSelectedBrand(null); }}
+                />
+            )}
+            {showDeleteConfirm && selectedBrand && (
+                <ConfirmActionModal
+                    title="Excluir Marca"
+                    message={`Tem certeza que deseja excluir a marca "${selectedBrand.tradeName || selectedBrand.legalName}"? Esta ação não pode ser desfeita.`}
+                    confirmLabel="Excluir"
+                    confirmColor="red"
+                    onConfirm={handleDelete}
+                    onClose={() => { setShowDeleteConfirm(false); setSelectedBrand(null); }}
+                />
+            )}
         </div>
     );
 };

@@ -123,6 +123,24 @@ export class AdminController {
     return this.adminService.updateCompany(id, dto, user.id);
   }
 
+  @Patch('companies/:id/status')
+  async updateCompanyStatus(
+    @Param('id') id: string,
+    @Body('status') status: CompanyStatus,
+    @Body('reason') reason: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.adminService.updateCompanyStatus(id, status, user.id, reason);
+  }
+
+  @Delete('companies/:id')
+  async deleteCompany(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.adminService.deleteCompany(id, user.id);
+  }
+
   @Post('companies/:id/users')
   async addUserToCompany(
     @Param('id') id: string,

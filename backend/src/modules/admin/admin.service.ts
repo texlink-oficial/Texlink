@@ -662,6 +662,90 @@ export class AdminService {
     return updated;
   }
 
+  async updateCompanyStatus(
+    companyId: string,
+    status: CompanyStatus,
+    adminId: string,
+    reason?: string,
+  ) {
+    const company = await this.prisma.company.findUniqueOrThrow({
+      where: { id: companyId },
+      select: {
+        status: true,
+        tradeName: true,
+        legalName: true,
+        type: true,
+      },
+    });
+
+    const previousStatus = company.status;
+
+    const updated = await this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        status,
+        statusReason: reason || null,
+        statusChangedAt: new Date(),
+        statusChangedById: adminId,
+      },
+    });
+
+    const actionLabel = status === CompanyStatus.ACTIVE ? 'ACTIVATED' : 'SUSPENDED';
+    await this.prisma.adminAction.create({
+      data: {
+        companyId,
+        adminId,
+        action: actionLabel,
+        reason: reason || null,
+        previousStatus,
+        newStatus: status,
+      },
+    });
+
+    this.logger.log(
+      `Company ${companyId} status changed from ${previousStatus} to ${status} by admin ${adminId}`,
+    );
+
+    return updated;
+  }
+
+  async deleteCompany(companyId: string, adminId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
+    if (!company) {
+      throw new NotFoundException('Empresa não encontrada');
+    }
+
+    const previousStatus = company.status;
+
+    // Soft delete - set status to SUSPENDED and mark reason
+    const updated = await this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        status: CompanyStatus.SUSPENDED,
+        statusReason: 'Excluída pelo administrador',
+        statusChangedAt: new Date(),
+        statusChangedById: adminId,
+      },
+    });
+
+    await this.prisma.adminAction.create({
+      data: {
+        companyId,
+        adminId,
+        action: 'DELETED',
+        reason: 'Excluída pelo administrador',
+        previousStatus,
+        newStatus: CompanyStatus.SUSPENDED,
+      },
+    });
+
+    this.logger.log(`Company ${companyId} soft-deleted by admin ${adminId}`);
+
+    return { success: true, message: 'Empresa excluída com sucesso' };
+  }
+
   async addUserToCompany(companyId: string, dto: AddUserToCompanyDto, adminId: string) {
     const company = await this.prisma.company.findUnique({ where: { id: companyId } });
     if (!company) {

@@ -273,4 +273,14 @@ export const adminService = {
         const response = await api.delete(`/admin/companies/${companyId}/users/${userId}`);
         return response.data;
     },
+
+    async updateCompanyStatus(id: string, status: 'ACTIVE' | 'SUSPENDED', reason?: string) {
+        const response = await api.patch(`/admin/companies/${id}/status`, { status, reason });
+        return response.data;
+    },
+
+    async deleteCompany(id: string) {
+        const response = await api.delete(`/admin/companies/${id}`);
+        return response.data;
+    },
 };

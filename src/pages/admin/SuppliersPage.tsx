@@ -1,19 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     Factory, Star, Package, Filter,
     CheckCircle, Clock, XCircle, Loader2,
-    Search, MapPin, ChevronRight, RefreshCw
+    Search, MapPin, ChevronRight, RefreshCw,
+    MoreVertical, Eye, Edit3, Power, Trash2
 } from 'lucide-react';
-import { adminService } from '../../services';
+import { adminService } from '../../services/admin.service';
+import { useToast } from '../../contexts/ToastContext';
+import CompanyDetailsModal from '../../components/admin/CompanyDetailsModal';
+import EditCompanyModal from '../../components/admin/EditCompanyModal';
+import ConfirmActionModal from '../../components/admin/ConfirmActionModal';
 
 interface Supplier {
     id: string;
     tradeName: string;
     legalName: string;
+    document: string;
+    email?: string;
+    phone?: string;
     city: string;
     state: string;
     avgRating: number | string;
     status: 'PENDING' | 'ACTIVE' | 'SUSPENDED';
+    createdAt: string;
     supplierProfile?: {
         productTypes: string[];
         monthlyCapacity: number;
@@ -27,10 +36,31 @@ const SuppliersPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
+    const [openActionId, setOpenActionId] = useState<string | null>(null);
+    const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+    const [showDetails, setShowDetails] = useState(false);
+    const [showEdit, setShowEdit] = useState(false);
+    const [showStatusConfirm, setShowStatusConfirm] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    const toast = useToast();
 
     useEffect(() => {
         loadSuppliers();
     }, [selectedStatus]);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setOpenActionId(null);
+            }
+        };
+        if (openActionId) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [openActionId]);
 
     const loadSuppliers = async () => {
         try {
@@ -44,12 +74,30 @@ const SuppliersPage: React.FC = () => {
         }
     };
 
-    const handleStatusChange = async (id: string, status: 'ACTIVE' | 'SUSPENDED') => {
+    const handleStatusChange = async (reason?: string) => {
+        if (!selectedSupplier) return;
+        const newStatus = selectedSupplier.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
         try {
-            await adminService.updateSupplierStatus(id, status);
+            await adminService.updateCompanyStatus(selectedSupplier.id, newStatus, reason);
+            toast.success('Status atualizado', `Facção ${newStatus === 'ACTIVE' ? 'ativada' : 'suspensa'} com sucesso`);
+            setShowStatusConfirm(false);
+            setSelectedSupplier(null);
             loadSuppliers();
         } catch (error) {
-            console.error('Error updating status:', error);
+            toast.error('Erro', 'Não foi possível atualizar o status');
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!selectedSupplier) return;
+        try {
+            await adminService.deleteCompany(selectedSupplier.id);
+            toast.success('Facção excluída', 'Facção excluída com sucesso');
+            setShowDeleteConfirm(false);
+            setSelectedSupplier(null);
+            loadSuppliers();
+        } catch (error) {
+            toast.error('Erro', 'Não foi possível excluir a facção');
         }
     };
 
@@ -141,21 +189,85 @@ const SuppliersPage: React.FC = () => {
                             <SupplierCard
                                 key={supplier.id}
                                 supplier={supplier}
-                                onStatusChange={handleStatusChange}
+                                isMenuOpen={openActionId === supplier.id}
+                                menuRef={openActionId === supplier.id ? menuRef : undefined}
+                                onToggleMenu={() => setOpenActionId(openActionId === supplier.id ? null : supplier.id)}
+                                onViewDetails={() => {
+                                    setSelectedSupplier(supplier);
+                                    setShowDetails(true);
+                                    setOpenActionId(null);
+                                }}
+                                onEdit={() => {
+                                    setSelectedSupplier(supplier);
+                                    setShowEdit(true);
+                                    setOpenActionId(null);
+                                }}
+                                onToggleStatus={() => {
+                                    setSelectedSupplier(supplier);
+                                    setShowStatusConfirm(true);
+                                    setOpenActionId(null);
+                                }}
+                                onDelete={() => {
+                                    setSelectedSupplier(supplier);
+                                    setShowDeleteConfirm(true);
+                                    setOpenActionId(null);
+                                }}
                             />
                         ))}
                     </div>
                 )}
             </main>
+
+            {/* Modals */}
+            {showDetails && selectedSupplier && (
+                <CompanyDetailsModal
+                    company={{ ...selectedSupplier, type: 'SUPPLIER' }}
+                    onClose={() => { setShowDetails(false); setSelectedSupplier(null); }}
+                />
+            )}
+            {showEdit && selectedSupplier && (
+                <EditCompanyModal
+                    company={selectedSupplier}
+                    onClose={() => { setShowEdit(false); setSelectedSupplier(null); }}
+                    onSuccess={() => { setShowEdit(false); setSelectedSupplier(null); loadSuppliers(); }}
+                />
+            )}
+            {showStatusConfirm && selectedSupplier && (
+                <ConfirmActionModal
+                    title={selectedSupplier.status === 'ACTIVE' ? 'Suspender Facção' : 'Ativar Facção'}
+                    message={`Tem certeza que deseja ${selectedSupplier.status === 'ACTIVE' ? 'suspender' : 'ativar'} a facção "${selectedSupplier.tradeName || selectedSupplier.legalName}"?`}
+                    confirmLabel={selectedSupplier.status === 'ACTIVE' ? 'Suspender' : 'Ativar'}
+                    confirmColor={selectedSupplier.status === 'ACTIVE' ? 'amber' : undefined}
+                    showReasonField={selectedSupplier.status === 'ACTIVE'}
+                    reasonLabel="Motivo da suspensão"
+                    onConfirm={handleStatusChange}
+                    onClose={() => { setShowStatusConfirm(false); setSelectedSupplier(null); }}
+                />
+            )}
+            {showDeleteConfirm && selectedSupplier && (
+                <ConfirmActionModal
+                    title="Excluir Facção"
+                    message={`Tem certeza que deseja excluir a facção "${selectedSupplier.tradeName || selectedSupplier.legalName}"? Esta ação não pode ser desfeita.`}
+                    confirmLabel="Excluir"
+                    confirmColor="red"
+                    onConfirm={handleDelete}
+                    onClose={() => { setShowDeleteConfirm(false); setSelectedSupplier(null); }}
+                />
+            )}
         </div>
     );
 };
 
 const SupplierCard: React.FC<{
     supplier: Supplier;
-    onStatusChange: (id: string, status: 'ACTIVE' | 'SUSPENDED') => void
-}> = ({ supplier, onStatusChange }) => {
-    // Fix: Force to number before toFixed to prevent TypeError if it comes as string
+    isMenuOpen: boolean;
+    menuRef?: React.RefObject<HTMLDivElement>;
+    onToggleMenu: () => void;
+    onViewDetails: () => void;
+    onEdit: () => void;
+    onToggleStatus: () => void;
+    onDelete: () => void;
+}> = ({ supplier, isMenuOpen, menuRef, onToggleMenu, onViewDetails, onEdit, onToggleStatus, onDelete }) => {
     const ratingValue = typeof supplier.avgRating === 'string'
         ? parseFloat(supplier.avgRating)
         : supplier.avgRating;
@@ -183,7 +295,53 @@ const SupplierCard: React.FC<{
                             </div>
                         </div>
                     </div>
-                    <StatusBadge status={supplier.status} />
+                    <div className="flex items-center gap-2">
+                        <StatusBadge status={supplier.status} />
+                        <div className="relative" ref={menuRef}>
+                            <button
+                                onClick={onToggleMenu}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition-colors"
+                            >
+                                <MoreVertical className="w-4 h-4" />
+                            </button>
+                            {isMenuOpen && (
+                                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl shadow-xl z-20 overflow-hidden">
+                                    <button
+                                        onClick={onViewDetails}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
+                                    >
+                                        <Eye className="w-4 h-4" />
+                                        Ver Detalhes
+                                    </button>
+                                    <button
+                                        onClick={onEdit}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
+                                    >
+                                        <Edit3 className="w-4 h-4" />
+                                        Editar
+                                    </button>
+                                    <button
+                                        onClick={onToggleStatus}
+                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                                            supplier.status === 'ACTIVE'
+                                                ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                                                : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
+                                        }`}
+                                    >
+                                        <Power className="w-4 h-4" />
+                                        {supplier.status === 'ACTIVE' ? 'Suspender' : 'Ativar'}
+                                    </button>
+                                    <button
+                                        onClick={onDelete}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        Excluir
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -224,24 +382,6 @@ const SupplierCard: React.FC<{
                         </div>
                     </div>
                 )}
-
-                <div className="pt-2 border-t border-gray-100 dark:border-white/[0.06]">
-                    {supplier.status === 'ACTIVE' ? (
-                        <button
-                            onClick={() => onStatusChange(supplier.id, 'SUSPENDED')}
-                            className="w-full py-2.5 bg-rose-500/10 hover:bg-rose-500 text-rose-600 dark:text-rose-400 hover:text-white text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all border border-rose-500/20 active:scale-[0.98]"
-                        >
-                            Suspender Facção
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => onStatusChange(supplier.id, 'ACTIVE')}
-                            className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 dark:text-emerald-400 hover:text-white text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all border border-emerald-500/20 active:scale-[0.98]"
-                        >
-                            Ativar Facção
-                        </button>
-                    )}
-                </div>
             </div>
         </div>
     );
