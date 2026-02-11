@@ -50,12 +50,17 @@ export class NotificationsService {
   /**
    * Get notifications for a user
    */
-  async getNotifications(userId: string, query: GetNotificationsQueryDto) {
+  async getNotifications(userId: string, query: GetNotificationsQueryDto, companyId?: string | null) {
     const limit = Math.min(query.limit || 20, 50);
 
     const where: any = {
       recipientId: userId,
     };
+
+    // Filter by company context to enforce tenant isolation
+    if (companyId) {
+      where.companyId = companyId;
+    }
 
     if (query.unreadOnly) {
       where.read = false;
@@ -69,6 +74,11 @@ export class NotificationsService {
       where.createdAt = { lt: new Date(query.cursor) };
     }
 
+    const unreadWhere: any = { recipientId: userId, read: false };
+    if (companyId) {
+      unreadWhere.companyId = companyId;
+    }
+
     const [notifications, unreadCount] = await Promise.all([
       this.prisma.notification.findMany({
         where,
@@ -76,7 +86,7 @@ export class NotificationsService {
         take: limit + 1,
       }),
       this.prisma.notification.count({
-        where: { recipientId: userId, read: false },
+        where: unreadWhere,
       }),
     ]);
 
@@ -123,12 +133,17 @@ export class NotificationsService {
       notificationIds?: string[];
       markAll?: boolean;
     },
+    companyId?: string | null,
   ) {
     const now = new Date();
 
     if (options.markAll) {
+      const where: any = { recipientId: userId, read: false };
+      if (companyId) {
+        where.companyId = companyId;
+      }
       const result = await this.prisma.notification.updateMany({
-        where: { recipientId: userId, read: false },
+        where,
         data: { read: true, readAt: now },
       });
       return { updatedCount: result.count };
@@ -164,10 +179,12 @@ export class NotificationsService {
   /**
    * Get unread count
    */
-  async getUnreadCount(userId: string): Promise<number> {
-    return this.prisma.notification.count({
-      where: { recipientId: userId, read: false },
-    });
+  async getUnreadCount(userId: string, companyId?: string | null): Promise<number> {
+    const where: any = { recipientId: userId, read: false };
+    if (companyId) {
+      where.companyId = companyId;
+    }
+    return this.prisma.notification.count({ where });
   }
 
   /**

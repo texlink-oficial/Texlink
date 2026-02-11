@@ -188,7 +188,7 @@ export class NotificationsGateway
       );
 
       // Get unread count and send initial state
-      const unreadCount = await this.getUnreadCount(userId);
+      const unreadCount = await this.getUnreadCount(userId, companyId);
 
       // Emit connection success
       client.emit('connected', {
@@ -248,12 +248,16 @@ export class NotificationsGateway
       let updatedCount = 0;
 
       if (data.markAll) {
-        // Mark all as read
+        // Mark all as read (scoped to company)
+        const markAllWhere: any = {
+          recipientId: client.userId,
+          read: false,
+        };
+        if (client.companyId) {
+          markAllWhere.companyId = client.companyId;
+        }
         const result = await this.prisma.notification.updateMany({
-          where: {
-            recipientId: client.userId,
-            read: false,
-          },
+          where: markAllWhere,
           data: {
             read: true,
             readAt: now,
@@ -290,8 +294,8 @@ export class NotificationsGateway
         updatedCount = result.count;
       }
 
-      // Get new unread count
-      const unreadCount = await this.getUnreadCount(client.userId);
+      // Get new unread count (scoped to company)
+      const unreadCount = await this.getUnreadCount(client.userId, client.companyId);
 
       // Emit updated count to all user's sockets
       this.emitToUser(client.userId, 'unread-count', { count: unreadCount });
@@ -319,7 +323,7 @@ export class NotificationsGateway
         return { success: false, error: 'Not authenticated', count: 0 };
       }
 
-      const count = await this.getUnreadCount(client.userId);
+      const count = await this.getUnreadCount(client.userId, client.companyId);
       return { success: true, count };
     } catch (error) {
       return { success: false, error: error.message, count: 0 };
@@ -349,6 +353,11 @@ export class NotificationsGateway
       const where: any = {
         recipientId: client.userId,
       };
+
+      // Filter by company context to enforce tenant isolation
+      if (client.companyId) {
+        where.companyId = client.companyId;
+      }
 
       if (data.unreadOnly) {
         where.read = false;
@@ -387,13 +396,15 @@ export class NotificationsGateway
   /**
    * Get unread notification count for a user
    */
-  private async getUnreadCount(userId: string): Promise<number> {
-    return this.prisma.notification.count({
-      where: {
-        recipientId: userId,
-        read: false,
-      },
-    });
+  private async getUnreadCount(userId: string, companyId?: string): Promise<number> {
+    const where: any = {
+      recipientId: userId,
+      read: false,
+    };
+    if (companyId) {
+      where.companyId = companyId;
+    }
+    return this.prisma.notification.count({ where });
   }
 
   /**
@@ -452,8 +463,11 @@ export class NotificationsGateway
     // Emit to user
     this.emitToUser(notification.recipientId, 'notification:new', notification);
 
-    // Update unread count
-    const unreadCount = await this.getUnreadCount(notification.recipientId);
+    // Update unread count (scoped to notification's company)
+    const unreadCount = await this.getUnreadCount(
+      notification.recipientId,
+      notification.companyId || undefined,
+    );
     this.emitToUser(notification.recipientId, 'unread-count', {
       count: unreadCount,
     });

@@ -29,7 +29,7 @@ export class NotificationsController {
     @Request() req: any,
     @Query() query: GetNotificationsQueryDto,
   ) {
-    return this.notificationsService.getNotifications(req.user.sub, query);
+    return this.notificationsService.getNotifications(req.user.sub, query, req.user.companyId);
   }
 
   /**
@@ -37,7 +37,7 @@ export class NotificationsController {
    */
   @Get('unread-count')
   async getUnreadCount(@Request() req: any) {
-    const count = await this.notificationsService.getUnreadCount(req.user.sub);
+    const count = await this.notificationsService.getUnreadCount(req.user.sub, req.user.companyId);
     return { count };
   }
 
@@ -85,7 +85,7 @@ export class NotificationsController {
   async markAllAsRead(@Request() req: any) {
     const result = await this.notificationsService.markAsRead(req.user.sub, {
       markAll: true,
-    });
+    }, req.user.companyId);
     return { ...result, unreadCount: 0 };
   }
 }
