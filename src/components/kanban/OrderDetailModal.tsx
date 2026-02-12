@@ -360,10 +360,19 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                     </div>
                                     <button
                                         onClick={() => setIsChatOpen(true)}
-                                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-brand-50 dark:bg-brand-900/30 hover:bg-brand-100 dark:hover:bg-brand-900/50 border border-brand-200 dark:border-brand-800/50 rounded-lg text-sm font-semibold text-brand-700 dark:text-brand-300 transition-colors"
+                                        className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                                            order.status === OrderStatus.NEW || order.status === OrderStatus.NEGOTIATING
+                                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md shadow-amber-500/20'
+                                                : 'bg-brand-50 dark:bg-brand-900/30 hover:bg-brand-100 dark:hover:bg-brand-900/50 border border-brand-200 dark:border-brand-800/50 text-brand-700 dark:text-brand-300'
+                                        }`}
                                     >
                                         <MessageCircle className="h-4 w-4" />
-                                        {userRole === 'SUPPLIER' ? 'Chat com a Marca' : 'Chat com a Facção'}
+                                        <span className="flex flex-col items-start leading-tight">
+                                            <span>{userRole === 'SUPPLIER' ? 'Chat com a Marca' : 'Chat com a Facção'}</span>
+                                            {(order.status === OrderStatus.NEW || order.status === OrderStatus.NEGOTIATING) && (
+                                                <span className="text-[10px] font-normal opacity-90">Envie propostas de preço e prazo</span>
+                                            )}
+                                        </span>
                                     </button>
                                 </div>
 

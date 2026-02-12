@@ -248,9 +248,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ order, onClose, on
               <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
             </div>
           ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
-              <p className="text-sm">Nenhuma mensagem ainda</p>
-              <p className="text-xs mt-1">Inicie a conversa!</p>
+            <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 px-6">
+              <Coins className="h-10 w-10 text-amber-400 mb-3" />
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nenhuma mensagem ainda</p>
+              <p className="text-xs mt-1 text-center leading-relaxed">
+                Use o botão <span className="font-semibold text-amber-600 dark:text-amber-400">"Enviar Proposta"</span> abaixo para negociar preço, quantidade e prazo.
+              </p>
             </div>
           ) : (
             <>
@@ -536,8 +539,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ order, onClose, on
           </div>
         )}
 
+        {/* Proposal CTA */}
+        {!showProposalForm && (
+          <div className="px-3 pt-2 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 z-10">
+            <button
+              onClick={() => setShowProposalForm(true)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold text-sm rounded-xl shadow-md shadow-amber-500/20 transition-all active:scale-[0.98]"
+            >
+              <Coins className="h-4 w-4" />
+              Enviar Proposta de Negociação
+            </button>
+          </div>
+        )}
+
         {/* Input Area */}
-        <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 z-10">
+        <div className={`p-3 bg-white dark:bg-gray-800 ${showProposalForm ? 'border-t border-gray-100 dark:border-gray-700' : ''} z-10`}>
           {rateLimitInfo.blocked && (
             <div className="mb-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-700 dark:text-red-400 flex items-center gap-2">
               <span className="font-semibold">Limite atingido</span>
@@ -545,16 +561,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ order, onClose, on
             </div>
           )}
           <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 p-1.5 rounded-full border border-gray-200 dark:border-gray-700 focus-within:border-brand-300 dark:focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-100 dark:focus-within:ring-brand-900/30 transition-all">
-            <button
-              onClick={() => setShowProposalForm(!showProposalForm)}
-              className={`p-2 rounded-full transition-colors ${showProposalForm
-                  ? 'bg-brand-100 text-brand-600 dark:bg-brand-900 dark:text-brand-300'
-                  : 'text-gray-400 dark:text-gray-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-              title="Criar Proposta de Negociação"
-            >
-              <Coins className="h-5 w-5" />
-            </button>
             <input
               type="text"
               value={inputValue}
