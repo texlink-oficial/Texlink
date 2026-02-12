@@ -34,9 +34,9 @@ const tabs: { id: TabStatus; label: string; icon: React.ElementType }[] = [
 
 const typeOptions: { value: ContractType | ''; label: string }[] = [
   { value: '', label: 'Todos os tipos' },
-  { value: 'SERVICE_AGREEMENT', label: 'Prestacao de Servicos' },
+  { value: 'SERVICE_AGREEMENT', label: 'Prestação de Serviços' },
   { value: 'NDA', label: 'Confidencialidade' },
-  { value: 'CODE_OF_CONDUCT', label: 'Codigo de Conduta' },
+  { value: 'CODE_OF_CONDUCT', label: 'Código de Conduta' },
   { value: 'AMENDMENT', label: 'Aditivo' },
 ];
 
@@ -91,7 +91,7 @@ export const ContractsListPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contratos</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Gerencie contratos com suas faccoes parceiras
+            Gerencie contratos com suas facções parceiras
           </p>
         </div>
         <Button variant="primary" onClick={() => navigate('/brand/contratos/novo')} className="gap-2">
@@ -107,7 +107,7 @@ export const ContractsListPage: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               type="text"
-              placeholder="Buscar por titulo, ID ou faccao..."
+              placeholder="Buscar por título, ID ou facção..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10"
@@ -205,8 +205,8 @@ export const ContractsListPage: React.FC = () => {
           </h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">
             {activeTab === 'all'
-              ? 'Voce ainda nao possui contratos cadastrados'
-              : 'Nao ha contratos nesta categoria'}
+              ? 'Você ainda não possui contratos cadastrados'
+              : 'Não há contratos nesta categoria'}
           </p>
           <Button variant="primary" onClick={() => navigate('/brand/contratos/novo')}>
             Criar Primeiro Contrato

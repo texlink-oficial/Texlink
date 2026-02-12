@@ -56,12 +56,12 @@ const RegisterPage: React.FC = () => {
         setError('');
 
         if (!isValidCNPJ(cnpj)) {
-            setError('CNPJ invalido. Informe os 14 digitos.');
+            setError('CNPJ inválido. Informe os 14 dígitos.');
             return;
         }
 
         if (!isValidPhone(phone)) {
-            setError('Celular invalido. Informe o numero com DDD.');
+            setError('Celular inválido. Informe o número com DDD.');
             return;
         }
 
@@ -147,7 +147,7 @@ const RegisterPage: React.FC = () => {
                                         }`}
                                 >
                                     <Factory className="w-6 h-6 mx-auto mb-2" />
-                                    <span className="text-sm font-medium">Faccao</span>
+                                    <span className="text-sm font-medium">Facção</span>
                                 </button>
                                 <button
                                     type="button"
@@ -198,7 +198,7 @@ const RegisterPage: React.FC = () => {
                                 />
                             </div>
                             <p className="text-xs text-brand-400 mt-1">
-                                A unicidade do CNPJ sera validada no servidor.
+                                A unicidade do CNPJ será validada no servidor.
                             </p>
                         </div>
 

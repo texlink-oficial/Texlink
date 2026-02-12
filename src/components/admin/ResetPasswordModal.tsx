@@ -40,7 +40,7 @@ export default function ResetPasswordModal({ user, onClose, onSuccess }: ResetPa
 
   function validate(): string | null {
     if (newPassword.length < 6) return 'A senha deve ter pelo menos 6 caracteres.';
-    if (newPassword !== confirmPassword) return 'As senhas nao conferem.';
+    if (newPassword !== confirmPassword) return 'As senhas não conferem.';
     return null;
   }
 
@@ -93,7 +93,7 @@ export default function ResetPasswordModal({ user, onClose, onSuccess }: ResetPa
           <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-lg p-3 flex gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-amber-700 dark:text-amber-400">
-              Ao redefinir a senha, o usuario <strong>{user.name}</strong> precisara usar a nova senha para acessar o sistema.
+              Ao redefinir a senha, o usuário <strong>{user.name}</strong> precisará usar a nova senha para acessar o sistema.
             </p>
           </div>
 

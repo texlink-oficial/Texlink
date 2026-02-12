@@ -11,12 +11,12 @@ interface LGPDConsentModalProps {
 }
 
 const DOCUMENT_TYPES = [
-  'CNPJ e situacao cadastral',
-  'Certidoes negativas de debitos',
+  'CNPJ e situação cadastral',
+  'Certidões negativas de débitos',
   'Guias de recolhimento (INSS, FGTS, DAS)',
-  'Licencas de funcionamento',
-  'Laudos tecnicos (NRs)',
-  'Certificacoes ABVTEX',
+  'Licenças de funcionamento',
+  'Laudos técnicos (NRs)',
+  'Certificações ABVTEX',
 ];
 
 export const LGPDConsentModal: React.FC<LGPDConsentModalProps> = ({
@@ -76,7 +76,7 @@ export const LGPDConsentModal: React.FC<LGPDConsentModalProps> = ({
             {/* Intro */}
             <div className="text-sm text-gray-600 dark:text-gray-300">
               <p>
-                Ao aceitar esta parceria, a marca <strong className="text-gray-900 dark:text-white">{brandName}</strong> podera
+                Ao aceitar esta parceria, a marca <strong className="text-gray-900 dark:text-white">{brandName}</strong> poderá
                 visualizar seus documentos de compliance para verificar sua regularidade.
               </p>
             </div>
@@ -86,7 +86,7 @@ export const LGPDConsentModal: React.FC<LGPDConsentModalProps> = ({
               <div className="flex items-center gap-2 mb-3">
                 <FileText className="w-4 h-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Documentos que poderao ser visualizados:
+                  Documentos que poderão ser visualizados:
                 </span>
               </div>
               <ul className="space-y-2">
@@ -110,15 +110,15 @@ export const LGPDConsentModal: React.FC<LGPDConsentModalProps> = ({
               <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-300">
                 <li className="flex items-start gap-2">
                   <span className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-                  Voce pode revogar este consentimento a qualquer momento
+                  Você pode revogar este consentimento a qualquer momento
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-                  Ao revogar, o relacionamento com a marca sera encerrado
+                  Ao revogar, o relacionamento com a marca será encerrado
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-                  Os documentos serao usados apenas para verificacao de compliance
+                  Os documentos serão usados apenas para verificação de compliance
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
@@ -128,7 +128,7 @@ export const LGPDConsentModal: React.FC<LGPDConsentModalProps> = ({
                     rel="noopener noreferrer"
                     className="underline hover:text-blue-900 dark:hover:text-blue-200"
                   >
-                    Consulte nossa Politica de Privacidade
+                    Consulte nossa Política de Privacidade
                   </a>
                 </li>
               </ul>
@@ -152,8 +152,8 @@ export const LGPDConsentModal: React.FC<LGPDConsentModalProps> = ({
             <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
               <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-amber-700 dark:text-amber-400">
-                Voce tambem pode aceitar a parceria sem compartilhar documentos.
-                Neste caso, a marca nao tera acesso aos seus documentos de compliance.
+                Você também pode aceitar a parceria sem compartilhar documentos.
+                Neste caso, a marca não terá acesso aos seus documentos de compliance.
               </p>
             </div>
           </div>

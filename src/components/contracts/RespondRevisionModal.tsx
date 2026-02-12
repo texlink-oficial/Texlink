@@ -45,7 +45,7 @@ export const RespondRevisionModal: React.FC<RespondRevisionModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Responder Solicitacao de Revisao
+              Responder Solicitação de Revisão
             </h2>
             <button
               onClick={onClose}
@@ -63,7 +63,7 @@ export const RespondRevisionModal: React.FC<RespondRevisionModalProps> = ({
                   <MessageSquare className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs font-medium text-orange-700 dark:text-orange-400 mb-1">
-                      Solicitacao de revisao:
+                      Solicitação de revisão:
                     </p>
                     <p className="text-sm text-orange-800 dark:text-orange-300">{revision.message}</p>
                   </div>
@@ -100,9 +100,9 @@ export const RespondRevisionModal: React.FC<RespondRevisionModalProps> = ({
                     <Check className="w-5 h-5" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900 dark:text-white">Aceitar Revisao</p>
+                    <p className="font-medium text-gray-900 dark:text-white">Aceitar Revisão</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      O contrato sera atualizado conforme solicitado
+                      O contrato será atualizado conforme solicitado
                     </p>
                   </div>
                 </button>
@@ -127,9 +127,9 @@ export const RespondRevisionModal: React.FC<RespondRevisionModalProps> = ({
                     <XCircle className="w-5 h-5" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900 dark:text-white">Rejeitar Revisao</p>
+                    <p className="font-medium text-gray-900 dark:text-white">Rejeitar Revisão</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      O contrato sera mantido como esta
+                      O contrato será mantido como está
                     </p>
                   </div>
                 </button>
@@ -141,7 +141,7 @@ export const RespondRevisionModal: React.FC<RespondRevisionModalProps> = ({
                   htmlFor="responseNotes"
                   className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
                 >
-                  Observacoes {response === 'REJECTED' && <span className="text-red-500">*</span>}
+                  Observações {response === 'REJECTED' && <span className="text-red-500">*</span>}
                 </label>
                 <textarea
                   id="responseNotes"
@@ -149,8 +149,8 @@ export const RespondRevisionModal: React.FC<RespondRevisionModalProps> = ({
                   onChange={(e) => setResponseNotes(e.target.value)}
                   placeholder={
                     response === 'ACCEPTED'
-                      ? 'Adicione observacoes sobre a revisao (opcional)...'
-                      : 'Explique o motivo da rejeicao...'
+                      ? 'Adicione observações sobre a revisão (opcional)...'
+                      : 'Explique o motivo da rejeição...'
                   }
                   rows={3}
                   maxLength={500}
@@ -174,7 +174,7 @@ export const RespondRevisionModal: React.FC<RespondRevisionModalProps> = ({
                 loading={isLoading}
                 disabled={!response || (response === 'REJECTED' && !responseNotes.trim())}
               >
-                {response === 'ACCEPTED' ? 'Confirmar Aceite' : 'Confirmar Rejeicao'}
+                {response === 'ACCEPTED' ? 'Confirmar Aceite' : 'Confirmar Rejeição'}
               </Button>
             </div>
           </form>

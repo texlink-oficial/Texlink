@@ -69,15 +69,15 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
                 <div className="p-5">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {isReject ? 'Motivo da rejeicao *' : 'Comentario (opcional)'}
+                        {isReject ? 'Motivo da rejeição *' : 'Comentário (opcional)'}
                     </label>
                     <textarea
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder={isReject
-                            ? 'Informe o motivo da rejeicao...'
-                            : 'Adicione um comentario sobre a aprovacao...'
+                            ? 'Informe o motivo da rejeição...'
+                            : 'Adicione um comentário sobre a aprovação...'
                         }
                         rows={4}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.1] rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none text-sm"
@@ -86,7 +86,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                     {isReject && reason.trim().length === 0 && (
                         <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
-                            Motivo obrigatorio para rejeicao
+                            Motivo obrigatório para rejeição
                         </p>
                     )}
                     <p className="mt-1.5 text-xs text-gray-400">Ctrl+Enter para confirmar</p>
@@ -138,16 +138,16 @@ const DocumentStatusBadge: React.FC<{ status: string }> = ({ status }) => {
 
 // ---- Document Type Label ----
 const documentTypeLabels: Record<string, string> = {
-    CNPJ_CARD: 'Cartao CNPJ',
+    CNPJ_CARD: 'Cartão CNPJ',
     SOCIAL_CONTRACT: 'Contrato Social',
-    STATE_REGISTRATION: 'Inscricao Estadual',
-    MUNICIPAL_REGISTRATION: 'Inscricao Municipal',
+    STATE_REGISTRATION: 'Inscrição Estadual',
+    MUNICIPAL_REGISTRATION: 'Inscrição Municipal',
     FGTS_CERTIFICATE: 'Certificado FGTS',
     INSS_CERTIFICATE: 'Certificado INSS',
-    TAX_CLEARANCE: 'Certidao Negativa',
-    FIRE_SAFETY: 'Alvara Bombeiros',
-    OPERATING_LICENSE: 'Alvara Funcionamento',
-    ENVIRONMENTAL_LICENSE: 'Licenca Ambiental',
+    TAX_CLEARANCE: 'Certidão Negativa',
+    FIRE_SAFETY: 'Alvará Bombeiros',
+    OPERATING_LICENSE: 'Alvará Funcionamento',
+    ENVIRONMENTAL_LICENSE: 'Licença Ambiental',
     OTHER: 'Outro',
 };
 
@@ -268,7 +268,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ actions, isLoading }) => {
             <div className="flex items-center gap-3 mb-4">
                 <Shield className="w-5 h-5 text-gray-400" />
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Historico de Acoes Administrativas
+                    Histórico de Ações Administrativas
                 </h2>
             </div>
 
@@ -279,7 +279,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ actions, isLoading }) => {
             ) : actions.length === 0 ? (
                 <div className="text-center py-8">
                     <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-sm text-gray-400">Nenhuma acao registrada</p>
+                    <p className="text-sm text-gray-400">Nenhuma ação registrada</p>
                 </div>
             ) : (
                 <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-white/[0.06] rounded-2xl overflow-hidden">
@@ -420,8 +420,8 @@ const ApprovalsPage: React.FC = () => {
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Aprovacoes Pendentes</h1>
-                        <p className="text-gray-500 dark:text-gray-400">{approvals.length} faccoes aguardando revisao</p>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Aprovações Pendentes</h1>
+                        <p className="text-gray-500 dark:text-gray-400">{approvals.length} facções aguardando revisão</p>
                     </div>
                 </div>
 
@@ -432,7 +432,7 @@ const ApprovalsPage: React.FC = () => {
                 ) : approvals.length === 0 ? (
                     <div className="text-center py-12">
                         <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                        <p className="text-brand-300">Nenhuma aprovacao pendente</p>
+                        <p className="text-brand-300">Nenhuma aprovação pendente</p>
                     </div>
                 ) : (
                     <div className="space-y-4">

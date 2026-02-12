@@ -59,10 +59,10 @@ export const CancelContractModal: React.FC<CancelContractModalProps> = ({
               <div className="flex gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                 <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-red-700 dark:text-red-300">
-                  <p className="font-medium mb-1">Atencao!</p>
+                  <p className="font-medium mb-1">Atenção!</p>
                   <p>
-                    Esta acao ira cancelar permanentemente o contrato. Ambas as partes serao
-                    notificadas e o contrato nao podera ser reativado.
+                    Esta ação irá cancelar permanentemente o contrato. Ambas as partes serão
+                    notificadas e o contrato não poderá ser reativado.
                   </p>
                 </div>
               </div>
@@ -112,7 +112,7 @@ export const CancelContractModal: React.FC<CancelContractModalProps> = ({
                   className="mt-1 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500"
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Confirmo que desejo cancelar este contrato e estou ciente de que esta acao nao pode
+                  Confirmo que desejo cancelar este contrato e estou ciente de que esta ação não pode
                   ser desfeita.
                 </span>
               </label>

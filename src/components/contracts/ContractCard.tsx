@@ -57,7 +57,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({ contract, viewType =
             {contract.displayId}
           </p>
           <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate">
-            {contract.title || 'Contrato sem titulo'}
+            {contract.title || 'Contrato sem título'}
           </h3>
         </div>
         <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-brand-500 transition-colors ml-2 flex-shrink-0" />
@@ -101,7 +101,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({ contract, viewType =
           {hasPendingRevisions && (
             <div className="flex items-center gap-2 text-xs text-orange-600 dark:text-orange-400">
               <AlertCircle className="w-3.5 h-3.5" />
-              <span>Revisao pendente</span>
+              <span>Revisão pendente</span>
             </div>
           )}
         </div>

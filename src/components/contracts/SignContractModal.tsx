@@ -74,8 +74,8 @@ export const SignContractModal: React.FC<SignContractModalProps> = ({
                 <div className="text-sm text-amber-700 dark:text-amber-300">
                   <p className="font-medium mb-1">Assinatura Digital</p>
                   <p>
-                    Sua assinatura sera registrada com data, hora e endereco IP para validade
-                    juridica.
+                    Sua assinatura será registrada com data, hora e endereço IP para validade
+                    jurídica.
                   </p>
                 </div>
               </div>
@@ -97,7 +97,7 @@ export const SignContractModal: React.FC<SignContractModalProps> = ({
                   required
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Conforme documento de identificacao
+                  Conforme documento de identificação
                 </p>
               </div>
 
@@ -110,7 +110,7 @@ export const SignContractModal: React.FC<SignContractModalProps> = ({
                   className="mt-1 w-4 h-4 text-brand-500 border-gray-300 rounded focus:ring-brand-500"
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Declaro que li e concordo com todos os termos e condicoes deste contrato, e que
+                  Declaro que li e concordo com todos os termos e condições deste contrato, e que
                   estou legalmente autorizado a assinar em nome da{' '}
                   {signerType === 'brand' ? 'empresa contratante' : 'empresa contratada'}.
                 </span>
@@ -119,7 +119,7 @@ export const SignContractModal: React.FC<SignContractModalProps> = ({
               {/* Warning */}
               <div className="flex gap-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs text-gray-600 dark:text-gray-400">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <p>Esta acao nao pode ser desfeita. Apos assinatura, o contrato tera validade legal.</p>
+                <p>Esta ação não pode ser desfeita. Após assinatura, o contrato terá validade legal.</p>
               </div>
             </div>
 

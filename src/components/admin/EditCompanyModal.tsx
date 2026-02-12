@@ -42,15 +42,15 @@ export default function EditCompanyModal({ company, onClose, onSuccess }: Props)
         setError('');
 
         if (!legalName.trim()) {
-            setError('Razao Social e obrigatoria.');
+            setError('Razão Social é obrigatória.');
             return;
         }
         if (!city.trim()) {
-            setError('Cidade e obrigatoria.');
+            setError('Cidade é obrigatória.');
             return;
         }
         if (!state) {
-            setError('Estado e obrigatorio.');
+            setError('Estado é obrigatório.');
             return;
         }
 
@@ -113,9 +113,9 @@ export default function EditCompanyModal({ company, onClose, onSuccess }: Props)
                             />
                         </div>
 
-                        {/* Razao Social */}
+                        {/* Razão Social */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Razao Social *</label>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Razão Social *</label>
                             <input
                                 type="text"
                                 value={legalName}
@@ -201,7 +201,7 @@ export default function EditCompanyModal({ company, onClose, onSuccess }: Props)
                             disabled={isLoading}
                             className="px-8 py-2.5 bg-sky-500 text-white text-sm font-bold rounded-xl hover:bg-sky-600 shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isLoading ? 'Salvando...' : 'Salvar Alteracoes'}
+                            {isLoading ? 'Salvando...' : 'Salvar Alterações'}
                         </button>
                     </div>
                 </form>

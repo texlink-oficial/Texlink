@@ -30,7 +30,7 @@ interface Order {
 
 const ORDER_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
     LANCADO_PELA_MARCA: { label: 'Aguardando Aceite', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-500/10' },
-    EM_NEGOCIACAO: { label: 'Em Negociacao', color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-100 dark:bg-indigo-500/10' },
+    EM_NEGOCIACAO: { label: 'Em Negociação', color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-100 dark:bg-indigo-500/10' },
     ACEITO_PELA_FACCAO: { label: 'Aceito', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-500/10' },
     EM_PREPARACAO_SAIDA_MARCA: { label: 'Preparando Envio', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-500/10' },
     EM_TRANSITO_PARA_FACCAO: { label: 'Em Trânsito (Ida)', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-500/10' },

@@ -22,10 +22,10 @@ interface Tab {
 
 const tabs: Tab[] = [
     { id: 'company', label: 'Dados da Empresa', icon: <Building2 className="h-4 w-4" /> },
-    { id: 'bank', label: 'Dados Bancarios', icon: <CreditCard className="h-4 w-4" /> },
-    { id: 'notifications', label: 'Notificacoes', icon: <Bell className="h-4 w-4" /> },
-    { id: 'security', label: 'Seguranca', icon: <Shield className="h-4 w-4" /> },
-    { id: 'suggestions', label: 'Sugestoes', icon: <MessageSquare className="h-4 w-4" /> },
+    { id: 'bank', label: 'Dados Bancários', icon: <CreditCard className="h-4 w-4" /> },
+    { id: 'notifications', label: 'Notificações', icon: <Bell className="h-4 w-4" /> },
+    { id: 'security', label: 'Segurança', icon: <Shield className="h-4 w-4" /> },
+    { id: 'suggestions', label: 'Sugestões', icon: <MessageSquare className="h-4 w-4" /> },
 ];
 
 const BrandSettingsPage: React.FC = () => {
@@ -53,9 +53,9 @@ const BrandSettingsPage: React.FC = () => {
             <div className="space-y-6">
                 {/* Header */}
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Configuracoes</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Configurações</h1>
                     <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                        Gerencie as configuracoes da sua empresa
+                        Gerencie as configurações da sua empresa
                     </p>
                 </div>
 

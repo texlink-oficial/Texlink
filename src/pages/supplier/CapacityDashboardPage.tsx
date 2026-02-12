@@ -34,15 +34,15 @@ function minutesToHours(minutes: number): string {
 function getStatusLabel(status: string): string {
     const map: Record<string, string> = {
         LANCADO_PELA_MARCA: 'Novo',
-        EM_NEGOCIACAO: 'Negociacao',
+        EM_NEGOCIACAO: 'Negociação',
         ACEITO_PELA_FACCAO: 'Aceito',
         EM_PREPARACAO_SAIDA_MARCA: 'Preparando',
-        EM_TRANSITO_PARA_FACCAO: 'Transito',
-        EM_PREPARACAO_ENTRADA_FACCAO: 'Preparacao',
-        EM_PRODUCAO: 'Producao',
+        EM_TRANSITO_PARA_FACCAO: 'Trânsito',
+        EM_PREPARACAO_ENTRADA_FACCAO: 'Preparação',
+        EM_PRODUCAO: 'Produção',
         PRONTO: 'Pronto',
-        EM_TRANSITO_PARA_MARCA: 'Transito',
-        EM_REVISAO: 'Em Revisao',
+        EM_TRANSITO_PARA_MARCA: 'Trânsito',
+        EM_REVISAO: 'Em Revisão',
         PARCIALMENTE_APROVADO: 'Parcial',
         REPROVADO: 'Reprovado',
         AGUARDANDO_RETRABALHO: 'Retrabalho',
@@ -286,7 +286,7 @@ const CapacityDashboardPage: React.FC = () => {
                     <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3">
                         <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
                         <p className="text-red-700 dark:text-red-300 font-medium">
-                            Atencao! Sua capacidade esta acima de 90%. Considere ajustar sua disponibilidade.
+                            Atenção! Sua capacidade está acima de 90%. Considere ajustar sua disponibilidade.
                         </p>
                     </div>
                 )}

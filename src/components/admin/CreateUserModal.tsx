@@ -57,9 +57,9 @@ export default function CreateUserModal({ onClose, onSuccess }: CreateUserModalP
 
   function validate(): string | null {
     if (name.trim().length < 3) return 'O nome deve ter pelo menos 3 caracteres.';
-    if (!email.includes('@')) return 'Informe um email valido.';
+    if (!email.includes('@')) return 'Informe um email válido.';
     if (password.length < 6) return 'A senha deve ter pelo menos 6 caracteres.';
-    if (password !== confirmPassword) return 'As senhas nao conferem.';
+    if (password !== confirmPassword) return 'As senhas não conferem.';
     return null;
   }
 
@@ -83,10 +83,10 @@ export default function CreateUserModal({ onClose, onSuccess }: CreateUserModalP
         companyId: companyId || undefined,
         ...(companyId && { isCompanyAdmin }),
       });
-      toast.success('Usuario criado', 'Usuario criado com sucesso');
+      toast.success('Usuário criado', 'Usuário criado com sucesso');
       onSuccess();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Erro ao criar usuario.';
+      const msg = err?.response?.data?.message || err?.message || 'Erro ao criar usuário.';
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setIsLoading(false);
@@ -103,7 +103,7 @@ export default function CreateUserModal({ onClose, onSuccess }: CreateUserModalP
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-sky-500" />
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Novo Usuario</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Novo Usuário</h2>
           </div>
           <button
             onClick={onClose}
@@ -157,7 +157,7 @@ export default function CreateUserModal({ onClose, onSuccess }: CreateUserModalP
             >
               <option value="ADMIN">Admin</option>
               <option value="BRAND">Marca</option>
-              <option value="SUPPLIER">Faccao</option>
+              <option value="SUPPLIER">Facção</option>
             </select>
           </div>
 
@@ -279,7 +279,7 @@ export default function CreateUserModal({ onClose, onSuccess }: CreateUserModalP
           {/* Security note */}
           <div className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
             <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <p>A senha sera enviada ao usuario. Recomende que ele altere no primeiro acesso.</p>
+            <p>A senha será enviada ao usuário. Recomende que ele altere no primeiro acesso.</p>
           </div>
 
           {/* Actions */}
@@ -297,7 +297,7 @@ export default function CreateUserModal({ onClose, onSuccess }: CreateUserModalP
               disabled={isLoading}
               className="px-8 py-2.5 bg-sky-500 text-white text-sm font-bold rounded-xl hover:bg-sky-600 shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Criando...' : 'Criar Usuario'}
+              {isLoading ? 'Criando...' : 'Criar Usuário'}
             </button>
           </div>
         </form>

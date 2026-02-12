@@ -18,7 +18,7 @@ const ServerErrorPage: React.FC = () => {
         </h2>
         <p className="text-gray-400 mb-8">
           Desculpe, algo deu errado em nossos servidores. Nossa equipe foi
-          notificada e esta trabalhando para resolver o problema.
+          notificada e está trabalhando para resolver o problema.
         </p>
         <div className="flex gap-3 justify-center">
           <button
@@ -31,7 +31,7 @@ const ServerErrorPage: React.FC = () => {
             to="/"
             className="px-6 py-3 bg-brand-800 hover:bg-brand-700 text-white rounded-lg transition-colors font-medium"
           >
-            Ir para o inicio
+            Ir para o início
           </Link>
         </div>
         <p className="text-gray-500 text-sm mt-8">

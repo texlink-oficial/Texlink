@@ -21,7 +21,7 @@ export default function EditUserModal({ user, onClose, onSuccess }: EditUserModa
 
   function validate(): string | null {
     if (name.trim().length < 3) return 'O nome deve ter pelo menos 3 caracteres.';
-    if (!email.includes('@')) return 'Informe um email valido.';
+    if (!email.includes('@')) return 'Informe um email válido.';
     return null;
   }
 
@@ -43,10 +43,10 @@ export default function EditUserModal({ user, onClose, onSuccess }: EditUserModa
         role,
         isActive,
       });
-      toast.success('Usuario atualizado', 'Dados do usuario atualizados com sucesso');
+      toast.success('Usuário atualizado', 'Dados do usuário atualizados com sucesso');
       onSuccess();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Erro ao atualizar usuario.';
+      const msg = err?.response?.data?.message || err?.message || 'Erro ao atualizar usuário.';
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setIsLoading(false);
@@ -63,7 +63,7 @@ export default function EditUserModal({ user, onClose, onSuccess }: EditUserModa
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
           <div className="flex items-center gap-2">
             <Edit3 className="w-5 h-5 text-sky-500" />
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Editar Usuario</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Editar Usuário</h2>
           </div>
           <button
             onClick={onClose}
@@ -117,7 +117,7 @@ export default function EditUserModal({ user, onClose, onSuccess }: EditUserModa
             >
               <option value="ADMIN">Admin</option>
               <option value="BRAND">Marca</option>
-              <option value="SUPPLIER">Faccao</option>
+              <option value="SUPPLIER">Facção</option>
             </select>
           </div>
 
@@ -177,7 +177,7 @@ export default function EditUserModal({ user, onClose, onSuccess }: EditUserModa
           {/* Security note */}
           <div className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
             <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <p>Alteracoes de tipo podem afetar as permissoes do usuario no sistema.</p>
+            <p>Alterações de tipo podem afetar as permissões do usuário no sistema.</p>
           </div>
 
           {/* Actions */}
@@ -195,7 +195,7 @@ export default function EditUserModal({ user, onClose, onSuccess }: EditUserModa
               disabled={isLoading}
               className="px-8 py-2.5 bg-sky-500 text-white text-sm font-bold rounded-xl hover:bg-sky-600 shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Salvando...' : 'Salvar Alteracoes'}
+              {isLoading ? 'Salvando...' : 'Salvar Alterações'}
             </button>
           </div>
         </form>

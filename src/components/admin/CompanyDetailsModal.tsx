@@ -84,7 +84,7 @@ export default function CompanyDetailsModal({ company, onClose }: Props) {
                         <div className="flex items-start gap-3">
                             <FileText className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                             <div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Razao Social</p>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Razão Social</p>
                                 <p className="text-sm text-gray-900 dark:text-white font-medium">{company.legalName}</p>
                             </div>
                         </div>

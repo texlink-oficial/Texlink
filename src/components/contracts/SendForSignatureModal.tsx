@@ -63,10 +63,10 @@ export const SendForSignatureModal: React.FC<SendForSignatureModalProps> = ({
               <div className="flex gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <AlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-blue-700 dark:text-blue-300">
-                  <p className="font-medium mb-1">Acao necessaria</p>
+                  <p className="font-medium mb-1">Ação necessária</p>
                   <p>
-                    Voce precisara assinar o contrato primeiro. Apos sua assinatura, o contrato sera
-                    enviado para a faccao parceira.
+                    Você precisará assinar o contrato primeiro. Após sua assinatura, o contrato será
+                    enviado para a facção parceira.
                   </p>
                 </div>
               </div>
@@ -83,7 +83,7 @@ export const SendForSignatureModal: React.FC<SendForSignatureModalProps> = ({
                   id="message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Adicione uma mensagem para a faccao..."
+                  placeholder="Adicione uma mensagem para a facção..."
                   rows={3}
                   maxLength={500}
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors resize-none"

@@ -152,8 +152,8 @@ export const BrandRelationshipsManager: React.FC<BrandRelationshipsManagerProps>
           <div className="text-sm text-blue-800 dark:text-blue-300">
             <p className="font-medium mb-1">Sobre o compartilhamento de documentos (LGPD)</p>
             <p>
-              Ao consentir, suas marcas parceiras poderao visualizar seus documentos de compliance.
-              Voce pode revogar este consentimento a qualquer momento, mas isso encerrara o relacionamento com a marca.
+              Ao consentir, suas marcas parceiras poderão visualizar seus documentos de compliance.
+              Você pode revogar este consentimento a qualquer momento, mas isso encerrará o relacionamento com a marca.
             </p>
           </div>
         </div>
@@ -278,7 +278,7 @@ export const BrandRelationshipsManager: React.FC<BrandRelationshipsManagerProps>
                     Revogar Consentimento
                   </h2>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Esta acao encerrara o relacionamento
+                    Esta ação encerrará o relacionamento
                   </p>
                 </div>
               </div>
@@ -287,9 +287,9 @@ export const BrandRelationshipsManager: React.FC<BrandRelationshipsManagerProps>
               <div className="p-4 space-y-4">
                 <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
                   <p className="text-sm text-amber-800 dark:text-amber-300">
-                    <strong>Atencao:</strong> Ao revogar o consentimento, a marca{' '}
+                    <strong>Atenção:</strong> Ao revogar o consentimento, a marca{' '}
                     <strong>{(selectedRelationship as any).brand?.tradeName || 'parceira'}</strong>{' '}
-                    nao tera mais acesso aos seus documentos e o relacionamento sera encerrado permanentemente.
+                    não terá mais acesso aos seus documentos e o relacionamento será encerrado permanentemente.
                   </p>
                 </div>
 

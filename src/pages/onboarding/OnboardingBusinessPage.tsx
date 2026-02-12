@@ -97,10 +97,10 @@ const OnboardingBusinessPage: React.FC = () => {
                     <Building2 className="w-8 h-8 text-brand-400" />
                 </div>
                 <h2 className="text-2xl font-bold text-white mb-2">
-                    Qualificacao do Negocio
+                    Qualificação do Negócio
                 </h2>
                 <p className="text-brand-300">
-                    Conte-nos mais sobre sua faccao para entendermos melhor seu perfil
+                    Conte-nos mais sobre sua facção para entendermos melhor seu perfil
                 </p>
             </div>
 
@@ -111,11 +111,11 @@ const OnboardingBusinessPage: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* O que voce produz */}
+                {/* O que você produz */}
                 <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
                         <Package className="w-4 h-4" />
-                        O que voce produz? (selecione todos que se aplicam)
+                        O que você produz? (selecione todos que se aplicam)
                     </label>
                     <div className="flex flex-wrap gap-2">
                         {productTypeOptions.map((type) => (
@@ -193,7 +193,7 @@ const OnboardingBusinessPage: React.FC = () => {
                 <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
                         <Clock className="w-4 h-4" />
-                        Tempo de atuacao no mercado
+                        Tempo de atuação no mercado
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {timeInMarketOptions.map((option) => (
@@ -241,9 +241,9 @@ const OnboardingBusinessPage: React.FC = () => {
 
             <div className="mt-6 bg-brand-500/10 border border-brand-500/20 rounded-lg p-4">
                 <p className="text-sm text-brand-300">
-                    <strong className="text-brand-200">Dica:</strong> Estas informacoes ajudam as marcas a
+                    <strong className="text-brand-200">Dica:</strong> Estas informações ajudam as marcas a
                     entenderem melhor seu perfil e a oferecerem oportunidades adequadas
-                    ao seu negocio.
+                    ao seu negócio.
                 </p>
             </div>
         </div>

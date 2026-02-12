@@ -44,20 +44,20 @@ function generateCsv(data: PerformanceData): string {
 
     // KPIs
     lines.push('Indicador,Valor');
-    lines.push(`Pedidos Concluidos,${data.completedOrders}`);
-    lines.push(`Taxa de Aceitacao (%),${data.acceptanceRate}`);
-    lines.push(`Lead Time Medio (dias),${data.avgLeadTime}`);
+    lines.push(`Pedidos Concluídos,${data.completedOrders}`);
+    lines.push(`Taxa de Aceitação (%),${data.acceptanceRate}`);
+    lines.push(`Lead Time Médio (dias),${data.avgLeadTime}`);
     lines.push(`Taxa de Cancelamento (%),${data.cancellationRate}`);
     lines.push(`Total Faturado (R$),${data.totalRevenue}`);
     lines.push('');
 
     // Platform averages
     if (data.platformAverage) {
-        lines.push('Media da Plataforma,Valor');
+        lines.push('Média da Plataforma,Valor');
         lines.push(`Entrega no Prazo (%),${data.platformAverage.onTimeDeliveryRate}`);
         lines.push(`Qualidade (%),${data.platformAverage.qualityScore}`);
-        lines.push(`Taxa de Rejeicao (%),${data.platformAverage.rejectionRate}`);
-        lines.push(`Lead Time Medio (dias),${data.platformAverage.avgLeadTime}`);
+        lines.push(`Taxa de Rejeição (%),${data.platformAverage.rejectionRate}`);
+        lines.push(`Lead Time Médio (dias),${data.platformAverage.avgLeadTime}`);
         lines.push('');
     }
 
@@ -80,14 +80,14 @@ function generateCsv(data: PerformanceData): string {
     // Quality score trend
     if (data.qualityScoreTrend?.length) {
         lines.push('Qualidade por Semana');
-        lines.push('Data,Aprovacao (%)');
+        lines.push('Data,Aprovação (%)');
         data.qualityScoreTrend.forEach((p) => lines.push(`${p.date},${p.value}`));
         lines.push('');
     }
 
     // Rejection rate trend
     if (data.rejectionRateTrend?.length) {
-        lines.push('Taxa de Rejeicao por Semana');
+        lines.push('Taxa de Rejeição por Semana');
         lines.push('Data,Taxa (%)');
         data.rejectionRateTrend.forEach((p) => lines.push(`${p.date},${p.value}`));
         lines.push('');
@@ -501,19 +501,19 @@ const PerformancePage: React.FC = () => {
             {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                 <MetricCard
-                    title="Pedidos Concluidos"
+                    title="Pedidos Concluídos"
                     value={data?.completedOrders || 0}
                     icon={CheckCircle}
                     iconColor="green"
                 />
                 <MetricCard
-                    title="Taxa de Aceitacao"
+                    title="Taxa de Aceitação"
                     value={`${data?.acceptanceRate || 0}%`}
                     icon={TrendingUp}
                     iconColor="blue"
                 />
                 <MetricCard
-                    title="Lead Time Medio"
+                    title="Lead Time Médio"
                     value={`${data?.avgLeadTime || 0} dias`}
                     icon={Clock}
                     iconColor="purple"
@@ -543,14 +543,14 @@ const PerformancePage: React.FC = () => {
                     unit="%"
                 />
                 <TrendChart
-                    title="Qualidade (Aprovacao)"
+                    title="Qualidade (Aprovação)"
                     data={data?.qualityScoreTrend || []}
                     color="#6366f1"
                     platformAvgValue={data?.platformAverage?.qualityScore}
                     unit="%"
                 />
                 <TrendChart
-                    title="Taxa de Rejeicao"
+                    title="Taxa de Rejeição"
                     data={data?.rejectionRateTrend || []}
                     color="#ef4444"
                     platformAvgValue={data?.platformAverage?.rejectionRate}
@@ -572,7 +572,7 @@ const PerformancePage: React.FC = () => {
                                 Comparativo com a Plataforma
                             </h2>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Veja como seu desempenho se compara a media de todos os fornecedores
+                                Veja como seu desempenho se compara à média de todos os fornecedores
                             </p>
                         </div>
                     </div>
@@ -588,7 +588,7 @@ const PerformancePage: React.FC = () => {
                             unit="%"
                         />
                         <ComparisonItem
-                            label="Qualidade (Aprovacao)"
+                            label="Qualidade (Aprovação)"
                             supplierValue={
                                 data.qualityScoreTrend?.length
                                     ? data.qualityScoreTrend[data.qualityScoreTrend.length - 1].value
@@ -598,14 +598,14 @@ const PerformancePage: React.FC = () => {
                             unit="%"
                         />
                         <ComparisonItem
-                            label="Taxa de Rejeicao"
+                            label="Taxa de Rejeição"
                             supplierValue={data.cancellationRate}
                             platformValue={data.platformAverage.rejectionRate}
                             unit="%"
                             invertColor
                         />
                         <ComparisonItem
-                            label="Lead Time Medio"
+                            label="Lead Time Médio"
                             supplierValue={data.avgLeadTime}
                             platformValue={data.platformAverage.avgLeadTime}
                             unit=" dias"
@@ -730,7 +730,7 @@ const PerformancePage: React.FC = () => {
                     <div className="p-12 text-center">
                         <Star className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                         <p className="text-gray-500 dark:text-gray-400 text-sm">
-                            Nenhuma avaliacao recebida ainda
+                            Nenhuma avaliação recebida ainda
                         </p>
                     </div>
                 ) : (

@@ -41,7 +41,7 @@ export const RequestRevisionModal: React.FC<RequestRevisionModalProps> = ({
                 <MessageSquare className="w-5 h-5 text-orange-600 dark:text-orange-400" />
               </div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Solicitar Revisao
+                Solicitar Revisão
               </h2>
             </div>
             <button
@@ -70,8 +70,8 @@ export const RequestRevisionModal: React.FC<RequestRevisionModalProps> = ({
               {/* Info */}
               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Descreva as alteracoes ou esclarecimentos que voce gostaria de solicitar. A marca
-                  sera notificada e podera responder sua solicitacao.
+                  Descreva as alterações ou esclarecimentos que você gostaria de solicitar. A marca
+                  será notificada e poderá responder sua solicitação.
                 </p>
               </div>
 
@@ -87,7 +87,7 @@ export const RequestRevisionModal: React.FC<RequestRevisionModalProps> = ({
                   id="message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Descreva as alteracoes ou esclarecimentos solicitados..."
+                  placeholder="Descreva as alterações ou esclarecimentos solicitados..."
                   rows={4}
                   maxLength={1000}
                   required
@@ -112,7 +112,7 @@ export const RequestRevisionModal: React.FC<RequestRevisionModalProps> = ({
                 className="gap-2"
               >
                 <MessageSquare className="w-4 h-4" />
-                Enviar Solicitacao
+                Enviar Solicitação
               </Button>
             </div>
           </form>

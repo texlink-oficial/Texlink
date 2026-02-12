@@ -26,19 +26,19 @@ interface SupplierDocumentsTabProps {
 // Document type labels in Portuguese
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   ABVTEX_TERMO: 'Termo ABVTEX',
-  CNPJ_ATIVO: 'Cartao CNPJ',
+  CNPJ_ATIVO: 'Cartão CNPJ',
   CND_FEDERAL: 'CND Federal',
   CRF_FGTS: 'CRF FGTS',
   GUIA_INSS: 'Guia INSS',
   GUIA_FGTS: 'Guia FGTS',
   GUIA_SIMPLES_DAS: 'Guia DAS',
-  LICENCA_FUNCIONAMENTO: 'Licenca de Funcionamento',
+  LICENCA_FUNCIONAMENTO: 'Licença de Funcionamento',
   AVCB: 'AVCB',
   CONTRATO_SOCIAL: 'Contrato Social',
-  INSCRICAO_MUNICIPAL: 'Inscricao Municipal',
-  RELATORIO_EMPREGADOS: 'Relatorio de Empregados',
-  RELACAO_SUBCONTRATADOS: 'Relacao de Subcontratados',
-  LICENCA_AMBIENTAL: 'Licenca Ambiental',
+  INSCRICAO_MUNICIPAL: 'Inscrição Municipal',
+  RELATORIO_EMPREGADOS: 'Relatório de Empregados',
+  RELACAO_SUBCONTRATADOS: 'Relação de Subcontratados',
+  LICENCA_AMBIENTAL: 'Licença Ambiental',
   LAUDO_NR1_GRO_PGR: 'Laudo NR-1 (PGR)',
   LAUDO_NR7_PCMSO: 'Laudo NR-7 (PCMSO)',
   LAUDO_NR10_SEGURANCA_ELETRICA: 'Laudo NR-10',
@@ -158,13 +158,13 @@ export const SupplierDocumentsTab: React.FC<SupplierDocumentsTabProps> = ({
           <ShieldOff className="w-8 h-8 text-gray-400" />
         </div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-          Acesso nao autorizado
+          Acesso não autorizado
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-          {summary.message || 'O fornecedor nao autorizou o compartilhamento de documentos com sua marca.'}
+          {summary.message || 'O fornecedor não autorizou o compartilhamento de documentos com sua marca.'}
         </p>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
-          O consentimento pode ser concedido durante a aceitacao de uma solicitacao de parceria.
+          O consentimento pode ser concedido durante a aceitação de uma solicitação de parceria.
         </p>
       </div>
     );

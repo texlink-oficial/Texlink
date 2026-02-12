@@ -9,7 +9,7 @@ interface ContractTypeBadgeProps {
 
 const typeConfig: Record<ContractType, { label: string; icon: React.ElementType; className: string }> = {
   SERVICE_AGREEMENT: {
-    label: 'Prestacao de Servicos',
+    label: 'Prestação de Serviços',
     icon: FileText,
     className: 'bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400',
   },
@@ -19,7 +19,7 @@ const typeConfig: Record<ContractType, { label: string; icon: React.ElementType;
     className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   },
   CODE_OF_CONDUCT: {
-    label: 'Codigo de Conduta',
+    label: 'Código de Conduta',
     icon: Scale,
     className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   },

@@ -52,20 +52,20 @@ export default function CreateCompanyModal({ onClose, onSuccess }: CreateCompany
 
     const validate = (): boolean => {
         if (!legalName.trim()) {
-            setError('Razao Social e obrigatoria.');
+            setError('Razão Social é obrigatória.');
             return false;
         }
         const digits = document.replace(/\D/g, '');
         if (digits.length < 14) {
-            setError('CNPJ deve ter 14 digitos.');
+            setError('CNPJ deve ter 14 dígitos.');
             return false;
         }
         if (!city.trim()) {
-            setError('Cidade e obrigatoria.');
+            setError('Cidade é obrigatória.');
             return false;
         }
         if (!state) {
-            setError('Estado e obrigatorio.');
+            setError('Estado é obrigatório.');
             return false;
         }
         return true;
@@ -155,14 +155,14 @@ export default function CreateCompanyModal({ onClose, onSuccess }: CreateCompany
                                 }`}
                             >
                                 <Factory className="w-4 h-4" />
-                                Faccao
+                                Facção
                             </button>
                         </div>
 
-                        {/* Razao Social */}
+                        {/* Razão Social */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                Razao Social *
+                                Razão Social *
                             </label>
                             <input
                                 type="text"

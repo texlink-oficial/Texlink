@@ -19,7 +19,7 @@ const statusConfig: Record<ContractStatus, { label: string; icon: React.ElementT
     className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   },
   PENDING_SUPPLIER_SIGNATURE: {
-    label: 'Aguardando Faccao',
+    label: 'Aguardando Facção',
     icon: Clock,
     className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
   },

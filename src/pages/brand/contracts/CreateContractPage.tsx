@@ -29,23 +29,23 @@ type CreateMode = 'template' | 'upload';
 const contractTypes: { value: ContractType; label: string; description: string }[] = [
   {
     value: 'SERVICE_AGREEMENT',
-    label: 'Prestacao de Servicos',
-    description: 'Contrato padrao para producao de pecas',
+    label: 'Prestação de Serviços',
+    description: 'Contrato padrão para produção de peças',
   },
   {
     value: 'NDA',
     label: 'Confidencialidade (NDA)',
-    description: 'Termo de sigilo e nao divulgacao',
+    description: 'Termo de sigilo e não divulgação',
   },
   {
     value: 'CODE_OF_CONDUCT',
-    label: 'Codigo de Conduta',
-    description: 'Normas eticas e de responsabilidade social',
+    label: 'Código de Conduta',
+    description: 'Normas éticas e de responsabilidade social',
   },
   {
     value: 'AMENDMENT',
     label: 'Aditivo Contratual',
-    description: 'Alteracao de contrato existente',
+    description: 'Alteração de contrato existente',
   },
 ];
 
@@ -170,7 +170,7 @@ export const CreateContractPage: React.FC = () => {
 
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Novo Contrato</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Crie um novo contrato para uma faccao parceira
+          Crie um novo contrato para uma facção parceira
         </p>
       </div>
 
@@ -210,7 +210,7 @@ export const CreateContractPage: React.FC = () => {
               htmlFor="relationship"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
             >
-              Faccao Parceira <span className="text-red-500">*</span>
+              Facção Parceira <span className="text-red-500">*</span>
             </label>
             {loadingRelationships ? (
               <div className="h-10 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
@@ -219,7 +219,7 @@ export const CreateContractPage: React.FC = () => {
                 <div className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-300">
                   <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
                   <span>
-                    Voce nao possui faccoes ativas vinculadas. Vincule uma faccao antes de criar um
+                    Você não possui facções ativas vinculadas. Vincule uma facção antes de criar um
                     contrato.
                   </span>
                 </div>
@@ -232,10 +232,10 @@ export const CreateContractPage: React.FC = () => {
                 required
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               >
-                <option value="">Selecione uma faccao</option>
+                <option value="">Selecione uma facção</option>
                 {relationships.map((rel) => (
                   <option key={rel.id} value={rel.id}>
-                    {rel.supplier?.tradeName || rel.supplier?.legalName || `Faccao ${rel.supplierId}`}
+                    {rel.supplier?.tradeName || rel.supplier?.legalName || `Facção ${rel.supplierId}`}
                   </option>
                 ))}
               </select>
@@ -290,7 +290,7 @@ export const CreateContractPage: React.FC = () => {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Contrato de Producao - Colecao Verao 2026"
+              placeholder="Ex: Contrato de Produção - Coleção Verão 2026"
             />
           </div>
 

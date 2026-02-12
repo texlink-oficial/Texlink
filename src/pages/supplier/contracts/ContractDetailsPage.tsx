@@ -100,11 +100,11 @@ export const ContractDetailsPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       await contractsService.requestRevision(contract.id, data);
-      addToast({ type: 'success', message: 'Solicitacao de revisao enviada' });
+      addToast({ type: 'success', message: 'Solicitação de revisão enviada' });
       setShowRevisionModal(false);
       fetchContract();
     } catch (err) {
-      addToast({ type: 'error', message: 'Erro ao solicitar revisao' });
+      addToast({ type: 'error', message: 'Erro ao solicitar revisão' });
     } finally {
       setIsSubmitting(false);
     }
@@ -138,7 +138,7 @@ export const ContractDetailsPage: React.FC = () => {
         <div className="text-center py-12">
           <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            {error || 'Contrato nao encontrado'}
+            {error || 'Contrato não encontrado'}
           </h3>
           <Button variant="outline" onClick={() => navigate('/portal/contratos')}>
             Voltar para Lista
@@ -188,7 +188,7 @@ export const ContractDetailsPage: React.FC = () => {
                 className="gap-2"
               >
                 <MessageSquare className="w-4 h-4" />
-                Solicitar Revisao
+                Solicitar Revisão
               </Button>
             )}
             {canSign && (
@@ -445,7 +445,7 @@ export const ContractDetailsPage: React.FC = () => {
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-2 h-2 mt-2 rounded-full bg-green-500" />
                   <div>
-                    <p className="text-sm text-gray-900 dark:text-white">Assinado por voce</p>
+                    <p className="text-sm text-gray-900 dark:text-white">Assinado por você</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {formatDateTime(contract.supplierSignedAt)}
                     </p>
