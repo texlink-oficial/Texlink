@@ -118,6 +118,14 @@ export const partnershipRequestsService = {
   },
 
   /**
+   * Check existing requests/relationships for multiple suppliers at once (batch)
+   */
+  async checkExistingBatch(supplierIds: string[]): Promise<Record<string, CheckExistingResponse>> {
+    const response = await api.post<Record<string, CheckExistingResponse>>('/partnership-requests/check-batch', { supplierIds });
+    return response.data;
+  },
+
+  /**
    * Get request by ID
    */
   async getById(id: string): Promise<PartnershipRequest> {

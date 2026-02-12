@@ -12,21 +12,33 @@ import {
   ContractRevisionStatus,
   Prisma,
 } from '@prisma/client';
-import * as fs from 'fs';
 import * as crypto from 'crypto';
+import { STORAGE_PROVIDER } from '../upload/storage.provider';
 
-// Mock fs, crypto, and pdfkit modules
-jest.mock('fs');
+// Mock crypto and pdfkit modules
 jest.mock('crypto');
 jest.mock('pdfkit', () => {
-  return jest.fn().mockImplementation(() => ({
-    fontSize: jest.fn().mockReturnThis(),
-    font: jest.fn().mockReturnThis(),
-    text: jest.fn().mockReturnThis(),
-    moveDown: jest.fn().mockReturnThis(),
-    pipe: jest.fn().mockReturnThis(),
-    end: jest.fn(),
-  }));
+  return jest.fn().mockImplementation(() => {
+    const handlers = {};
+    return {
+      fontSize: jest.fn().mockReturnThis(),
+      font: jest.fn().mockReturnThis(),
+      text: jest.fn().mockReturnThis(),
+      moveDown: jest.fn().mockReturnThis(),
+      on: jest.fn((event, cb) => {
+        handlers[event] = cb;
+      }),
+      end: jest.fn(() => {
+        // Simulate PDF generation: emit data then end
+        if (handlers['data']) {
+          handlers['data'](Buffer.from('fake-pdf-content'));
+        }
+        if (handlers['end']) {
+          handlers['end']();
+        }
+      }),
+    };
+  });
 });
 
 describe('ContractsService', () => {
@@ -62,6 +74,17 @@ describe('ContractsService', () => {
 
   const mockEventEmitter = {
     emit: jest.fn(),
+  };
+
+  const mockStorage = {
+    upload: jest.fn().mockResolvedValue({
+      url: 'http://localhost:3000/uploads/contracts/test-uuid.pdf',
+      key: 'contracts/test-uuid.pdf',
+    }),
+    delete: jest.fn().mockResolvedValue(undefined),
+    getUrl: jest.fn().mockReturnValue('http://localhost:3000/uploads/contracts/test-uuid.pdf'),
+    getPresignedUrl: jest.fn().mockResolvedValue('http://localhost:3000/uploads/contracts/test-uuid.pdf'),
+    resolveUrl: jest.fn().mockResolvedValue('http://localhost:3000/uploads/contracts/test-uuid.pdf'),
   };
 
   const mockRelationship = {
@@ -104,33 +127,16 @@ describe('ContractsService', () => {
           provide: EventEmitter2,
           useValue: mockEventEmitter,
         },
+        {
+          provide: STORAGE_PROVIDER,
+          useValue: mockStorage,
+        },
       ],
     }).compile();
 
     service = module.get<ContractsService>(ContractsService);
     prisma = module.get<PrismaService>(PrismaService);
     eventEmitter = module.get<EventEmitter2>(EventEmitter2);
-
-    // Mock fs.existsSync and fs.mkdirSync
-    (fs.existsSync as jest.Mock).mockReturnValue(true);
-    (fs.mkdirSync as jest.Mock).mockReturnValue(undefined);
-    (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
-    (fs.readFileSync as jest.Mock).mockReturnValue(Buffer.from('test'));
-    (fs.createWriteStream as jest.Mock).mockReturnValue({
-      on: jest.fn((event, callback) => {
-        // Immediately call 'finish' callback to simulate successful write
-        if (event === 'finish') {
-          setImmediate(callback);
-        }
-      }),
-    });
-    (fs.createReadStream as jest.Mock).mockReturnValue({
-      on: jest.fn((event, callback) => {
-        if (event === 'end') {
-          setImmediate(callback);
-        }
-      }),
-    });
 
     // Mock crypto
     const mockHash = {
@@ -318,7 +324,13 @@ describe('ContractsService', () => {
       );
 
       expect(result).toEqual(mockUploadedContract);
-      expect(fs.writeFileSync).toHaveBeenCalled();
+      expect(mockStorage.upload).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mimetype: 'application/pdf',
+          buffer: expect.any(Buffer),
+        }),
+        'contracts',
+      );
       expect(mockPrisma.supplierContract.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           type: ContractType.NDA,

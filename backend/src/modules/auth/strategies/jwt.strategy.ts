@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { CacheService } from '../../../common/services/cache.service';
 
 export interface JwtPayload {
   sub: string;
@@ -10,11 +11,14 @@ export interface JwtPayload {
   role: string;
 }
 
+const JWT_USER_CACHE_TTL = 300; // 5 minutes
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private configService: ConfigService,
     private prisma: PrismaService,
+    private cache: CacheService,
   ) {
     const secret = configService.get<string>('jwt.secret');
     if (!secret) {
@@ -28,6 +32,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    const cacheKey = `jwt:user:${payload.sub}`;
+    const cached = await this.cache.get<any>(cacheKey);
+    if (cached) {
+      // Ensure cached user is still active
+      if (!cached.isActive) {
+        throw new UnauthorizedException('User not found or inactive');
+      }
+      return cached;
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: {
@@ -58,7 +72,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const company = matchingCompanyUser?.company || null;
     const companyType = company?.type;
 
-    return {
+    const result = {
       ...user,
       companyId,
       company,
@@ -66,5 +80,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ...(companyType === 'SUPPLIER' && { supplierId: companyId }),
       ...(companyType === 'BRAND' && { brandId: companyId }),
     };
+
+    await this.cache.set(cacheKey, result, JWT_USER_CACHE_TTL);
+
+    return result;
   }
 }

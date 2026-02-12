@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { UploadModule } from '../upload/upload.module';
 import { ContractsService } from './contracts.service';
 import { ContractsController } from './contracts.controller';
 
@@ -11,9 +12,10 @@ import { ContractsController } from './contracts.controller';
  * - Template configurável
  * - Assinatura eletrônica simples (IP tracking)
  * - Transições de status
+ * - Storage via StorageProvider (local/S3)
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, UploadModule],
   controllers: [ContractsController],
   providers: [ContractsService],
   exports: [ContractsService],

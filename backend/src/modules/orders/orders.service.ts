@@ -1442,52 +1442,42 @@ export class OrdersService {
     });
   }
 
-  // Get review statistics for reporting
+  // Get review statistics for reporting (uses DB aggregation instead of loading all orders)
   async getReviewStats(companyId?: string) {
     const whereClause = companyId ? { brandId: companyId } : {};
 
-    const orders = await this.prisma.order.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        status: true,
-        totalReviewCount: true,
-        approvalCount: true,
-        rejectionCount: true,
-        secondQualityCount: true,
-        quantity: true,
-        reviews: {
-          select: {
-            result: true,
-            approvedQuantity: true,
-            rejectedQuantity: true,
-            secondQualityQuantity: true,
+    const [totalOrders, ordersWithReviews, ordersWithRework, aggregated, firstTimeApproved] =
+      await Promise.all([
+        // Total orders
+        this.prisma.order.count({ where: whereClause }),
+        // Orders that have been reviewed
+        this.prisma.order.count({
+          where: { ...whereClause, totalReviewCount: { gt: 0 } },
+        }),
+        // Orders with rework (have child orders)
+        this.prisma.order.count({
+          where: { ...whereClause, childOrders: { some: {} } },
+        }),
+        // Aggregate second quality count
+        this.prisma.order.aggregate({
+          where: whereClause,
+          _sum: { secondQualityCount: true },
+        }),
+        // First-time approved: orders with exactly 1 review that is APPROVED
+        this.prisma.order.count({
+          where: {
+            ...whereClause,
+            reviews: { every: { result: 'APPROVED' } },
+            totalReviewCount: 1,
           },
-        },
-        childOrders: { select: { id: true } },
-      },
-    });
+        }),
+      ]);
 
-    const totalOrders = orders.length;
-    const ordersWithReviews = orders.filter(
-      (o) => o.totalReviewCount > 0,
-    ).length;
-    const ordersWithRework = orders.filter(
-      (o) => o.childOrders.length > 0,
-    ).length;
-    const totalSecondQuality = orders.reduce(
-      (sum, o) => sum + o.secondQualityCount,
-      0,
-    );
+    const totalSecondQuality = aggregated._sum.secondQualityCount || 0;
 
-    // Calculate approval rate
-    const reviewedOrders = orders.filter((o) => o.reviews.length > 0);
-    const approvedFirstTime = reviewedOrders.filter(
-      (o) => o.reviews.length === 1 && o.reviews[0].result === 'APPROVED',
-    ).length;
     const firstTimeApprovalRate =
-      reviewedOrders.length > 0
-        ? (approvedFirstTime / reviewedOrders.length) * 100
+      ordersWithReviews > 0
+        ? (firstTimeApproved / ordersWithReviews) * 100
         : 0;
 
     return {

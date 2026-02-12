@@ -334,6 +334,9 @@ export class AuthService {
       },
     });
 
+    // Invalidate JWT user cache so next request picks up new data
+    await this.cache.del(`jwt:user:${userId}`);
+
     return this.getProfile(userId);
   }
 
@@ -402,6 +405,10 @@ export class AuthService {
           'revoked',
           ttl,
         );
+      }
+      // Invalidate JWT user cache
+      if (payload.sub) {
+        await this.cache.del(`jwt:user:${payload.sub}`);
       }
     } catch {
       // Token already expired or invalid — no need to blacklist

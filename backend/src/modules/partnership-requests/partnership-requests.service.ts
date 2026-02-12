@@ -384,6 +384,70 @@ export class PartnershipRequestsService {
   }
 
   /**
+   * Check existing requests/relationships for multiple suppliers at once (batch)
+   */
+  async checkExistingBatch(supplierIds: string[], userId: string) {
+    const companyUser = await this.prisma.companyUser.findFirst({
+      where: {
+        userId,
+        company: { type: CompanyType.BRAND },
+      },
+    });
+
+    if (!companyUser) {
+      throw new ForbiddenException('Usuário não pertence a uma marca');
+    }
+
+    const brandId = companyUser.companyId;
+
+    // Fetch all relationships and pending requests in two queries
+    const [relationships, pendingRequests] = await Promise.all([
+      this.prisma.supplierBrandRelationship.findMany({
+        where: {
+          brandId,
+          supplierId: { in: supplierIds },
+        },
+      }),
+      this.prisma.partnershipRequest.findMany({
+        where: {
+          brandId,
+          supplierId: { in: supplierIds },
+          status: PartnershipRequestStatus.PENDING,
+        },
+      }),
+    ]);
+
+    // Index by supplierId for O(1) lookups
+    const relationshipMap = new Map(
+      relationships.map((r) => [r.supplierId, r]),
+    );
+    const pendingRequestMap = new Map(
+      pendingRequests.map((r) => [r.supplierId, r]),
+    );
+
+    // Build result record
+    const result: Record<string, {
+      hasActiveRelationship: boolean;
+      hasPendingRequest: boolean;
+      pendingRequestId: string | null;
+      relationshipStatus: string | null;
+    }> = {};
+
+    for (const supplierId of supplierIds) {
+      const relationship = relationshipMap.get(supplierId);
+      const pendingRequest = pendingRequestMap.get(supplierId);
+      result[supplierId] = {
+        hasActiveRelationship: relationship?.status === RelationshipStatus.ACTIVE,
+        hasPendingRequest: !!pendingRequest,
+        pendingRequestId: pendingRequest?.id || null,
+        relationshipStatus: relationship?.status || null,
+      };
+    }
+
+    return result;
+  }
+
+  /**
    * Respond to a partnership request (accept or reject)
    */
   async respond(id: string, dto: RespondPartnershipRequestDto, userId: string, clientIp?: string) {

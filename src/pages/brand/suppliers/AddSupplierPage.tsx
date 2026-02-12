@@ -102,22 +102,17 @@ const AddSupplierPage: React.FC = () => {
             const data = await relationshipsService.getAvailableForBrand(brandId);
             setAvailableSuppliers(data);
 
-            // Load partnership request status for all suppliers in parallel
-            const results = await Promise.all(
-                data.map(async (supplier) => {
-                    try {
-                        const status = await partnershipRequestsService.checkExisting(supplier.id);
-                        return [supplier.id, status] as const;
-                    } catch {
-                        return null;
-                    }
-                }),
-            );
-            const statuses: Record<string, CheckExistingResponse> = {};
-            for (const result of results) {
-                if (result) statuses[result[0]] = result[1];
+            // Load partnership request status for all suppliers in a single batch call
+            if (data.length > 0) {
+                try {
+                    const statuses = await partnershipRequestsService.checkExistingBatch(
+                        data.map(s => s.id)
+                    );
+                    setSupplierStatuses(statuses);
+                } catch {
+                    // Ignore batch check errors - supplier cards will show default state
+                }
             }
-            setSupplierStatuses(statuses);
         } catch (error) {
             console.error('Error loading available suppliers:', error);
             setErrorMessage('Erro ao carregar fornecedores disponíveis');

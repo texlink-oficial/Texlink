@@ -90,6 +90,18 @@ export class PartnershipRequestsController {
   }
 
   /**
+   * Check existing requests/relationships for multiple suppliers at once (batch)
+   */
+  @Post('check-batch')
+  @Roles(UserRole.BRAND)
+  checkExistingBatch(
+    @Body() dto: { supplierIds: string[] },
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.partnershipRequestsService.checkExistingBatch(dto.supplierIds, userId);
+  }
+
+  /**
    * Get request by ID
    */
   @Get(':id')

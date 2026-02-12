@@ -12,9 +12,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Res,
-  StreamableFile,
   NotFoundException,
-  ForbiddenException,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -27,9 +25,8 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
-import * as fs from 'fs';
-import * as path from 'path';
 import { ContractsService } from './contracts.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateContractDto,
   UploadContractDto,
@@ -55,7 +52,10 @@ import { UserRole } from '@prisma/client';
 @ApiTags('Contratos')
 @Controller('contracts')
 export class ContractsController {
-  constructor(private readonly contractsService: ContractsService) {}
+  constructor(
+    private readonly contractsService: ContractsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   // ==================== BRAND ENDPOINTS ====================
 
@@ -181,34 +181,17 @@ export class ContractsController {
   async downloadContract(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<StreamableFile> {
+    @Res() res: Response,
+  ): Promise<void> {
     const contract = await this.contractsService.findById(id, user.id);
 
     if (!contract.documentUrl) {
       throw new NotFoundException('Documento não disponível');
     }
 
-    // SECURITY FIX: Validate path is within allowed uploads directory
-    const uploadsDir = path.resolve(process.cwd(), 'uploads');
-    const requestedPath = path.resolve(process.cwd(), contract.documentUrl);
-
-    if (!requestedPath.startsWith(uploadsDir + path.sep)) {
-      throw new ForbiddenException('Acesso negado ao arquivo');
-    }
-
-    if (!fs.existsSync(requestedPath)) {
-      throw new NotFoundException('Arquivo não encontrado');
-    }
-
-    const file = fs.createReadStream(requestedPath);
-
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${contract.displayId}.pdf"`,
-    });
-
-    return new StreamableFile(file);
+    // Get a presigned/resolved URL from the storage provider and redirect
+    const url = await this.contractsService.getDocumentUrl(contract.documentUrl);
+    res.redirect(url);
   }
 
   /**
@@ -452,21 +435,14 @@ export class ContractsController {
    * Busca convite pelo token (helper reutilizável)
    */
   private async getInvitationByToken(token: string) {
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
+    const invitation = await this.prisma.credentialInvitation.findUnique({
+      where: { token },
+    });
 
-    try {
-      const invitation = await prisma.credentialInvitation.findUnique({
-        where: { token },
-      });
-
-      if (!invitation) {
-        throw new Error('Token de convite inválido');
-      }
-
-      return invitation;
-    } finally {
-      await prisma.$disconnect();
+    if (!invitation) {
+      throw new NotFoundException('Token de convite inválido');
     }
+
+    return invitation;
   }
 }

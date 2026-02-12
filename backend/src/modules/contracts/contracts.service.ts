@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   Logger,
   NotFoundException,
   BadRequestException,
@@ -15,9 +16,9 @@ import {
   Prisma,
 } from '@prisma/client';
 import PDFDocument from 'pdfkit';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as crypto from 'crypto';
+import type { StorageProvider } from '../upload/storage.provider';
+import { STORAGE_PROVIDER } from '../upload/storage.provider';
 import {
   DEFAULT_CONTRACT_TEMPLATE,
   DEFAULT_PAYMENT_TERMS,
@@ -42,21 +43,12 @@ import {
 @Injectable()
 export class ContractsService {
   private readonly logger = new Logger(ContractsService.name);
-  private readonly uploadsPath = path.join(
-    process.cwd(),
-    'uploads',
-    'contracts',
-  );
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
-  ) {
-    // Criar diretório de uploads se não existir
-    if (!fs.existsSync(this.uploadsPath)) {
-      fs.mkdirSync(this.uploadsPath, { recursive: true });
-    }
-  }
+    @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
+  ) {}
 
   // ==================== CONTRACT MANAGEMENT METHODS ====================
 
@@ -114,14 +106,25 @@ export class ContractsService {
       contractText = contractText.replace(regex, String(value));
     });
 
-    // Gerar PDF
+    // Gerar PDF em buffer
     const fileName = `${displayId}.pdf`;
-    const filePath = path.join(this.uploadsPath, fileName);
-
-    await this.generatePDF(contractText, filePath, dto.title);
+    const pdfBuffer = await this.generatePDF(contractText, dto.title);
 
     // Calcular hash do documento
-    const documentHash = await this.calculateFileHash(filePath);
+    const documentHash = this.calculateBufferHash(pdfBuffer);
+
+    // Upload via StorageProvider
+    const { url: documentUrl } = await this.storage.upload(
+      {
+        fieldname: 'file',
+        originalname: fileName,
+        encoding: '7bit',
+        mimetype: 'application/pdf',
+        buffer: pdfBuffer,
+        size: pdfBuffer.length,
+      },
+      'contracts',
+    );
 
     // Criar registro do contrato
     const contract = await this.prisma.supplierContract.create({
@@ -136,7 +139,7 @@ export class ContractsService {
         value: dto.value ? new Prisma.Decimal(dto.value) : null,
         validFrom: new Date(dto.validFrom),
         validUntil: new Date(dto.validUntil),
-        documentUrl: `/uploads/contracts/${fileName}`,
+        documentUrl,
         documentHash,
         terms: dto.terms as any,
         parentContractId: dto.parentContractId,
@@ -180,13 +183,22 @@ export class ContractsService {
     // Gerar displayId único
     const displayId = await this.generateDisplayId();
 
-    // Salvar arquivo
-    const fileName = `${displayId}.pdf`;
-    const filePath = path.join(this.uploadsPath, fileName);
-    fs.writeFileSync(filePath, file.buffer);
-
     // Calcular hash do documento
-    const documentHash = await this.calculateFileHash(filePath);
+    const documentHash = this.calculateBufferHash(file.buffer);
+
+    // Upload via StorageProvider
+    const fileName = `${displayId}.pdf`;
+    const { url: documentUrl } = await this.storage.upload(
+      {
+        fieldname: 'file',
+        originalname: fileName,
+        encoding: '7bit',
+        mimetype: file.mimetype || 'application/pdf',
+        buffer: file.buffer,
+        size: file.size || file.buffer.length,
+      },
+      'contracts',
+    );
 
     // Criar registro do contrato
     const contract = await this.prisma.supplierContract.create({
@@ -199,7 +211,7 @@ export class ContractsService {
         title: dto.title,
         validFrom: new Date(dto.validFrom),
         validUntil: new Date(dto.validUntil),
-        documentUrl: `/uploads/contracts/${fileName}`,
+        documentUrl,
         documentHash,
         parentContractId: dto.parentContractId,
         createdById: userId,
@@ -790,6 +802,31 @@ export class ContractsService {
   }
 
   /**
+   * Resolve a document URL, returning a presigned URL for S3 or a direct URL for legacy paths.
+   * Handles backward compatibility with old `/uploads/contracts/...` paths.
+   */
+  async getDocumentUrl(documentUrl: string): Promise<string> {
+    // Legacy local paths: /uploads/contracts/CTR-xxx.pdf
+    if (documentUrl.startsWith('/uploads/')) {
+      // Extract key from legacy path (remove leading /uploads/)
+      const key = documentUrl.replace(/^\/uploads\//, '');
+      if (this.storage.getPresignedUrl) {
+        return this.storage.getPresignedUrl(key, 3600);
+      }
+      return this.storage.getUrl(key);
+    }
+
+    // URLs from StorageProvider (S3, CloudFront, or local http:// URLs)
+    if (this.storage.resolveUrl) {
+      const resolved = await this.storage.resolveUrl(documentUrl, 3600);
+      if (resolved) return resolved;
+    }
+
+    // Fallback: return as-is (already a full URL)
+    return documentUrl;
+  }
+
+  /**
    * Buscar contratos vencendo em X dias
    */
   async getExpiringContracts(days: number) {
@@ -929,14 +966,25 @@ export class ContractsService {
       contractText = contractText.replace(regex, value);
     });
 
-    // Gerar PDF
+    // Gerar PDF em buffer
     const fileName = `${displayId}.pdf`;
-    const filePath = path.join(this.uploadsPath, fileName);
-
-    await this.generatePDF(contractText, filePath);
+    const pdfBuffer = await this.generatePDF(contractText);
 
     // Calcular hash do documento
-    const documentHash = await this.calculateFileHash(filePath);
+    const documentHash = this.calculateBufferHash(pdfBuffer);
+
+    // Upload via StorageProvider
+    const { url: documentUrl } = await this.storage.upload(
+      {
+        fieldname: 'file',
+        originalname: fileName,
+        encoding: '7bit',
+        mimetype: 'application/pdf',
+        buffer: pdfBuffer,
+        size: pdfBuffer.length,
+      },
+      'contracts',
+    );
 
     // Criar registro do contrato
     const contract = await this.prisma.supplierContract.create({
@@ -945,7 +993,7 @@ export class ContractsService {
         credentialId,
         templateId: 'default',
         templateVersion: '1.0',
-        documentUrl: `/uploads/contracts/${fileName}`,
+        documentUrl,
         documentHash,
         terms: terms as any,
         // Marca assina automaticamente (pode ser alterado futuramente)
@@ -1126,20 +1174,25 @@ export class ContractsService {
       contractText = contractText.replace(regex, String(value));
     });
 
-    // Gerar PDF
+    // Gerar PDF em buffer
     const fileName = `contract-${displayId}.pdf`;
-    const filePath = path.join(this.uploadsPath, fileName);
-
-    await this.generatePDF(contractText, filePath);
+    const pdfBuffer = await this.generatePDF(contractText);
 
     // Calcular hash do documento
-    const fileBuffer = fs.readFileSync(filePath);
-    const documentHash = crypto
-      .createHash('sha256')
-      .update(fileBuffer)
-      .digest('hex');
+    const documentHash = this.calculateBufferHash(pdfBuffer);
 
-    const documentUrl = `/uploads/contracts/${fileName}`;
+    // Upload via StorageProvider
+    const { url: documentUrl } = await this.storage.upload(
+      {
+        fieldname: 'file',
+        originalname: fileName,
+        encoding: '7bit',
+        mimetype: 'application/pdf',
+        buffer: pdfBuffer,
+        size: pdfBuffer.length,
+      },
+      'contracts',
+    );
 
     // Criar registro do contrato
     const contract = await this.prisma.supplierContract.create({
@@ -1269,13 +1322,12 @@ export class ContractsService {
   // ==================== PRIVATE HELPERS ====================
 
   /**
-   * Gera PDF usando PDFKit
+   * Gera PDF usando PDFKit e retorna o conteúdo como Buffer
    */
   private async generatePDF(
     text: string,
-    outputPath: string,
     title?: string,
-  ): Promise<void> {
+  ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
         const doc = new PDFDocument({
@@ -1288,9 +1340,11 @@ export class ContractsService {
           },
         });
 
-        const stream = fs.createWriteStream(outputPath);
+        const chunks: Buffer[] = [];
 
-        doc.pipe(stream);
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
 
         // Cabeçalho
         doc
@@ -1314,9 +1368,6 @@ export class ContractsService {
           );
 
         doc.end();
-
-        stream.on('finish', resolve);
-        stream.on('error', reject);
       } catch (error) {
         reject(error);
       }
@@ -1324,17 +1375,10 @@ export class ContractsService {
   }
 
   /**
-   * Calcula hash SHA-256 do arquivo
+   * Calcula hash SHA-256 de um Buffer
    */
-  private async calculateFileHash(filePath: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const hash = crypto.createHash('sha256');
-      const stream = fs.createReadStream(filePath);
-
-      stream.on('data', (data) => hash.update(data));
-      stream.on('end', () => resolve(hash.digest('hex')));
-      stream.on('error', reject);
-    });
+  private calculateBufferHash(buffer: Buffer): string {
+    return crypto.createHash('sha256').update(buffer).digest('hex');
   }
 
   /**
