@@ -19,11 +19,20 @@ import {
   ORDER_STATUS_CHANGED,
   ORDER_FINALIZED,
 } from '../notifications/events/notification.events';
+import { STORAGE_PROVIDER } from '../upload/storage.provider';
 
 describe('OrdersService', () => {
   let service: OrdersService;
   let prisma: PrismaService;
   let eventEmitter: EventEmitter2;
+
+  const mockStorage = {
+    upload: jest.fn(),
+    delete: jest.fn(),
+    getUrl: jest.fn((key: string) => `http://localhost/uploads/${key}`),
+    getPresignedUrl: jest.fn((key: string) => Promise.resolve(`http://localhost/uploads/${key}`)),
+    resolveUrl: jest.fn((url: string | null) => Promise.resolve(url)),
+  };
 
   const mockPrisma = {
     order: {
@@ -70,6 +79,10 @@ describe('OrdersService', () => {
         {
           provide: EventEmitter2,
           useValue: mockEventEmitter,
+        },
+        {
+          provide: STORAGE_PROVIDER,
+          useValue: mockStorage,
         },
       ],
     }).compile();
@@ -396,7 +409,7 @@ describe('OrdersService', () => {
       expect(result.status).toBe(OrderStatus.EM_PREPARACAO_SAIDA_MARCA);
     });
 
-    it('should allow valid transition: ACEITO_PELA_FACCAO to EM_PRODUCAO (by supplier, materialsProvided=false)', async () => {
+    it('should allow valid transition: ACEITO_PELA_FACCAO to FILA_DE_PRODUCAO (by supplier, materialsProvided=false)', async () => {
       const acceptedOrder = {
         ...mockOrder,
         status: OrderStatus.ACEITO_PELA_FACCAO,
@@ -410,15 +423,15 @@ describe('OrdersService', () => {
 
       const updatedOrder = {
         ...acceptedOrder,
-        status: OrderStatus.EM_PRODUCAO,
+        status: OrderStatus.FILA_DE_PRODUCAO,
       };
       mockPrisma.order.update.mockResolvedValue(updatedOrder);
 
       const result = await service.updateStatus('order-1', 'user-2', {
-        status: OrderStatus.EM_PRODUCAO,
+        status: OrderStatus.FILA_DE_PRODUCAO,
       });
 
-      expect(result.status).toBe(OrderStatus.EM_PRODUCAO);
+      expect(result.status).toBe(OrderStatus.FILA_DE_PRODUCAO);
     });
 
     it('should throw BadRequestException for invalid transition: LANCADO_PELA_MARCA to EM_PRODUCAO', async () => {
@@ -565,12 +578,12 @@ describe('OrdersService', () => {
       reviewedBy: { id: 'user-1', name: 'Test User' },
     };
 
-    it('should create review with all APPROVED quantities and set status to FINALIZADO', async () => {
+    it('should create review with all APPROVED quantities and set status to EM_PROCESSO_PAGAMENTO', async () => {
       mockPrisma.order.findUnique.mockResolvedValue(mockOrder);
       mockPrisma.orderReview.create.mockResolvedValue(mockReview);
       mockPrisma.order.update.mockResolvedValue({
         ...mockOrder,
-        status: OrderStatus.FINALIZADO,
+        status: OrderStatus.EM_PROCESSO_PAGAMENTO,
       });
 
       const result = await service.createReview('order-1', 'user-1', {
@@ -582,12 +595,14 @@ describe('OrdersService', () => {
       });
 
       expect(result.result).toBe(ReviewResult.APPROVED);
-      expect(mockPrisma.order.update).toHaveBeenCalledWith({
-        where: { id: 'order-1' },
-        data: expect.objectContaining({
-          status: OrderStatus.FINALIZADO,
+      expect(mockPrisma.order.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'order-1' },
+          data: expect.objectContaining({
+            status: OrderStatus.EM_PROCESSO_PAGAMENTO,
+          }),
         }),
-      });
+      );
     });
 
     it('should create review with partial approved and set status to PARCIALMENTE_APROVADO', async () => {
@@ -959,11 +974,13 @@ describe('OrdersService', () => {
       const result = await service.getAvailableTransitions('order-1', 'user-1');
 
       expect(result.canAdvance).toBe(true);
-      expect(result.transitions).toHaveLength(1);
+      // Brand gets: Preparar Insumos + Cancelar Pedido
+      expect(result.transitions).toHaveLength(2);
       expect(result.transitions[0].nextStatus).toBe(
         OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
       );
       expect(result.transitions[0].label).toBe('Preparar Insumos');
+      expect(result.transitions[1].nextStatus).toBe(OrderStatus.CANCELADO);
     });
 
     it('should return correct transitions for supplier', async () => {
@@ -990,15 +1007,19 @@ describe('OrdersService', () => {
       const result = await service.getAvailableTransitions('order-1', 'user-2');
 
       expect(result.canAdvance).toBe(true);
-      expect(result.transitions).toHaveLength(1);
+      // Supplier gets: Produção Concluída + Cancelar Pedido
+      expect(result.transitions).toHaveLength(2);
       expect(result.transitions[0].nextStatus).toBe(OrderStatus.PRONTO);
       expect(result.transitions[0].label).toBe('Produção Concluída');
+      expect(result.transitions[1].nextStatus).toBe(OrderStatus.CANCELADO);
     });
 
     it('should return empty transitions when it is not user turn', async () => {
+      // Use EM_TRANSITO_PARA_MARCA status where only BRAND can act (Confirmar Recebimento)
+      // Supplier has no transitions here — not even cancel
       const order = {
         id: 'order-1',
-        status: OrderStatus.ACEITO_PELA_FACCAO,
+        status: OrderStatus.EM_TRANSITO_PARA_MARCA,
         materialsProvided: true,
         brandId: 'brand-1',
         supplierId: 'supplier-1',
@@ -1021,7 +1042,7 @@ describe('OrdersService', () => {
       expect(result.canAdvance).toBe(false);
       expect(result.transitions).toHaveLength(0);
       expect(result.waitingFor).toBe('BRAND');
-      expect(result.waitingLabel).toBe('Aguardando a Marca preparar insumos');
+      expect(result.waitingLabel).toBe('Aguardando a Marca confirmar recebimento');
     });
   });
 });
