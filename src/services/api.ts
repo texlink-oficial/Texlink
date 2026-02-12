@@ -33,10 +33,33 @@ const processQueue = (error: unknown, token: string | null = null) => {
     failedQueue = [];
 };
 
+/**
+ * Unwrap envelope: { data, meta } → data
+ * Falls back to raw response if no envelope detected (backward compat)
+ */
+const unwrapEnvelope = (responseData: any) => {
+    if (responseData && typeof responseData === 'object' && 'data' in responseData && 'meta' in responseData) {
+        return responseData.data;
+    }
+    return responseData;
+};
+
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Unwrap the API envelope so frontend code keeps using response.data directly
+        response.data = unwrapEnvelope(response.data);
+        return response;
+    },
     async (error) => {
         const originalRequest = error.config;
+
+        // Extract structured error message from envelope and ensure backward compat
+        if (error.response?.data?.error?.message) {
+            const msg = error.response.data.error.message;
+            error.message = Array.isArray(msg) ? msg[0] : msg;
+            // Backward compat: frontend code reads error.response.data.message
+            error.response.data.message = error.response.data.error.message;
+        }
 
         // Don't retry refresh/login/register requests
         if (
@@ -69,7 +92,9 @@ api.interceptors.response.use(
                         `${API_URL}/auth/refresh`,
                         { refreshToken },
                     );
-                    const { accessToken, refreshToken: newRefreshToken } = response.data;
+                    // Raw axios call gets the full envelope — unwrap it
+                    const refreshData = unwrapEnvelope(response.data);
+                    const { accessToken, refreshToken: newRefreshToken } = refreshData;
                     sessionStorage.setItem('token', accessToken);
                     localStorage.setItem('refreshToken', newRefreshToken);
                     originalRequest.headers.Authorization = `Bearer ${accessToken}`;

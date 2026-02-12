@@ -7,6 +7,7 @@ import * as Sentry from '@sentry/nestjs';
 import * as bodyParser from 'body-parser';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -53,7 +54,8 @@ async function bootstrap() {
   app.use(bodyParser.json({ limit: '1mb' }));
   app.use(bodyParser.urlencoded({ limit: '1mb', extended: true }));
 
-  // Global exception filter
+  // Global response envelope: { data, meta } for success, { error, meta } for errors
+  app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // Global validation pipe

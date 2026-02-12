@@ -9,14 +9,18 @@ import {
 import { Request, Response } from 'express';
 import * as Sentry from '@sentry/nestjs';
 
-interface ErrorResponse {
-  statusCode: number;
-  timestamp: string;
-  path: string;
-  method: string;
-  message: string | string[];
-  error?: string;
-  correlationId?: string;
+export interface ApiErrorResponse {
+  error: {
+    code: string;
+    message: string | string[];
+  };
+  meta: {
+    statusCode: number;
+    timestamp: string;
+    path: string;
+    method: string;
+    correlationId: string;
+  };
 }
 
 @Catch()
@@ -34,7 +38,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     let status: number;
     let message: string | string[];
-    let error: string | undefined;
+    let errorCode: string;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -46,19 +50,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
         const responseObj = exceptionResponse as Record<string, unknown>;
         message =
           (responseObj.message as string | string[]) || exception.message;
-        error = responseObj.error as string;
       } else {
         message = exception.message;
       }
+
+      errorCode = HttpStatus[status] || 'UNKNOWN_ERROR';
     } else if (exception instanceof Error) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message =
         process.env.NODE_ENV === 'production'
           ? 'Internal server error'
           : exception.message;
-      error = 'Internal Server Error';
+      errorCode = 'INTERNAL_SERVER_ERROR';
 
-      // Report to Sentry + log the full error (but don't expose to client)
       Sentry.captureException(exception, {
         extra: { correlationId, path: request.url, method: request.method },
       });
@@ -70,7 +74,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     } else {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'Internal server error';
-      error = 'Internal Server Error';
+      errorCode = 'INTERNAL_SERVER_ERROR';
 
       this.logger.error(
         `Unknown exception type: ${JSON.stringify(exception)}`,
@@ -79,23 +83,25 @@ export class HttpExceptionFilter implements ExceptionFilter {
       );
     }
 
-    const errorResponse: ErrorResponse = {
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      method: request.method,
-      message,
-      correlationId,
+    const errorResponse: ApiErrorResponse = {
+      error: {
+        code: errorCode,
+        message,
+      },
+      meta: {
+        statusCode: status,
+        timestamp: new Date().toISOString(),
+        path: request.url,
+        method: request.method,
+        correlationId,
+      },
     };
-
-    if (error) {
-      errorResponse.error = error;
-    }
 
     // Log all errors (structured logging)
     const logLevel = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'log';
     this.logger[logLevel]({
-      ...errorResponse,
+      ...errorResponse.meta,
+      message: errorResponse.error.message,
       userAgent: request.headers['user-agent'],
       ip: request.ip,
     });
