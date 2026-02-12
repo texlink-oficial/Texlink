@@ -39,6 +39,7 @@ const RegisterPage: React.FC = () => {
     const [phone, setPhone] = useState('');
     const [role, setRole] = useState<'BRAND' | 'SUPPLIER'>('SUPPLIER');
     const [showPassword, setShowPassword] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -67,6 +68,11 @@ const RegisterPage: React.FC = () => {
         const passwordError = validatePassword(password);
         if (passwordError) {
             setError(passwordError);
+            return;
+        }
+
+        if (!termsAccepted) {
+            setError('Voce precisa aceitar os termos de uso e a politica de privacidade para continuar.');
             return;
         }
 
@@ -263,9 +269,23 @@ const RegisterPage: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* Termos de Uso */}
+                        <div className="flex items-start gap-3">
+                            <input
+                                type="checkbox"
+                                id="termsAccepted"
+                                checked={termsAccepted}
+                                onChange={(e) => setTermsAccepted(e.target.checked)}
+                                className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-brand-500 focus:ring-brand-500 focus:ring-offset-0"
+                            />
+                            <label htmlFor="termsAccepted" className="text-sm text-brand-300 leading-relaxed cursor-pointer">
+                                Eu aceito os termos de uso do aplicativo e estou de acordo com a politica de privacidade.
+                            </label>
+                        </div>
+
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || !termsAccepted}
                             className="w-full py-3 px-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (

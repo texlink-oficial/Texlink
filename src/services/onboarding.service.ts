@@ -129,6 +129,8 @@ export const onboardingService = {
         productTypes: string[];
         specialties?: string[];
         monthlyCapacity: number;
+        activeWorkers?: number;
+        hoursPerDay?: number;
         currentOccupancy?: number;
     }): Promise<SupplierProfile> {
         const response = await api.patch<SupplierProfile>('/suppliers/onboarding/phase3', data);

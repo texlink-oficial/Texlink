@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Package, Sparkles, Users, Clock, Factory } from 'lucide-react';
+import { PRODUCT_TYPE_OPTIONS, MACHINE_OPTIONS } from '../../../constants/supplierOptions';
 
 interface Step5CapabilitiesProps {
   token: string;
@@ -13,28 +14,8 @@ interface CapabilitiesData {
   hoursPerDay: number;
 }
 
-const productTypeOptions = [
-  'Infantil',
-  'Adulto Feminino',
-  'Adulto Masculino',
-  'Fitness/Activewear',
-  'Moda Praia',
-  'Pijamas/Loungewear',
-  'Uniformes',
-  'Jeans/Denim',
-];
-
-const specialtyOptions = [
-  'Malha',
-  'Tricô',
-  'Jeans',
-  'Alfaiataria',
-  'Moletom',
-  'Tecido Plano',
-  'Lingerie',
-  'Bordados',
-  'Estamparia',
-];
+const productTypeOptions = [...PRODUCT_TYPE_OPTIONS];
+const specialtyOptions = [...MACHINE_OPTIONS];
 
 /**
  * Step 5: Capacidades Produtivas

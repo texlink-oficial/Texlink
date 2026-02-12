@@ -497,7 +497,7 @@ export const MOCK_ORDERS: Order[] = [
 export const STATUS_COLUMNS = [
   { id: OrderStatus.NEW, label: 'Novos Pedidos', color: 'bg-slate-100 text-slate-800 border-slate-200' },
   { id: OrderStatus.NEGOTIATING, label: 'Em Negociação', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-  { id: OrderStatus.ACCEPTED, label: 'Aguardando Insumos', color: 'bg-amber-100 text-amber-800 border-amber-200' },
+  { id: OrderStatus.ACCEPTED, label: 'Aceito pela Facção', color: 'bg-amber-100 text-amber-800 border-amber-200' },
   { id: OrderStatus.PRODUCTION_QUEUE, label: 'Fila de Produção', color: 'bg-purple-100 text-purple-800 border-purple-200' },
   { id: OrderStatus.PRODUCTION, label: 'Em Produção', color: 'bg-brand-100 text-brand-800 border-brand-200' },
   { id: OrderStatus.READY_SEND, label: 'Em Trânsito', color: 'bg-blue-100 text-blue-800 border-blue-200' },

@@ -198,7 +198,19 @@ const SupplierKanbanDashboard: React.FC = () => {
     const ordersByColumn = useMemo(() => {
         const grouped: Record<string, Order[]> = {};
         KANBAN_COLUMNS.forEach(col => {
-            grouped[col.id] = filteredOrders.filter(o => col.statuses.includes(o.status));
+            grouped[col.id] = [];
+        });
+        filteredOrders.forEach(order => {
+            // When supplier provides materials (materialsProvided=false), ACCEPTED orders
+            // skip "Aguardando Insumos" and go directly to "Fila de Produção"
+            if (order.status === OrderStatus.ACCEPTED && !order.materialsProvided) {
+                grouped['production_queue']?.push(order);
+                return;
+            }
+            const col = KANBAN_COLUMNS.find(c => c.statuses.includes(order.status));
+            if (col) {
+                grouped[col.id].push(order);
+            }
         });
         return grouped;
     }, [filteredOrders]);

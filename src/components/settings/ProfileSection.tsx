@@ -67,7 +67,16 @@ const ProfileSection: React.FC = () => {
         }
     };
 
-    const companyTypeLabel = company?.type === 'BRAND' ? 'Marca' : company?.type === 'SUPPLIER' ? 'Faccao' : company?.type;
+    const companyTypeLabel = company?.type === 'BRAND' ? 'Marca' : company?.type === 'SUPPLIER' ? 'Facção' : company?.type;
+
+    const userRoleLabel = (role: string) => {
+        const map: Record<string, string> = {
+            BRAND: 'Marca',
+            SUPPLIER: 'Facção',
+            ADMIN: 'Administrador',
+        };
+        return map[role] || role;
+    };
 
     const statusLabel = (status: string) => {
         const map: Record<string, { label: string; color: string }> = {
@@ -88,9 +97,9 @@ const ProfileSection: React.FC = () => {
                     <User className="w-5 h-5 text-brand-600 dark:text-brand-400" />
                 </div>
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Informacoes Pessoais</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Informações Pessoais</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Gerencie suas informacoes pessoais
+                        Gerencie suas informações pessoais
                     </p>
                 </div>
             </div>
@@ -124,7 +133,7 @@ const ProfileSection: React.FC = () => {
                             {initials}
                         </div>
                     )}
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{user.role}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{userRoleLabel(user.role)}</span>
                 </div>
 
                 {/* Form */}
@@ -180,7 +189,7 @@ const ProfileSection: React.FC = () => {
                         </div>
                         {companyUser?.role && (
                             <div>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">Funcao</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Função</span>
                                 <p className="text-sm text-gray-900 dark:text-white">
                                     {ROLE_NAMES[companyUser.role as CompanyRole] || companyUser.role}
                                 </p>
@@ -194,7 +203,7 @@ const ProfileSection: React.FC = () => {
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-4">
                 <div className="flex items-center gap-2 mb-3">
                     <Shield className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white">Informacoes da Conta</h3>
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white">Informações da Conta</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {user.createdAt && (
@@ -240,7 +249,7 @@ const ProfileSection: React.FC = () => {
                             Salvando...
                         </>
                     ) : (
-                        'Salvar Alteracoes'
+                        'Salvar Alterações'
                     )}
                 </button>
             </div>

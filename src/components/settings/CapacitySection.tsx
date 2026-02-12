@@ -13,30 +13,7 @@ import {
 } from 'lucide-react';
 import { settingsService } from '../../services/settings.service';
 import { CapacitySettings } from '../../types';
-
-const PRODUCT_TYPE_OPTIONS = [
-    'Infantil',
-    'Adulto',
-    'Fitness',
-    'Moda Praia',
-    'Lingerie',
-    'Uniforme',
-    'Plus Size',
-    'Gestante',
-];
-
-const SPECIALTY_OPTIONS = [
-    'Malha',
-    'Jeans',
-    'Moletom',
-    'Tricô',
-    'Alfaiataria',
-    'Couro',
-    'Seda',
-    'Linho',
-    'Viscose',
-    'Poliéster',
-];
+import { PRODUCT_TYPE_OPTIONS, MACHINE_OPTIONS as SPECIALTY_OPTIONS } from '../../constants/supplierOptions';
 
 const CapacitySection: React.FC = () => {
     const [data, setData] = useState<CapacitySettings | null>(null);
@@ -238,9 +215,6 @@ const CapacitySection: React.FC = () => {
                             </p>
                         </div>
                     </div>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-3">
-                        A capacidade mensal é calculada automaticamente: costureiros × horas × 60min × 22 dias úteis
-                    </p>
                 </div>
 
                 {/* Capacity */}

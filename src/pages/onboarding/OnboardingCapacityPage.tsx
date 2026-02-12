@@ -2,29 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { onboardingService } from '../../services/onboarding.service';
 import { Package, Sparkles, Users, Clock, Factory, Loader2, CheckCircle } from 'lucide-react';
+import { PRODUCT_TYPE_OPTIONS, MACHINE_OPTIONS } from '../../constants/supplierOptions';
 
-const productTypeOptions = [
-    'Infantil',
-    'Adulto Feminino',
-    'Adulto Masculino',
-    'Fitness/Activewear',
-    'Moda Praia',
-    'Pijamas/Loungewear',
-    'Uniformes',
-    'Jeans/Denim',
-];
-
-const specialtyOptions = [
-    'Malha',
-    'Tricô',
-    'Jeans',
-    'Alfaiataria',
-    'Moletom',
-    'Tecido Plano',
-    'Lingerie',
-    'Bordados',
-    'Estamparia',
-];
+const productTypeOptions = [...PRODUCT_TYPE_OPTIONS];
+const specialtyOptions = [...MACHINE_OPTIONS];
 
 interface FormData {
     productTypes: string[];
@@ -88,6 +69,8 @@ const OnboardingCapacityPage: React.FC = () => {
                 productTypes: formData.productTypes,
                 specialties: formData.specialties.length > 0 ? formData.specialties : undefined,
                 monthlyCapacity: monthlyCapacityMinutes,
+                activeWorkers: formData.activeWorkers,
+                hoursPerDay: formData.hoursPerDay,
             });
             await onboardingService.completeOnboarding();
             navigate('/portal/inicio');

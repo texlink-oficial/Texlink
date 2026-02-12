@@ -2,20 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { brandOnboardingService } from '../../services/brandOnboarding.service';
 import { Package, Clock, Building2, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
+import { PRODUCT_TYPE_OPTIONS } from '../../constants/supplierOptions';
 
-const productTypeOptions = [
-    'Tecido Plano',
-    'Malha',
-    'Alfaiataria',
-    'Acessorios',
-    'Moda Praia',
-    'Fitness',
-    'Jeanswear',
-    'Moda Intima',
-    'Moda Infantil',
-    'Uniforme',
-    'Outro',
-];
+const productTypeOptions = [...PRODUCT_TYPE_OPTIONS];
 
 const timeInMarketOptions = [
     'Menos de 1 ano',

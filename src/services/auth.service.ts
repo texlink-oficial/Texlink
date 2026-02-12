@@ -60,6 +60,12 @@ export const authService = {
     },
 
     async register(data: RegisterDto): Promise<AuthResponse> {
+        // Clear any existing session/storage before registering a new account
+        // to prevent stale data from previous accounts leaking into the new one
+        sessionStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+
         const response = await api.post<AuthResponse>('/auth/register', data);
         const { accessToken, refreshToken, user } = response.data;
         sessionStorage.setItem('token', accessToken);
@@ -99,6 +105,9 @@ export const authService = {
         sessionStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
+        // Clear IndexedDB to prevent data leaking between accounts
+        indexedDB.deleteDatabase('ChatDB');
+        indexedDB.deleteDatabase('texlink-notifications');
         window.location.href = '/login';
     },
 

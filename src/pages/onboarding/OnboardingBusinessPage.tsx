@@ -2,52 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { onboardingService } from '../../services/onboarding.service';
 import { Package, Users, Clock, Building2, Loader2, CheckCircle, ArrowLeft, Wrench } from 'lucide-react';
+import { PRODUCT_TYPE_OPTIONS, MACHINE_OPTIONS } from '../../constants/supplierOptions';
 
-const productTypeOptions = [
-    'Tecido Plano',
-    'Malha',
-    'Alfaiataria',
-    'Acessorios',
-    'Moda Praia',
-    'Fitness',
-    'Jeanswear',
-    'Moda Intima',
-    'Moda Infantil',
-    'Uniforme',
-    'Outro',
-];
-
-const machineOptions = [
-    'Bordadeira',
-    'Botoneira',
-    'Caseadeira',
-    'Catraca',
-    'Cilindrica',
-    'Cobertura/Galoneira',
-    'Coluna',
-    'Elastiqueira',
-    'Enfestadeira',
-    'Fechadeira',
-    'Interloque',
-    'Maquina de pregar botao',
-    'Maquina de rebite',
-    'Overloque',
-    'Maquina de corte a quente',
-    'Maquina de corte (faca/vertical)',
-    'Maquina de ilhos',
-    'Maquina de ultrassom',
-    'Mesa de succao',
-    'Passadoria industrial',
-    'Plotter de risco',
-    'Ponto conjugado',
-    'Refiladeira',
-    'Reta industrial',
-    'Reta domestica',
-    'Travete',
-    'Type',
-    'Vaporizador',
-    'Zig-zag',
-];
+const productTypeOptions = [...PRODUCT_TYPE_OPTIONS];
+const machineOptions = [...MACHINE_OPTIONS];
 
 const timeInMarketOptions = [
     'Menos de 1 ano',

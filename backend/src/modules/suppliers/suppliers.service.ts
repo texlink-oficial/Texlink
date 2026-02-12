@@ -86,6 +86,8 @@ export class SuppliersService {
         productTypes: dto.productTypes,
         specialties: dto.specialties || [],
         monthlyCapacity: dto.monthlyCapacity,
+        activeWorkers: dto.activeWorkers ?? undefined,
+        hoursPerDay: dto.hoursPerDay ?? undefined,
         currentOccupancy: dto.currentOccupancy || 0,
         onboardingComplete: dto.onboardingComplete ?? true,
       },
