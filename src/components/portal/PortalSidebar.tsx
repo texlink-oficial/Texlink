@@ -364,15 +364,15 @@ export const PortalSidebar: React.FC = () => {
               </div>
 
               {/* Availability Badge with Glow */}
-              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium transition-all ${supplierProfile.company?.status === 'ACTIVE'
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium transition-all ${supplierProfile.company?.status === 'APPROVED'
                   ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                  : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
                 }`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${supplierProfile.company?.status === 'ACTIVE'
+                <div className={`w-1.5 h-1.5 rounded-full ${supplierProfile.company?.status === 'APPROVED'
                     ? 'bg-green-500 animate-glow-pulse'
-                    : 'bg-red-500'
-                  }`} style={supplierProfile.company?.status === 'ACTIVE' ? { boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)' } : {}} />
-                {supplierProfile.company?.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}
+                    : 'bg-yellow-500'
+                  }`} style={supplierProfile.company?.status === 'APPROVED' ? { boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)' } : {}} />
+                {supplierProfile.company?.status === 'APPROVED' ? 'Ativa' : 'Pendente'}
               </div>
             </div>
           )}

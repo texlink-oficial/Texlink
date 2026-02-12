@@ -9,7 +9,7 @@ const SupplierProfilePage: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Meu Perfil</h1>
                     <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                        Visualize e edite suas informacoes pessoais
+                        Visualize e edite suas informações pessoais
                     </p>
                 </div>
 
