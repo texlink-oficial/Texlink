@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Order, OrderStatus } from '../../types';
-import { Clock, AlertCircle, CheckCircle2, ChevronRight, Package, MapPin, Calendar, DollarSign, GripVertical, Scissors, Circle, Layers, Check, X, Paperclip, FileText, Tag, ArrowRight } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, ChevronRight, Package, MapPin, Calendar, DollarSign, GripVertical, Scissors, Circle, Layers, Check, X, Paperclip, FileText, Tag, ArrowRight, Scale } from 'lucide-react';
 
 interface OrderCardProps {
     order: Order;
@@ -10,6 +10,7 @@ interface OrderCardProps {
     onDragStart?: (e: React.DragEvent, order: Order) => void;
     onAccept?: (orderId: string) => Promise<void>;
     onReject?: (orderId: string) => Promise<void>;
+    onNegotiate?: (orderId: string) => Promise<void>;
     isSupplierView?: boolean;
     isMyTurn?: boolean;
 }
@@ -21,6 +22,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
     onDragStart,
     onAccept,
     onReject,
+    onNegotiate,
     isSupplierView = true,
     isMyTurn,
 }) => {
@@ -58,6 +60,18 @@ export const OrderCard: React.FC<OrderCardProps> = ({
             setIsProcessing(true);
             try {
                 await onReject(order.id);
+            } finally {
+                setIsProcessing(false);
+            }
+        }
+    };
+
+    const handleNegotiate = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (onNegotiate && !isProcessing) {
+            setIsProcessing(true);
+            try {
+                await onNegotiate(order.id);
             } finally {
                 setIsProcessing(false);
             }
@@ -133,7 +147,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
     const isFinalized = order.status === OrderStatus.FINALIZED;
     const isNewOrder = order.status === OrderStatus.NEW;
-    const showAcceptReject = isSupplierView && isNewOrder && onAccept && onReject;
+    const showActions = isSupplierView && isNewOrder && (onAccept || onNegotiate);
 
     const getUrgencyColor = (date: string) => {
         if (isFinalized) return 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800';
@@ -288,27 +302,44 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
                 {getWaitingBadge()}
 
-                {/* Accept/Reject Buttons for NEW orders */}
-                {showAcceptReject && (
-                    <div className="mt-2.5 flex gap-2">
-                        <button
-                            onClick={handleAccept}
-                            disabled={isProcessing}
-                            aria-label="Aceitar pedido"
-                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-sm press-scale touch-feedback focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                        >
-                            <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                            Aceitar
-                        </button>
-                        <button
-                            onClick={handleReject}
-                            disabled={isProcessing}
-                            aria-label="Recusar pedido"
-                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-sm press-scale touch-feedback focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-                        >
-                            <X className="h-3.5 w-3.5" aria-hidden="true" />
-                            Recusar
-                        </button>
+                {/* Action Buttons for NEW orders */}
+                {showActions && (
+                    <div className="mt-2.5 space-y-1.5">
+                        <div className="flex gap-2">
+                            {onAccept && (
+                                <button
+                                    onClick={handleAccept}
+                                    disabled={isProcessing}
+                                    aria-label="Aceitar pedido"
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-sm press-scale touch-feedback focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                                >
+                                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Aceitar
+                                </button>
+                            )}
+                            {onNegotiate && (
+                                <button
+                                    onClick={handleNegotiate}
+                                    disabled={isProcessing}
+                                    aria-label="Negociar pedido"
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-sm press-scale touch-feedback focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                                >
+                                    <Scale className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Negociar
+                                </button>
+                            )}
+                        </div>
+                        {onReject && (
+                            <button
+                                onClick={handleReject}
+                                disabled={isProcessing}
+                                aria-label="Recusar pedido"
+                                className="w-full flex items-center justify-center gap-1.5 py-1 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-50 text-red-600 dark:text-red-400 text-xs font-medium rounded-lg transition-all duration-200 border border-red-200 dark:border-red-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                            >
+                                <X className="h-3.5 w-3.5" aria-hidden="true" />
+                                Recusar
+                            </button>
+                        )}
                     </div>
                 )}
 

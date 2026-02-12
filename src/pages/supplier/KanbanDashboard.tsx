@@ -280,6 +280,18 @@ const SupplierKanbanDashboard: React.FC = () => {
         }
     };
 
+    // Handler for negotiating an order
+    const handleNegotiateOrder = async (orderId: string) => {
+        try {
+            await ordersService.updateStatus(orderId, 'EM_NEGOCIACAO' as any);
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, status: OrderStatus.NEGOTIATING } : o
+            ));
+        } catch (error) {
+            console.error('Error starting negotiation:', error);
+        }
+    };
+
     const activeFiltersCount =
         (dateFilter !== 'all' ? 1 : 0) +
         (statusFilter.length > 0 ? 1 : 0) +
@@ -381,6 +393,7 @@ const SupplierKanbanDashboard: React.FC = () => {
                                                         onDragStart={() => { }}
                                                         onAccept={handleAcceptOrder}
                                                         onReject={handleRejectOrder}
+                                                        onNegotiate={handleNegotiateOrder}
                                                         isSupplierView={true}
                                                     />
                                                 ))}
