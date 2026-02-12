@@ -9,6 +9,7 @@ import {
     AlertCircle,
     X
 } from 'lucide-react';
+import api from '../../../services/api';
 
 type PayoutFrequency = 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
 
@@ -44,20 +45,9 @@ const PayoutFrequencyPage: React.FC = () => {
     const loadConfig = async () => {
         try {
             setIsLoading(true);
-            // Mock data
-            const mockConfig: FrequencyConfig = {
-                currentFrequency: 'WEEKLY',
-                dayOfWeek: 1, // Monday
-                nextPayouts: [
-                    '2026-01-20',
-                    '2026-01-27',
-                    '2026-02-03',
-                    '2026-02-10',
-                ],
-                hasPendingRequest: false,
-            };
-            setConfig(mockConfig);
-            setSelectedFrequency(mockConfig.currentFrequency);
+            const response = await api.get<FrequencyConfig>('/portal/finance/payout-frequency');
+            setConfig(response.data);
+            setSelectedFrequency(response.data.currentFrequency);
         } catch (error) {
             console.error('Error loading config:', error);
         } finally {
@@ -68,8 +58,7 @@ const PayoutFrequencyPage: React.FC = () => {
     const handleSubmitRequest = async () => {
         try {
             setIsSubmitting(true);
-            // Would call API
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await api.post('/portal/finance/payout-frequency/request', { frequency: selectedFrequency });
             setShowRequestModal(false);
             setShowSuccess(true);
             setConfig(prev => prev ? { ...prev, hasPendingRequest: true, pendingRequestFrequency: selectedFrequency } : null);

@@ -1,25 +1,5 @@
 import api from './api';
-
-export type OrderStatus =
-    | 'LANCADO_PELA_MARCA'
-    | 'EM_NEGOCIACAO'
-    | 'ACEITO_PELA_FACCAO'
-    | 'EM_PREPARACAO_SAIDA_MARCA'
-    | 'EM_TRANSITO_PARA_FACCAO'
-    | 'EM_PREPARACAO_ENTRADA_FACCAO'
-    | 'FILA_DE_PRODUCAO'
-    | 'EM_PRODUCAO'
-    | 'PRONTO'
-    | 'EM_TRANSITO_PARA_MARCA'
-    | 'EM_REVISAO'
-    | 'PARCIALMENTE_APROVADO'
-    | 'REPROVADO'
-    | 'AGUARDANDO_RETRABALHO'
-    | 'EM_PROCESSO_PAGAMENTO'
-    | 'FINALIZADO'
-    | 'CANCELADO'
-    | 'RECUSADO_PELA_FACCAO'
-    | 'DISPONIVEL_PARA_OUTRAS';
+export { OrderStatus } from '../types';
 
 export type OrderOrigin = 'ORIGINAL' | 'REWORK';
 export type ReviewType = 'QUALITY_CHECK' | 'FINAL_REVIEW';

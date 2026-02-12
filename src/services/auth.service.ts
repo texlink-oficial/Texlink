@@ -32,6 +32,11 @@ export interface User {
     role: string;
     isActive: boolean;
     createdAt?: string;
+    companyId?: string;
+    companyName?: string;
+    companyType?: string;
+    brandId?: string;
+    supplierId?: string;
     companyUsers?: {
         role: string;
         company: {

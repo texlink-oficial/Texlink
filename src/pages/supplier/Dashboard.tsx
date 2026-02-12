@@ -44,13 +44,6 @@ const Dashboard: React.FC = () => {
         capacityUsage: 0,
     };
 
-    // Generate mock sparkline data for trends
-    const generateSparklineData = (baseValue: number, variance = 0.3) => {
-        return Array.from({ length: 7 }, () =>
-            Math.max(0, baseValue * (1 + (Math.random() - 0.5) * variance))
-        );
-    };
-
     const firstName = user?.name?.split(' ')[0] || 'Usuário';
 
     return (
@@ -127,7 +120,6 @@ const Dashboard: React.FC = () => {
                             label="Pedidos Pendentes"
                             value={stats.pendingOrders}
                             color="amber"
-                            sparklineData={generateSparklineData(stats.pendingOrders)}
                         />
                     </div>
                     <div className="animate-stagger-fade stagger-2">
@@ -136,7 +128,6 @@ const Dashboard: React.FC = () => {
                             label="Em Produção"
                             value={stats.activeOrders}
                             color="blue"
-                            sparklineData={generateSparklineData(stats.activeOrders)}
                         />
                     </div>
                     <div className="animate-stagger-fade stagger-3">
@@ -146,7 +137,6 @@ const Dashboard: React.FC = () => {
                             value={stats.completedOrdersThisMonth}
                             color="green"
                             trend={12}
-                            sparklineData={generateSparklineData(stats.completedOrdersThisMonth)}
                         />
                     </div>
                     <div className="animate-stagger-fade stagger-4">
@@ -157,7 +147,6 @@ const Dashboard: React.FC = () => {
                             prefix="R$ "
                             decimals={0}
                             color="purple"
-                            sparklineData={generateSparklineData(Number(stats.totalRevenue))}
                         />
                     </div>
                 </div>

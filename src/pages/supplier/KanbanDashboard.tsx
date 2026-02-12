@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { ordersService, suppliersService, ratingsService, Order as ApiOrder, OrderStatus as ApiOrderStatus, SupplierDashboard, PendingRating } from '../../services';
+import { ordersService, suppliersService, ratingsService, Order as ApiOrder, SupplierDashboard, PendingRating } from '../../services';
 import { Order, OrderStatus } from '../../types';
 
 import { OrderCard } from '../../components/kanban/OrderCard';

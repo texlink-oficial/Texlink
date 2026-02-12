@@ -20,6 +20,7 @@ import {
     Users,
     Handshake,
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { relationshipsService } from '../../services';
 import type {
     SupplierBrandRelationship,
@@ -69,9 +70,8 @@ const BrandSuppliersPage: React.FC = () => {
     const [requestsError, setRequestsError] = useState<string | null>(null);
     const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
-    // Get current user's brandId from localStorage
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const brandId = user.brandId || user.companyId;
+    const { user } = useAuth();
+    const brandId = user?.brandId || user?.companyId;
 
     const fetchRequests = useCallback(async () => {
         setIsLoadingRequests(true);

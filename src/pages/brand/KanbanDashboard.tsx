@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { ordersService, ratingsService, Order as ApiOrder, OrderStatus as ApiOrderStatus, PendingRating } from '../../services';
+import { ordersService, ratingsService, Order as ApiOrder, PendingRating } from '../../services';
 import { Order, OrderStatus } from '../../types';
 
 import { OrderCard } from '../../components/kanban/OrderCard';

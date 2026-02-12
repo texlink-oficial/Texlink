@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { useChatSocket, ChatMessage } from '../../hooks/useChatSocket';
 import {
     Send,
@@ -62,7 +63,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
-    const currentUserId = JSON.parse(localStorage.getItem('user') || '{}')?.id;
+    const { user: authUser } = useAuth();
+    const currentUserId = authUser?.id;
 
     // Scroll to bottom on new messages
     useEffect(() => {

@@ -22,6 +22,7 @@ import {
 import { relationshipsService } from '../../../services';
 import type { SupplierBrandRelationship } from '../../../types/relationships';
 import { useToast } from '../../../contexts/ToastContext';
+import { useAuth } from '../../../contexts/AuthContext';
 
 type CreateMode = 'template' | 'upload';
 
@@ -52,6 +53,7 @@ export const CreateContractPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { addToast } = useToast();
+  const { user } = useAuth();
 
   const [mode, setMode] = useState<CreateMode>('template');
   const [isLoading, setIsLoading] = useState(false);
@@ -75,8 +77,7 @@ export const CreateContractPage: React.FC = () => {
   const loadRelationships = async () => {
     try {
       setLoadingRelationships(true);
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const brandId = user.brandId || user.companyId;
+      const brandId = user?.brandId || user?.companyId;
       if (brandId) {
         const data = await relationshipsService.getByBrand(brandId);
         // Filter to only ACTIVE relationships

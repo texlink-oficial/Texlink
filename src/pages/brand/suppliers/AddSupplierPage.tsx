@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 import {
     ArrowLeft,
     Plus,
@@ -82,9 +83,8 @@ const AddSupplierPage: React.FC = () => {
         priority: 0,
     });
 
-    // Get current user's brandId from localStorage
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const brandId = user.brandId || user.companyId;
+    const { user } = useAuth();
+    const brandId = user?.brandId || user?.companyId;
 
     useEffect(() => {
         if (activeTab === 'pool') {

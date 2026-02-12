@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { Order } from '../../types';
 import { useChatSocket, ChatMessage } from '../../hooks/useChatSocket';
 import {
@@ -56,7 +57,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ order, onClose, on
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const currentUserId = JSON.parse(localStorage.getItem('user') || '{}')?.id;
+  const { user: authUser } = useAuth();
+  const currentUserId = authUser?.id;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

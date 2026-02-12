@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { useAuth } from '../contexts/AuthContext';
 import { useMessageQueue } from './useMessageQueue';
 import { useNetworkStatus } from './useNetworkStatus';
 
@@ -84,6 +85,7 @@ export function useChatSocket(
     orderId: string | null,
     options: UseChatSocketOptions = {}
 ): UseChatSocketReturn {
+    const { user: authUser } = useAuth();
     const socketRef = useRef<Socket | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isConnected, setIsConnected] = useState(false);
@@ -351,11 +353,9 @@ export function useChatSocket(
         async (data: SendMessageData): Promise<boolean> => {
             if (!orderId) return false;
 
-            // Get current user info
-            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-            const currentUserId = currentUser?.id || 'unknown';
-            const currentUserName = currentUser?.name || 'Você';
-            const currentUserRole = currentUser?.role || 'BRAND';
+            const currentUserId = authUser?.id || 'unknown';
+            const currentUserName = authUser?.name || 'Você';
+            const currentUserRole = authUser?.role || 'BRAND';
 
             // If offline or not connected, queue the message
             if (!socketRef.current || !isConnected || !isOnline) {
