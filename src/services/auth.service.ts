@@ -22,6 +22,7 @@ export interface AuthResponse {
         role: string;
     };
     accessToken: string;
+    refreshToken?: string;
 }
 
 export interface User {
@@ -46,16 +47,18 @@ export interface User {
 export const authService = {
     async login(data: LoginDto): Promise<AuthResponse> {
         const response = await api.post<AuthResponse>('/auth/login', data);
-        const { accessToken, user } = response.data;
+        const { accessToken, refreshToken, user } = response.data;
         sessionStorage.setItem('token', accessToken);
+        if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
         return response.data;
     },
 
     async register(data: RegisterDto): Promise<AuthResponse> {
         const response = await api.post<AuthResponse>('/auth/register', data);
-        const { accessToken, user } = response.data;
+        const { accessToken, refreshToken, user } = response.data;
         sessionStorage.setItem('token', accessToken);
+        if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
         return response.data;
     },
@@ -67,8 +70,29 @@ export const authService = {
         return response.data;
     },
 
+    async refreshTokens(): Promise<{ accessToken: string; refreshToken: string } | null> {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) return null;
+        try {
+            const response = await api.post<{ accessToken: string; refreshToken: string }>(
+                '/auth/refresh',
+                { refreshToken },
+            );
+            sessionStorage.setItem('token', response.data.accessToken);
+            localStorage.setItem('refreshToken', response.data.refreshToken);
+            return response.data;
+        } catch {
+            return null;
+        }
+    },
+
     logout() {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+            api.post('/auth/logout', { refreshToken }).catch(() => {});
+        }
         sessionStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         window.location.href = '/login';
     },

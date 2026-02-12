@@ -1,7 +1,7 @@
 export default () => {
   // Validate required environment variables in production
   if (process.env.NODE_ENV === 'production') {
-    const requiredEnvVars = ['JWT_SECRET', 'DATABASE_URL', 'CORS_ORIGINS'];
+    const requiredEnvVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DATABASE_URL', 'CORS_ORIGINS'];
     const missing = requiredEnvVars.filter((v) => !process.env[v]);
     if (missing.length > 0) {
       throw new Error(
@@ -32,8 +32,9 @@ export default () => {
     },
     jwt: {
       secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRATION || '7d',
-      refreshExpiresIn: process.env.JWT_REFRESH_EXPIRATION || '30d',
+      refreshSecret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: process.env.JWT_EXPIRATION || '1h',
+      refreshExpiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d',
     },
     cors: {
       origins: process.env.CORS_ORIGINS?.split(',') || [

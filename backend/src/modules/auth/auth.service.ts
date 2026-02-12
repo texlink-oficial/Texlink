@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
@@ -17,12 +18,22 @@ const LOCKOUT_DURATION_SECONDS = 900; // 15 minutes
 
 @Injectable()
 export class AuthService {
+  private readonly refreshSecret: string;
+  private readonly refreshExpiresIn: string;
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private configService: ConfigService,
     private cache: CacheService,
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
-  ) {}
+  ) {
+    this.refreshSecret =
+      this.configService.get<string>('jwt.refreshSecret') ||
+      this.configService.get<string>('jwt.secret') + '-refresh';
+    this.refreshExpiresIn =
+      this.configService.get<string>('jwt.refreshExpiresIn') || '7d';
+  }
 
   async register(dto: RegisterDto) {
     // Hash password before transaction (CPU-intensive, don't hold tx open)
@@ -132,13 +143,15 @@ export class AuthService {
       return { user, company };
     });
 
-    // Generate token (outside transaction - no DB needed)
-    const token = this.generateToken(result.user.id, result.user.email, result.user.role);
+    // Generate tokens (outside transaction - no DB needed)
+    const accessToken = this.generateToken(result.user.id, result.user.email, result.user.role);
+    const refreshToken = this.generateRefreshToken(result.user.id, result.user.email, result.user.role);
 
     return {
       user: result.user,
       company: result.company,
-      accessToken: token,
+      accessToken,
+      refreshToken,
       needsOnboarding: dto.role === 'SUPPLIER' || dto.role === 'BRAND',
     };
   }
@@ -200,8 +213,9 @@ export class AuthService {
     // Clear failed attempts on successful login
     await this.cache.del(attemptsKey);
 
-    // Generate token
-    const token = this.generateToken(user.id, user.email, user.role);
+    // Generate tokens
+    const accessToken = this.generateToken(user.id, user.email, user.role);
+    const refreshToken = this.generateRefreshToken(user.id, user.email, user.role);
 
     // Get company matching user role; fall back to first association
     const companyUser =
@@ -225,7 +239,8 @@ export class AuthService {
         ...(companyType === 'SUPPLIER' && { supplierId: companyId }),
         ...(companyType === 'BRAND' && { brandId: companyId }),
       },
-      accessToken: token,
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -322,12 +337,90 @@ export class AuthService {
     return this.getProfile(userId);
   }
 
+  async refreshTokens(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: this.refreshSecret,
+      });
+
+      // Verify user still exists and is active
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { id: true, email: true, role: true, isActive: true },
+      });
+
+      if (!user || !user.isActive) {
+        throw new UnauthorizedException('User not found or inactive');
+      }
+
+      // Check if token was invalidated (logout)
+      const isBlacklisted = await this.cache.get<string>(
+        `auth:refresh:blacklist:${refreshToken}`,
+      );
+      if (isBlacklisted) {
+        throw new UnauthorizedException('Token has been revoked');
+      }
+
+      const newAccessToken = this.generateToken(user.id, user.email, user.role);
+      const newRefreshToken = this.generateRefreshToken(user.id, user.email, user.role);
+
+      // Blacklist the old refresh token to prevent reuse
+      const ttl = Math.max(
+        0,
+        Math.floor((payload.exp - Date.now() / 1000)),
+      );
+      if (ttl > 0) {
+        await this.cache.set(
+          `auth:refresh:blacklist:${refreshToken}`,
+          'revoked',
+          ttl,
+        );
+      }
+
+      return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async logout(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: this.refreshSecret,
+      });
+      const ttl = Math.max(
+        0,
+        Math.floor((payload.exp - Date.now() / 1000)),
+      );
+      if (ttl > 0) {
+        await this.cache.set(
+          `auth:refresh:blacklist:${refreshToken}`,
+          'revoked',
+          ttl,
+        );
+      }
+    } catch {
+      // Token already expired or invalid — no need to blacklist
+    }
+  }
+
   private generateToken(userId: string, email: string, role: string): string {
     return this.jwtService.sign({
       sub: userId,
       email,
       role,
     });
+  }
+
+  private generateRefreshToken(userId: string, email: string, role: string): string {
+    return this.jwtService.sign(
+      { sub: userId, email, role, type: 'refresh' },
+      { secret: this.refreshSecret, expiresIn: this.refreshExpiresIn as any },
+    );
   }
 
   private async incrementFailedAttempts(
