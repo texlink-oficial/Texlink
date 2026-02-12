@@ -88,6 +88,7 @@ export class PaymentsService {
             brandId: true,
             supplierId: true,
             brand: { include: { companyUsers: true } },
+            supplier: { include: { companyUsers: true } },
           },
         },
       },
@@ -95,6 +96,19 @@ export class PaymentsService {
 
     if (!payment) {
       throw new NotFoundException('Payment not found');
+    }
+
+    // Verify user has access (brand or supplier member)
+    const isBrandUser = payment.order.brand.companyUsers.some(
+      (cu) => cu.userId === userId,
+    );
+    const isSupplierUser = payment.order.supplier?.companyUsers.some(
+      (cu) => cu.userId === userId,
+    );
+    if (!isBrandUser && !isSupplierUser) {
+      throw new ForbiddenException(
+        'You do not have access to this payment',
+      );
     }
 
     const updatedPayment = await this.prisma.payment.update({
@@ -127,7 +141,32 @@ export class PaymentsService {
   }
 
   // Get payments for an order
-  async getOrderPayments(orderId: string) {
+  async getOrderPayments(orderId: string, userId: string) {
+    // Verify user has access to this order
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        brand: { include: { companyUsers: { select: { userId: true } } } },
+        supplier: { include: { companyUsers: { select: { userId: true } } } },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    const isBrandUser = order.brand.companyUsers.some(
+      (cu) => cu.userId === userId,
+    );
+    const isSupplierUser = order.supplier?.companyUsers.some(
+      (cu) => cu.userId === userId,
+    );
+    if (!isBrandUser && !isSupplierUser) {
+      throw new ForbiddenException(
+        'You do not have access to this order\'s payments',
+      );
+    }
+
     return this.prisma.payment.findMany({
       where: { orderId },
       orderBy: { dueDate: 'asc' },

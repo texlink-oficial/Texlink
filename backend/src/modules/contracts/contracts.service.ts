@@ -711,7 +711,7 @@ export class ContractsService {
   /**
    * Buscar contrato por ID
    */
-  async findById(contractId: string) {
+  async findById(contractId: string, userId?: string) {
     const contract = await this.prisma.supplierContract.findUnique({
       where: { id: contractId },
       include: {
@@ -766,6 +766,24 @@ export class ContractsService {
 
     if (!contract) {
       throw new NotFoundException('Contrato não encontrado');
+    }
+
+    // Verify user has access (belongs to brand or supplier company)
+    if (userId) {
+      const companyIds = [contract.brandId, contract.supplierId].filter(
+        (id): id is string => id != null,
+      );
+      const isMember = await this.prisma.companyUser.findFirst({
+        where: {
+          userId,
+          companyId: { in: companyIds },
+        },
+      });
+      if (!isMember) {
+        throw new ForbiddenException(
+          'Você não tem acesso a este contrato',
+        );
+      }
     }
 
     return contract;

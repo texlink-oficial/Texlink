@@ -69,7 +69,7 @@ export class CompaniesService {
     });
   }
 
-  async findById(id: string) {
+  async findById(id: string, userId: string) {
     const company = await this.prisma.company.findUnique({
       where: { id },
       include: {
@@ -83,6 +83,16 @@ export class CompaniesService {
 
     if (!company) {
       throw new NotFoundException('Company not found');
+    }
+
+    // Verify user belongs to this company
+    const isMember = company.companyUsers.some(
+      (cu) => cu.user.id === userId,
+    );
+    if (!isMember) {
+      throw new ForbiddenException(
+        'You do not have access to this company',
+      );
     }
 
     return company;

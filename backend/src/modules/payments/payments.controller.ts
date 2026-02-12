@@ -44,8 +44,13 @@ export class PaymentsController {
   }
 
   @Get('orders/:orderId')
-  async getOrderPayments(@Param('orderId') orderId: string) {
-    return this.paymentsService.getOrderPayments(orderId);
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.BRAND, UserRole.SUPPLIER, UserRole.ADMIN)
+  async getOrderPayments(
+    @Param('orderId') orderId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.paymentsService.getOrderPayments(orderId, userId);
   }
 
   @Get('summary')

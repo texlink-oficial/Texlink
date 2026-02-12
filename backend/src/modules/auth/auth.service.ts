@@ -25,115 +25,119 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    // Check if email already exists
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException('Email already registered');
-    }
-
-    // Check if document already exists (for SUPPLIER and BRAND)
-    if (dto.document) {
-      const existingCompany = await this.prisma.company.findUnique({
-        where: { document: dto.document },
-      });
-      if (existingCompany) {
-        throw new ConflictException('CNPJ/CPF já cadastrado');
-      }
-    }
-
-    // Hash password
+    // Hash password before transaction (CPU-intensive, don't hold tx open)
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
-    // Create user
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        passwordHash,
-        name: dto.name,
-        role: dto.role,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-      },
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Check if email already exists
+      const existingUser = await tx.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (existingUser) {
+        throw new ConflictException('Email already registered');
+      }
+
+      // Check if document already exists (for SUPPLIER and BRAND)
+      if (dto.document) {
+        const existingCompany = await tx.company.findUnique({
+          where: { document: dto.document },
+        });
+        if (existingCompany) {
+          throw new ConflictException('CNPJ/CPF já cadastrado');
+        }
+      }
+
+      // Create user
+      const user = await tx.user.create({
+        data: {
+          email: dto.email,
+          passwordHash,
+          name: dto.name,
+          role: dto.role,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          createdAt: true,
+        },
+      });
+
+      // Create Company and Profile for both SUPPLIER and BRAND
+      let company: { id: string } | null = null;
+      if (dto.role === 'SUPPLIER') {
+        company = await tx.company.create({
+          data: {
+            legalName: dto.companyName || dto.name,
+            tradeName: dto.companyName || dto.name,
+            document: dto.document || `PENDING_${user.id}`,
+            type: 'SUPPLIER',
+            city: dto.city || '',
+            state: dto.state || '',
+            phone: dto.phone,
+            email: dto.email,
+            status: 'PENDING',
+          },
+        });
+
+        await tx.companyUser.create({
+          data: {
+            userId: user.id,
+            companyId: company.id,
+            role: 'OWNER',
+          },
+        });
+
+        await tx.supplierProfile.create({
+          data: {
+            companyId: company.id,
+            onboardingPhase: 1,
+            onboardingComplete: false,
+          },
+        });
+      } else if (dto.role === 'BRAND') {
+        company = await tx.company.create({
+          data: {
+            legalName: dto.companyName || dto.name,
+            tradeName: dto.companyName || dto.name,
+            document: dto.document || `PENDING_${user.id}`,
+            type: 'BRAND',
+            city: dto.city || '',
+            state: dto.state || '',
+            phone: dto.phone,
+            email: dto.email,
+            status: 'PENDING',
+          },
+        });
+
+        await tx.companyUser.create({
+          data: {
+            userId: user.id,
+            companyId: company.id,
+            role: 'OWNER',
+          },
+        });
+
+        await tx.brandProfile.create({
+          data: {
+            companyId: company.id,
+            onboardingPhase: 1,
+            onboardingComplete: false,
+          },
+        });
+      }
+
+      return { user, company };
     });
 
-    // Create Company and Profile for both SUPPLIER and BRAND
-    let company: { id: string } | null = null;
-    if (dto.role === 'SUPPLIER') {
-      company = await this.prisma.company.create({
-        data: {
-          legalName: dto.companyName || dto.name,
-          tradeName: dto.companyName || dto.name,
-          document: dto.document || `PENDING_${user.id}`,
-          type: 'SUPPLIER',
-          city: dto.city || '',
-          state: dto.state || '',
-          phone: dto.phone,
-          email: dto.email,
-          status: 'PENDING',
-        },
-      });
-
-      await this.prisma.companyUser.create({
-        data: {
-          userId: user.id,
-          companyId: company.id,
-          role: 'OWNER',
-        },
-      });
-
-      await this.prisma.supplierProfile.create({
-        data: {
-          companyId: company.id,
-          onboardingPhase: 1,
-          onboardingComplete: false,
-        },
-      });
-    } else if (dto.role === 'BRAND') {
-      company = await this.prisma.company.create({
-        data: {
-          legalName: dto.companyName || dto.name,
-          tradeName: dto.companyName || dto.name,
-          document: dto.document || `PENDING_${user.id}`,
-          type: 'BRAND',
-          city: dto.city || '',
-          state: dto.state || '',
-          phone: dto.phone,
-          email: dto.email,
-          status: 'PENDING',
-        },
-      });
-
-      await this.prisma.companyUser.create({
-        data: {
-          userId: user.id,
-          companyId: company.id,
-          role: 'OWNER',
-        },
-      });
-
-      await this.prisma.brandProfile.create({
-        data: {
-          companyId: company.id,
-          onboardingPhase: 1,
-          onboardingComplete: false,
-        },
-      });
-    }
-
-    // Generate token
-    const token = this.generateToken(user.id, user.email, user.role);
+    // Generate token (outside transaction - no DB needed)
+    const token = this.generateToken(result.user.id, result.user.email, result.user.role);
 
     return {
-      user,
-      company,
+      user: result.user,
+      company: result.company,
       accessToken: token,
       needsOnboarding: dto.role === 'SUPPLIER' || dto.role === 'BRAND',
     };

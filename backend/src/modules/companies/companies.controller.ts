@@ -38,8 +38,11 @@ export class CompaniesController {
   }
 
   @Get(':id')
-  async findById(@Param('id') id: string) {
-    return this.companiesService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.companiesService.findById(id, userId);
   }
 
   @Patch(':id')

@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LogIn, Mail, Lock, Loader2, Users, Building2, Shield } from 'lucide-react';
-import { DEMO_CREDENTIALS } from '../../services/mockMode';
+// Only import demo credentials in development (tree-shaken in production)
+const DEMO_CREDENTIALS = import.meta.env.DEV
+    ? { brand: { email: 'demo-brand@texlink.com', password: 'demo123' }, supplier: { email: 'demo-supplier@texlink.com', password: 'demo123' }, admin: { email: 'demo-admin@texlink.com', password: 'demo123' } }
+    : { brand: { email: '', password: '' }, supplier: { email: '', password: '' }, admin: { email: '', password: '' } };
 
 const LoginPage: React.FC = () => {
     const navigate = useNavigate();

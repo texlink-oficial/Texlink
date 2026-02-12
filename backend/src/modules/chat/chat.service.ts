@@ -372,10 +372,6 @@ export class ChatService {
   }
 
   async verifyOrderAccess(orderId: string, userId: string) {
-    console.log(
-      `[ChatService] verifyOrderAccess - orderId: ${orderId}, userId: ${userId}`,
-    );
-
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -385,26 +381,13 @@ export class ChatService {
     });
 
     if (!order) {
-      console.log(`[ChatService] Order not found: ${orderId}`);
       throw new NotFoundException('Order not found');
     }
-
-    console.log(
-      `[ChatService] Order found - brandId: ${order.brandId}, supplierId: ${order.supplierId}`,
-    );
-    console.log(
-      `[ChatService] Brand users: ${order.brand.companyUsers.map((cu) => cu.userId).join(', ')}`,
-    );
-    console.log(
-      `[ChatService] Supplier users: ${order.supplier?.companyUsers.map((cu) => cu.userId).join(', ') || 'N/A'}`,
-    );
 
     const hasAccess =
       order.brand.companyUsers.some((cu) => cu.userId === userId) ||
       (order.supplier &&
         order.supplier.companyUsers.some((cu) => cu.userId === userId));
-
-    console.log(`[ChatService] Has access: ${hasAccess}`);
 
     if (!hasAccess) {
       throw new ForbiddenException('You do not have access to this order');

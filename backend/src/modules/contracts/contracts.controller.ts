@@ -156,8 +156,11 @@ export class ContractsController {
   @ApiParam({ name: 'id', description: 'ID do contrato' })
   @ApiResponse({ status: 200, description: 'Detalhes do contrato' })
   @ApiResponse({ status: 404, description: 'Contrato não encontrado' })
-  async findById(@Param('id') id: string) {
-    return this.contractsService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.contractsService.findById(id, user.id);
   }
 
   /**
@@ -176,9 +179,10 @@ export class ContractsController {
   @ApiResponse({ status: 403, description: 'Acesso negado ao arquivo' })
   async downloadContract(
     @Param('id') id: string,
+    @CurrentUser() user: any,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    const contract = await this.contractsService.findById(id);
+    const contract = await this.contractsService.findById(id, user.id);
 
     if (!contract.documentUrl) {
       throw new NotFoundException('Documento não disponível');

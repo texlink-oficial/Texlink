@@ -1206,13 +1206,8 @@ export class OrdersService {
   }
 
   // Get all reviews for an order
-  async getOrderReviews(orderId: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-    });
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
+  async getOrderReviews(orderId: string, userId: string) {
+    await this.verifyOrderAccess(orderId, userId);
 
     return this.prisma.orderReview.findMany({
       where: { orderId },
@@ -1438,7 +1433,9 @@ export class OrdersService {
   }
 
   // Get second quality items for an order
-  async getSecondQualityItems(orderId: string) {
+  async getSecondQualityItems(orderId: string, userId: string) {
+    await this.verifyOrderAccess(orderId, userId);
+
     return this.prisma.secondQualityItem.findMany({
       where: { orderId },
       orderBy: { createdAt: 'desc' },

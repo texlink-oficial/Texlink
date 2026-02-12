@@ -136,8 +136,11 @@ export class OrdersController {
   @Get(':id/reviews')
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND, UserRole.SUPPLIER, UserRole.ADMIN)
-  async getOrderReviews(@Param('id') orderId: string) {
-    return this.ordersService.getOrderReviews(orderId);
+  async getOrderReviews(
+    @Param('id') orderId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.ordersService.getOrderReviews(orderId, userId);
   }
 
   // Create child order for rework
@@ -179,8 +182,11 @@ export class OrdersController {
   @Get(':id/second-quality')
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND, UserRole.SUPPLIER, UserRole.ADMIN)
-  async getSecondQualityItems(@Param('id') orderId: string) {
-    return this.ordersService.getSecondQualityItems(orderId);
+  async getSecondQualityItems(
+    @Param('id') orderId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.ordersService.getSecondQualityItems(orderId, userId);
   }
 
   // Get review statistics

@@ -21,7 +21,7 @@ import { UploadModule } from '../upload/upload.module';
         return {
           secret,
           signOptions: {
-            expiresIn: config.get<number>('jwt.expiresIn') ?? '7d',
+            expiresIn: (config.get('jwt.expiresIn') as any) ?? '1h',
           },
         };
       },
