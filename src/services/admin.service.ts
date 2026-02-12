@@ -158,19 +158,19 @@ export const adminService = {
     async getSuppliers(status?: string) {
         const params = status ? { status } : undefined;
         const response = await api.get('/admin/suppliers', { params });
-        return response.data;
+        return response.data?.data ?? response.data;
     },
 
     async getBrands(status?: string) {
         const params = status ? { status } : undefined;
         const response = await api.get('/admin/brands', { params });
-        return response.data;
+        return response.data?.data ?? response.data;
     },
 
     async getAllOrders(status?: string) {
         const params = status ? { status } : undefined;
         const response = await api.get('/admin/orders', { params });
-        return response.data;
+        return response.data?.data ?? response.data;
     },
 
     async approveCompany(id: string) {

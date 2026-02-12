@@ -22,8 +22,11 @@ export class RatingsController {
   }
 
   @Get('company/:companyId')
-  async getCompanyRatings(@Param('companyId') companyId: string) {
-    return this.ratingsService.getCompanyRatings(companyId);
+  async getCompanyRatings(
+    @Param('companyId') companyId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.ratingsService.getCompanyRatings(companyId, userId);
   }
 
   @Get('received')

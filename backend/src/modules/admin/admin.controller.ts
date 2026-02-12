@@ -52,18 +52,42 @@ export class AdminController {
   }
 
   @Get('suppliers')
-  async getSuppliers(@Query('status') status?: CompanyStatus) {
-    return this.adminService.getSuppliers(status);
+  async getSuppliers(
+    @Query('status') status?: CompanyStatus,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getSuppliers(
+      status,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
   }
 
   @Get('brands')
-  async getBrands(@Query('status') status?: CompanyStatus) {
-    return this.adminService.getBrands(status);
+  async getBrands(
+    @Query('status') status?: CompanyStatus,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getBrands(
+      status,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
   }
 
   @Get('orders')
-  async getOrders(@Query('status') status?: OrderStatus) {
-    return this.adminService.getOrders(status);
+  async getOrders(
+    @Query('status') status?: OrderStatus,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getOrders(
+      status,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
   }
 
   @Get('documents')
@@ -71,8 +95,16 @@ export class AdminController {
     @Query('supplierId') supplierId?: string,
     @Query('type') type?: SupplierDocumentType,
     @Query('status') status?: SupplierDocumentStatus,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.adminService.getAllDocuments(supplierId, type, status);
+    return this.adminService.getAllDocuments(
+      supplierId,
+      type,
+      status,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
   }
 
   @Get('documents/stats')

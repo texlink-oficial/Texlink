@@ -26,9 +26,9 @@ if [ "$NODE_ENV" = "production" ]; then
     fi
   fi
 
-  # Always sync schema to ensure DB matches schema.prisma
+  # Sync schema to ensure DB matches schema.prisma (without data loss)
   echo "Syncing database schema..."
-  npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma
+  npx prisma db push --schema=./prisma/schema.prisma
 else
   npx prisma db push --schema=./prisma/schema.prisma
 fi

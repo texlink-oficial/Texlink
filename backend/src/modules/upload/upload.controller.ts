@@ -29,7 +29,18 @@ export class UploadController {
   @UseInterceptors(FilesInterceptor('files', 5)) // Max 5 files
   async uploadFiles(
     @Param('orderId') orderId: string,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
+          new FileTypeValidator({
+            fileType: /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/(vnd\.openxmlformats|vnd\.ms-excel|msword))/,
+          }),
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    files: Express.Multer.File[],
     @Req() req: any,
   ) {
     const mappedFiles = files.map((f) => ({

@@ -82,8 +82,32 @@ export class RatingsService {
     return rating;
   }
 
-  // Get ratings for a company
-  async getCompanyRatings(companyId: string) {
+  // Get ratings for a company (user must be a member or business partner)
+  async getCompanyRatings(companyId: string, userId: string) {
+    // Verify user is a member of this company or has a business relationship
+    const userCompanies = await this.prisma.companyUser.findMany({
+      where: { userId },
+      select: { companyId: true },
+    });
+    const userCompanyIds = userCompanies.map((cu) => cu.companyId);
+
+    if (!userCompanyIds.includes(companyId)) {
+      // Check if user's company has any orders with the target company
+      const hasRelationship = await this.prisma.order.findFirst({
+        where: {
+          OR: [
+            { brandId: { in: userCompanyIds }, supplierId: companyId },
+            { supplierId: { in: userCompanyIds }, brandId: companyId },
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (!hasRelationship) {
+        throw new ForbiddenException('You do not have access to this company\'s ratings');
+      }
+    }
+
     return this.prisma.rating.findMany({
       where: { toCompanyId: companyId },
       include: {

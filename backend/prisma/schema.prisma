@@ -765,6 +765,9 @@ model Order {
   reviews            OrderReview[]
   secondQualityItems SecondQualityItem[]
 
+  @@index([brandId])
+  @@index([supplierId])
+  @@index([status])
   @@index([relationshipId])
   @@map("orders")
 }

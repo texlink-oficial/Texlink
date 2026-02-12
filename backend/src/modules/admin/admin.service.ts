@@ -184,44 +184,85 @@ export class AdminService {
   }
 
   // Get all suppliers with filters
-  async getSuppliers(status?: CompanyStatus) {
-    return this.prisma.company.findMany({
-      where: {
-        type: CompanyType.SUPPLIER,
-        ...(status && { status }),
-      },
-      include: {
-        supplierProfile: true,
-        _count: { select: { ordersAsSupplier: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getSuppliers(status?: CompanyStatus, page = 1, limit = 50) {
+    const take = Math.min(limit, 100);
+    const skip = (page - 1) * take;
+
+    const [data, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where: {
+          type: CompanyType.SUPPLIER,
+          ...(status && { status }),
+        },
+        include: {
+          supplierProfile: true,
+          _count: { select: { ordersAsSupplier: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.company.count({
+        where: {
+          type: CompanyType.SUPPLIER,
+          ...(status && { status }),
+        },
+      }),
+    ]);
+
+    return { data, total, page, totalPages: Math.ceil(total / take) };
   }
 
   // Get all brands
-  async getBrands(status?: CompanyStatus) {
-    return this.prisma.company.findMany({
-      where: {
-        type: CompanyType.BRAND,
-        ...(status && { status }),
-      },
-      include: {
-        _count: { select: { ordersAsBrand: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getBrands(status?: CompanyStatus, page = 1, limit = 50) {
+    const take = Math.min(limit, 100);
+    const skip = (page - 1) * take;
+
+    const [data, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where: {
+          type: CompanyType.BRAND,
+          ...(status && { status }),
+        },
+        include: {
+          _count: { select: { ordersAsBrand: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.company.count({
+        where: {
+          type: CompanyType.BRAND,
+          ...(status && { status }),
+        },
+      }),
+    ]);
+
+    return { data, total, page, totalPages: Math.ceil(total / take) };
   }
 
   // Get all orders with filters
-  async getOrders(status?: OrderStatus) {
-    return this.prisma.order.findMany({
-      where: status ? { status } : undefined,
-      include: {
-        brand: { select: { id: true, tradeName: true } },
-        supplier: { select: { id: true, tradeName: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getOrders(status?: OrderStatus, page = 1, limit = 50) {
+    const take = Math.min(limit, 100);
+    const skip = (page - 1) * take;
+    const where = status ? { status } : undefined;
+
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          brand: { select: { id: true, tradeName: true } },
+          supplier: { select: { id: true, tradeName: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return { data, total, page, totalPages: Math.ceil(total / take) };
   }
 
   // Calculate document status based on expiration date
@@ -251,7 +292,12 @@ export class AdminService {
     supplierId?: string,
     type?: SupplierDocumentType,
     status?: SupplierDocumentStatus,
+    page = 1,
+    limit = 50,
   ) {
+    const take = Math.min(limit, 100);
+    const skip = (page - 1) * take;
+
     const whereClause: any = {};
 
     if (supplierId) {
@@ -262,14 +308,19 @@ export class AdminService {
       whereClause.type = type;
     }
 
-    const documents = await this.prisma.supplierDocument.findMany({
-      where: whereClause,
-      include: {
-        company: { select: { id: true, tradeName: true, document: true } },
-        uploadedBy: { select: { id: true, name: true } },
-      },
-      orderBy: [{ createdAt: 'desc' }],
-    });
+    const [documents, total] = await Promise.all([
+      this.prisma.supplierDocument.findMany({
+        where: whereClause,
+        include: {
+          company: { select: { id: true, tradeName: true, document: true } },
+          uploadedBy: { select: { id: true, name: true } },
+        },
+        orderBy: [{ createdAt: 'desc' }],
+        skip,
+        take,
+      }),
+      this.prisma.supplierDocument.count({ where: whereClause }),
+    ]);
 
     // Recalculate status and filter if needed
     const processedDocs = documents.map((doc) => {
@@ -278,11 +329,11 @@ export class AdminService {
     });
 
     // Filter by status after recalculation
-    if (status) {
-      return processedDocs.filter((doc) => doc.status === status);
-    }
+    const data = status
+      ? processedDocs.filter((doc) => doc.status === status)
+      : processedDocs;
 
-    return processedDocs;
+    return { data, total, page, totalPages: Math.ceil(total / take) };
   }
 
   // Get document stats across all suppliers
