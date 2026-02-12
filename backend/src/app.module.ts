@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -77,7 +77,7 @@ if (process.env.REDIS_URL) {
     ),
   );
 } else {
-  console.warn('[App] REDIS_URL not configured - Bull queues disabled, using in-memory scheduling');
+  Logger.warn('REDIS_URL not configured - Bull queues disabled, using in-memory scheduling', 'AppModule');
 }
 
 @Module({

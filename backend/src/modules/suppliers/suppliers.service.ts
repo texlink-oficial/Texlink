@@ -751,7 +751,7 @@ export class SuppliersService {
         rawResponse: data,
       };
     } catch (error) {
-      console.error('CNPJ validation error:', error);
+      this.logger.error(`CNPJ validation error: ${error}`);
       return {
         isValid: false,
         error: 'Erro ao consultar CNPJ. Tente novamente.',

@@ -1,5 +1,5 @@
 import { BullModuleOptions, SharedBullConfigurationFactory } from '@nestjs/bull';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /**
@@ -9,6 +9,8 @@ import { ConfigService } from '@nestjs/config';
  */
 @Injectable()
 export class BullConfigService implements SharedBullConfigurationFactory {
+  private readonly logger = new Logger(BullConfigService.name);
+
   constructor(private readonly configService: ConfigService) {}
 
   createSharedConfiguration(): BullModuleOptions {
@@ -16,8 +18,8 @@ export class BullConfigService implements SharedBullConfigurationFactory {
 
     if (!redisUrl) {
       // Return empty config for in-memory fallback (development only)
-      console.warn(
-        '[Bull] REDIS_URL not configured. Using in-memory queue (not recommended for production)',
+      this.logger.warn(
+        'REDIS_URL not configured. Using in-memory queue (not recommended for production)',
       );
       return {
         defaultJobOptions: {
