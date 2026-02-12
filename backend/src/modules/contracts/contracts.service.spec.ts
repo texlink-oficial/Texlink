@@ -19,13 +19,13 @@ import { STORAGE_PROVIDER } from '../upload/storage.provider';
 jest.mock('crypto');
 jest.mock('pdfkit', () => {
   return jest.fn().mockImplementation(() => {
-    const handlers = {};
+    const handlers: Record<string, (data?: Buffer) => void> = {};
     return {
       fontSize: jest.fn().mockReturnThis(),
       font: jest.fn().mockReturnThis(),
       text: jest.fn().mockReturnThis(),
       moveDown: jest.fn().mockReturnThis(),
-      on: jest.fn((event, cb) => {
+      on: jest.fn((event: string, cb: (data?: Buffer) => void) => {
         handlers[event] = cb;
       }),
       end: jest.fn(() => {

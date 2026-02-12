@@ -24,6 +24,10 @@ import {
   CompanyType,
 } from '@prisma/client';
 
+interface AuthenticatedRequest {
+  user: { id: string; email: string; role: UserRole; companyId: string };
+}
+
 @ApiTags('Suporte')
 @ApiBearerAuth()
 @Controller('support-tickets')
@@ -68,7 +72,7 @@ export class SupportTicketsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   async updateTicket(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTicketDto,
   ) {
@@ -80,7 +84,7 @@ export class SupportTicketsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   async replyAsSupport(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SendMessageDto,
   ) {
@@ -91,7 +95,7 @@ export class SupportTicketsController {
 
   // Create a new ticket
   @Post()
-  async create(@Request() req, @Body() dto: CreateTicketDto) {
+  async create(@Request() req: AuthenticatedRequest, @Body() dto: CreateTicketDto) {
     return this.supportTicketsService.create(
       dto,
       req.user.id,
@@ -102,7 +106,7 @@ export class SupportTicketsController {
   // Get my tickets
   @Get()
   async getMyTickets(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Query('status') status?: SupportTicketStatus,
     @Query('category') category?: SupportTicketCategory,
   ) {
@@ -115,7 +119,7 @@ export class SupportTicketsController {
 
   // Get ticket by ID (must be after static routes)
   @Get(':id')
-  async getById(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+  async getById(@Request() req: AuthenticatedRequest, @Param('id', ParseUUIDPipe) id: string) {
     return this.supportTicketsService.getById(
       id,
       req.user.id,
@@ -127,7 +131,7 @@ export class SupportTicketsController {
   // Add message to ticket
   @Post(':id/messages')
   async addMessage(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SendMessageDto,
   ) {
@@ -142,7 +146,7 @@ export class SupportTicketsController {
 
   // Get messages for a ticket
   @Get(':id/messages')
-  async getMessages(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+  async getMessages(@Request() req: AuthenticatedRequest, @Param('id', ParseUUIDPipe) id: string) {
     return this.supportTicketsService.getMessages(
       id,
       req.user.id,
@@ -153,7 +157,7 @@ export class SupportTicketsController {
 
   // Close ticket
   @Patch(':id/close')
-  async closeTicket(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+  async closeTicket(@Request() req: AuthenticatedRequest, @Param('id', ParseUUIDPipe) id: string) {
     return this.supportTicketsService.closeTicket(
       id,
       req.user.id,
