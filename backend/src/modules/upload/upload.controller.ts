@@ -12,6 +12,7 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
   Req,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -28,7 +29,7 @@ export class UploadController {
   @Post()
   @UseInterceptors(FilesInterceptor('files', 5)) // Max 5 files
   async uploadFiles(
-    @Param('orderId') orderId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
     @UploadedFiles(
       new ParseFilePipe({
         validators: [
@@ -60,26 +61,26 @@ export class UploadController {
   }
 
   @Get()
-  async getAttachments(@Param('orderId') orderId: string) {
+  async getAttachments(@Param('orderId', ParseUUIDPipe) orderId: string) {
     return this.uploadService.getOrderAttachments(orderId);
   }
 
   @Delete(':attachmentId')
   async deleteAttachment(
-    @Param('attachmentId') attachmentId: string,
+    @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
     @Req() req: any,
   ) {
     return this.uploadService.deleteAttachment(attachmentId, req.user.id);
   }
 
   @Post(':attachmentId/download')
-  async trackDownload(@Param('attachmentId') attachmentId: string) {
+  async trackDownload(@Param('attachmentId', ParseUUIDPipe) attachmentId: string) {
     await this.uploadService.incrementDownloadCount(attachmentId);
     return { success: true };
   }
 
   @Get(':attachmentId/download-url')
-  async getDownloadUrl(@Param('attachmentId') attachmentId: string) {
+  async getDownloadUrl(@Param('attachmentId', ParseUUIDPipe) attachmentId: string) {
     return this.uploadService.getAttachmentDownloadUrl(attachmentId);
   }
 }

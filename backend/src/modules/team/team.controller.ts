@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -41,7 +42,7 @@ export class TeamController {
   @Get('companies/:companyId/team')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.TEAM_VIEW)
-  async getTeamMembers(@Param('companyId') companyId: string) {
+  async getTeamMembers(@Param('companyId', ParseUUIDPipe) companyId: string) {
     return this.teamService.getTeamMembers(companyId);
   }
 
@@ -52,8 +53,8 @@ export class TeamController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.TEAM_VIEW)
   async getMember(
-    @Param('companyId') companyId: string,
-    @Param('memberId') memberId: string,
+    @Param('companyId', ParseUUIDPipe) companyId: string,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
   ) {
     return this.teamService.getMember(companyId, memberId);
   }
@@ -65,7 +66,7 @@ export class TeamController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.TEAM_INVITE)
   async inviteUser(
-    @Param('companyId') companyId: string,
+    @Param('companyId', ParseUUIDPipe) companyId: string,
     @Body() dto: InviteUserDto,
     @CurrentUser('id') userId: string,
   ) {
@@ -79,7 +80,7 @@ export class TeamController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.TEAM_MANAGE)
   async createUser(
-    @Param('companyId') companyId: string,
+    @Param('companyId', ParseUUIDPipe) companyId: string,
     @Body() dto: CreateUserDto,
   ) {
     return this.teamService.createUser(companyId, dto);
@@ -92,8 +93,8 @@ export class TeamController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.TEAM_MANAGE)
   async updateMember(
-    @Param('companyId') companyId: string,
-    @Param('memberId') memberId: string,
+    @Param('companyId', ParseUUIDPipe) companyId: string,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
     @Body() dto: UpdateMemberDto,
     @CurrentUser('id') currentUserId: string,
   ) {
@@ -112,8 +113,8 @@ export class TeamController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.TEAM_MANAGE_PERMISSIONS)
   async updateMemberPermissions(
-    @Param('companyId') companyId: string,
-    @Param('memberId') memberId: string,
+    @Param('companyId', ParseUUIDPipe) companyId: string,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
     @Body() dto: UpdateMemberPermissionsDto,
     @CurrentUser('id') currentUserId: string,
   ) {
@@ -132,8 +133,8 @@ export class TeamController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.TEAM_MANAGE)
   async removeMember(
-    @Param('companyId') companyId: string,
-    @Param('memberId') memberId: string,
+    @Param('companyId', ParseUUIDPipe) companyId: string,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
     @CurrentUser('id') currentUserId: string,
   ) {
     return this.teamService.removeMember(companyId, memberId, currentUserId);
@@ -147,7 +148,7 @@ export class TeamController {
   @Get('companies/:companyId/team/invitations')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.TEAM_VIEW)
-  async getPendingInvitations(@Param('companyId') companyId: string) {
+  async getPendingInvitations(@Param('companyId', ParseUUIDPipe) companyId: string) {
     return this.teamService.getPendingInvitations(companyId);
   }
 
@@ -158,8 +159,8 @@ export class TeamController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.TEAM_INVITE)
   async cancelInvitation(
-    @Param('companyId') companyId: string,
-    @Param('invitationId') invitationId: string,
+    @Param('companyId', ParseUUIDPipe) companyId: string,
+    @Param('invitationId', ParseUUIDPipe) invitationId: string,
   ) {
     return this.teamService.cancelInvitation(companyId, invitationId);
   }
@@ -171,8 +172,8 @@ export class TeamController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.TEAM_INVITE)
   async resendInvitation(
-    @Param('companyId') companyId: string,
-    @Param('invitationId') invitationId: string,
+    @Param('companyId', ParseUUIDPipe) companyId: string,
+    @Param('invitationId', ParseUUIDPipe) invitationId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.teamService.resendInvitation(companyId, invitationId, userId);
@@ -258,7 +259,7 @@ export class TeamController {
   @Get('companies/:companyId/my-permissions')
   @UseGuards(JwtAuthGuard)
   async getMyPermissions(
-    @Param('companyId') companyId: string,
+    @Param('companyId', ParseUUIDPipe) companyId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.permissionsService.getCompanyUserWithPermissions(

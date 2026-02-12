@@ -15,6 +15,7 @@ import {
   StreamableFile,
   NotFoundException,
   ForbiddenException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -157,7 +158,7 @@ export class ContractsController {
   @ApiResponse({ status: 200, description: 'Detalhes do contrato' })
   @ApiResponse({ status: 404, description: 'Contrato não encontrado' })
   async findById(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
   ) {
     return this.contractsService.findById(id, user.id);
@@ -178,7 +179,7 @@ export class ContractsController {
   @ApiResponse({ status: 404, description: 'Contrato não encontrado' })
   @ApiResponse({ status: 403, description: 'Acesso negado ao arquivo' })
   async downloadContract(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
@@ -226,7 +227,7 @@ export class ContractsController {
   @ApiResponse({ status: 200, description: 'Contrato enviado' })
   @ApiResponse({ status: 400, description: 'Contrato não pode ser enviado' })
   async sendForSignature(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: { message?: string },
     @CurrentUser() user: any,
   ) {
@@ -249,7 +250,7 @@ export class ContractsController {
   @ApiResponse({ status: 200, description: 'Contrato assinado' })
   @ApiResponse({ status: 400, description: 'Contrato já foi assinado' })
   async signAsBrand(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: { signerName: string; accepted: boolean },
     @CurrentUser() user: any,
     @Ip() ipAddress: string,
@@ -281,7 +282,7 @@ export class ContractsController {
   @ApiResponse({ status: 200, description: 'Contrato assinado' })
   @ApiResponse({ status: 400, description: 'Contrato já foi assinado' })
   async signAsSupplier(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: { signerName: string; accepted: boolean },
     @CurrentUser() user: any,
     @Ip() ipAddress: string,
@@ -313,7 +314,7 @@ export class ContractsController {
   @ApiResponse({ status: 200, description: 'Contrato cancelado' })
   @ApiResponse({ status: 400, description: 'Contrato não pode ser cancelado' })
   async cancelContract(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: { reason?: string },
     @CurrentUser() user: any,
   ) {
@@ -359,7 +360,7 @@ export class ContractsController {
   @ApiResponse({ status: 200, description: 'Revisão respondida' })
   @ApiResponse({ status: 400, description: 'Revisão já foi respondida' })
   async respondRevision(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: Omit<RespondRevisionDto, 'revisionId'>,
     @CurrentUser() user: any,
   ) {

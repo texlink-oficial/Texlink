@@ -7,6 +7,7 @@ import {
   Body,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
@@ -64,7 +65,7 @@ export class OrdersController {
   @Patch(':id/accept')
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPPLIER)
-  async accept(@Param('id') id: string, @CurrentUser('id') userId: string) {
+  async accept(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('id') userId: string) {
     return this.ordersService.accept(id, userId);
   }
 
@@ -72,7 +73,7 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPPLIER)
   async reject(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
     @Body('reason') reason?: string,
   ) {
@@ -85,7 +86,7 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND, UserRole.SUPPLIER)
   async getTransitions(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.ordersService.getAvailableTransitions(id, userId);
@@ -94,7 +95,7 @@ export class OrdersController {
   @Get(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND, UserRole.SUPPLIER, UserRole.ADMIN)
-  async getById(@Param('id') id: string, @CurrentUser('id') userId: string) {
+  async getById(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('id') userId: string) {
     return this.ordersService.getById(id, userId);
   }
 
@@ -102,7 +103,7 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND, UserRole.SUPPLIER)
   async updateStatus(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateOrderStatusDto,
   ) {
@@ -125,7 +126,7 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND, UserRole.SUPPLIER)
   async createReview(
-    @Param('id') orderId: string,
+    @Param('id', ParseUUIDPipe) orderId: string,
     @CurrentUser('id') userId: string,
     @Body() dto: CreateReviewDto,
   ) {
@@ -137,7 +138,7 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND, UserRole.SUPPLIER, UserRole.ADMIN)
   async getOrderReviews(
-    @Param('id') orderId: string,
+    @Param('id', ParseUUIDPipe) orderId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.ordersService.getOrderReviews(orderId, userId);
@@ -148,7 +149,7 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND)
   async createChildOrder(
-    @Param('id') parentOrderId: string,
+    @Param('id', ParseUUIDPipe) parentOrderId: string,
     @CurrentUser('id') userId: string,
     @Body() dto: CreateChildOrderDto,
   ) {
@@ -160,7 +161,7 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND, UserRole.SUPPLIER, UserRole.ADMIN)
   async getOrderHierarchy(
-    @Param('id') orderId: string,
+    @Param('id', ParseUUIDPipe) orderId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.ordersService.getOrderHierarchy(orderId, userId);
@@ -171,7 +172,7 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPPLIER)
   async addSecondQualityItems(
-    @Param('id') orderId: string,
+    @Param('id', ParseUUIDPipe) orderId: string,
     @CurrentUser('id') userId: string,
     @Body() items: SecondQualityItemDto[],
   ) {
@@ -183,7 +184,7 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND, UserRole.SUPPLIER, UserRole.ADMIN)
   async getSecondQualityItems(
-    @Param('id') orderId: string,
+    @Param('id', ParseUUIDPipe) orderId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.ordersService.getSecondQualityItems(orderId, userId);

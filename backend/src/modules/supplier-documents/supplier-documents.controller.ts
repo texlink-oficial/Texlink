@@ -10,6 +10,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -67,7 +68,7 @@ export class SupplierDocumentsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPPLIER)
   async getDocumentDownloadUrl(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.supplierDocumentsService.getDocumentDownloadUrl(id, userId);
@@ -77,7 +78,7 @@ export class SupplierDocumentsController {
   @Get(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPPLIER)
-  async findOne(@Param('id') id: string, @CurrentUser('id') userId: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('id') userId: string) {
     return this.supplierDocumentsService.findOne(id, userId);
   }
 
@@ -123,7 +124,7 @@ export class SupplierDocumentsController {
   @Roles(UserRole.SUPPLIER)
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser('id') userId: string,
   ) {
@@ -143,7 +144,7 @@ export class SupplierDocumentsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPPLIER)
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateSupplierDocumentDto,
     @CurrentUser('id') userId: string,
   ) {
@@ -154,7 +155,7 @@ export class SupplierDocumentsController {
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPPLIER)
-  async remove(@Param('id') id: string, @CurrentUser('id') userId: string) {
+  async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('id') userId: string) {
     return this.supplierDocumentsService.remove(id, userId);
   }
 
@@ -165,7 +166,7 @@ export class SupplierDocumentsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND)
   async getSupplierDocumentsForBrand(
-    @Param('supplierId') supplierId: string,
+    @Param('supplierId', ParseUUIDPipe) supplierId: string,
     @CurrentUser('id') userId: string,
     @Query('type') type?: SupplierDocumentType,
     @Query('status') status?: SupplierDocumentStatus,
@@ -183,7 +184,7 @@ export class SupplierDocumentsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND)
   async getSupplierDocumentsSummaryForBrand(
-    @Param('supplierId') supplierId: string,
+    @Param('supplierId', ParseUUIDPipe) supplierId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.supplierDocumentsService.getSupplierDocumentsSummaryForBrand(
@@ -197,8 +198,8 @@ export class SupplierDocumentsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND)
   async getDocumentDownloadUrlForBrand(
-    @Param('supplierId') supplierId: string,
-    @Param('documentId') documentId: string,
+    @Param('supplierId', ParseUUIDPipe) supplierId: string,
+    @Param('documentId', ParseUUIDPipe) documentId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.supplierDocumentsService.getDocumentDownloadUrlForBrand(

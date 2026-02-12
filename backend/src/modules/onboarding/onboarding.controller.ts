@@ -9,6 +9,7 @@ import {
   HttpStatus,
   UseInterceptors,
   UploadedFile,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -254,7 +255,7 @@ export class OnboardingController {
   })
   async deleteDocument(
     @Param('token') token: string,
-    @Param('documentId') documentId: string,
+    @Param('documentId', ParseUUIDPipe) documentId: string,
   ) {
     return this.onboardingService.deleteDocument(token, documentId);
   }

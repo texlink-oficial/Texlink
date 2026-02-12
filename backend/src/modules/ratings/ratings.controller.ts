@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, UseGuards, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { RatingsService } from './ratings.service';
 import { CreateRatingDto } from './dto';
@@ -14,7 +14,7 @@ export class RatingsController {
 
   @Post('orders/:orderId')
   async create(
-    @Param('orderId') orderId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
     @CurrentUser('id') userId: string,
     @Body() dto: CreateRatingDto,
   ) {
@@ -23,7 +23,7 @@ export class RatingsController {
 
   @Get('company/:companyId')
   async getCompanyRatings(
-    @Param('companyId') companyId: string,
+    @Param('companyId', ParseUUIDPipe) companyId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.ratingsService.getCompanyRatings(companyId, userId);

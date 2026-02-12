@@ -8,6 +8,7 @@ import {
   Body,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PartnersService } from './partners.service';
@@ -42,7 +43,7 @@ export class PartnersController {
   // Get partner by ID (public)
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  async findOnePublic(@Param('id') id: string) {
+  async findOnePublic(@Param('id', ParseUUIDPipe) id: string) {
     return this.partnersService.findOnePublic(id);
   }
 
@@ -65,7 +66,7 @@ export class PartnersController {
   @Get('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.partnersService.findOne(id);
   }
 
@@ -81,7 +82,7 @@ export class PartnersController {
   @Patch('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async update(@Param('id') id: string, @Body() dto: UpdatePartnerDto) {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePartnerDto) {
     return this.partnersService.update(id, dto);
   }
 
@@ -89,7 +90,7 @@ export class PartnersController {
   @Delete('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.partnersService.remove(id);
   }
 
@@ -97,7 +98,7 @@ export class PartnersController {
   @Patch('admin/:id/toggle')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async toggleActive(@Param('id') id: string) {
+  async toggleActive(@Param('id', ParseUUIDPipe) id: string) {
     return this.partnersService.toggleActive(id);
   }
 

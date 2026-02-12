@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Param, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Param, Res, UseGuards, ParseUUIDPipe } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
@@ -98,7 +98,7 @@ export class ReportsController {
   @Get('rejections/details/:supplierId')
   async getDetails(
     @CurrentUser('id') userId: string,
-    @Param('supplierId') supplierId: string,
+    @Param('supplierId', ParseUUIDPipe) supplierId: string,
     @Query() filters: RejectionReportFiltersDto,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,

@@ -6,6 +6,7 @@ import {
   Param,
   Body,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
@@ -27,7 +28,7 @@ export class PaymentsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND)
   async create(
-    @Param('orderId') orderId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
     @CurrentUser('id') userId: string,
     @Body() dto: CreatePaymentDto,
   ) {
@@ -36,7 +37,7 @@ export class PaymentsController {
 
   @Patch(':id')
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
     @Body() dto: UpdatePaymentDto,
   ) {
@@ -47,7 +48,7 @@ export class PaymentsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.BRAND, UserRole.SUPPLIER, UserRole.ADMIN)
   async getOrderPayments(
-    @Param('orderId') orderId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.paymentsService.getOrderPayments(orderId, userId);

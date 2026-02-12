@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { SupportTicketsService } from './support-tickets.service';
@@ -68,7 +69,7 @@ export class SupportTicketsController {
   @Roles(UserRole.ADMIN)
   async updateTicket(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTicketDto,
   ) {
     return this.supportTicketsService.updateTicket(id, dto, req.user.id);
@@ -80,7 +81,7 @@ export class SupportTicketsController {
   @Roles(UserRole.ADMIN)
   async replyAsSupport(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SendMessageDto,
   ) {
     return this.supportTicketsService.replyAsSupport(id, req.user.id, dto);
@@ -114,7 +115,7 @@ export class SupportTicketsController {
 
   // Get ticket by ID (must be after static routes)
   @Get(':id')
-  async getById(@Request() req, @Param('id') id: string) {
+  async getById(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.supportTicketsService.getById(
       id,
       req.user.id,
@@ -127,7 +128,7 @@ export class SupportTicketsController {
   @Post(':id/messages')
   async addMessage(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SendMessageDto,
   ) {
     return this.supportTicketsService.addMessage(
@@ -141,7 +142,7 @@ export class SupportTicketsController {
 
   // Get messages for a ticket
   @Get(':id/messages')
-  async getMessages(@Request() req, @Param('id') id: string) {
+  async getMessages(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.supportTicketsService.getMessages(
       id,
       req.user.id,
@@ -152,7 +153,7 @@ export class SupportTicketsController {
 
   // Close ticket
   @Patch(':id/close')
-  async closeTicket(@Request() req, @Param('id') id: string) {
+  async closeTicket(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.supportTicketsService.closeTicket(
       id,
       req.user.id,

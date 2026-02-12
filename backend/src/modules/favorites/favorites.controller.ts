@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { FavoritesService } from './favorites.service';
@@ -41,7 +42,7 @@ export class FavoritesController {
 
   @Get('templates/:id')
   async getTemplateById(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.favoritesService.getTemplateById(id, userId);
@@ -57,7 +58,7 @@ export class FavoritesController {
 
   @Patch('templates/:id')
   async updateTemplate(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTemplateDto,
     @CurrentUser('id') userId: string,
   ) {
@@ -66,7 +67,7 @@ export class FavoritesController {
 
   @Delete('templates/:id')
   async deleteTemplate(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.favoritesService.deleteTemplate(id, userId);
@@ -89,7 +90,7 @@ export class FavoritesController {
 
   @Patch('suppliers/:supplierId')
   async updateFavoriteSupplier(
-    @Param('supplierId') supplierId: string,
+    @Param('supplierId', ParseUUIDPipe) supplierId: string,
     @Body() dto: UpdateFavoriteSupplierDto,
     @CurrentUser('id') userId: string,
   ) {
@@ -102,7 +103,7 @@ export class FavoritesController {
 
   @Delete('suppliers/:supplierId')
   async removeFavoriteSupplier(
-    @Param('supplierId') supplierId: string,
+    @Param('supplierId', ParseUUIDPipe) supplierId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.favoritesService.removeFavoriteSupplier(supplierId, userId);
@@ -110,7 +111,7 @@ export class FavoritesController {
 
   @Get('suppliers/:supplierId/check')
   async isFavoriteSupplier(
-    @Param('supplierId') supplierId: string,
+    @Param('supplierId', ParseUUIDPipe) supplierId: string,
     @CurrentUser('id') userId: string,
   ) {
     const isFavorite = await this.favoritesService.isFavoriteSupplier(
@@ -137,7 +138,7 @@ export class FavoritesController {
 
   @Patch('payment-presets/:id')
   async updatePaymentPreset(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePaymentPresetDto,
     @CurrentUser('id') userId: string,
   ) {
@@ -146,7 +147,7 @@ export class FavoritesController {
 
   @Delete('payment-presets/:id')
   async deletePaymentPreset(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.favoritesService.deletePaymentPreset(id, userId);

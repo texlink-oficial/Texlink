@@ -102,15 +102,20 @@ const AddSupplierPage: React.FC = () => {
             const data = await relationshipsService.getAvailableForBrand(brandId);
             setAvailableSuppliers(data);
 
-            // Load partnership request status for each supplier
+            // Load partnership request status for all suppliers in parallel
+            const results = await Promise.all(
+                data.map(async (supplier) => {
+                    try {
+                        const status = await partnershipRequestsService.checkExisting(supplier.id);
+                        return [supplier.id, status] as const;
+                    } catch {
+                        return null;
+                    }
+                }),
+            );
             const statuses: Record<string, CheckExistingResponse> = {};
-            for (const supplier of data) {
-                try {
-                    const status = await partnershipRequestsService.checkExisting(supplier.id);
-                    statuses[supplier.id] = status;
-                } catch {
-                    // Ignore errors for individual checks
-                }
+            for (const result of results) {
+                if (result) statuses[result[0]] = result[1];
             }
             setSupplierStatuses(statuses);
         } catch (error) {

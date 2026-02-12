@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -45,7 +46,7 @@ export class NotificationsController {
    * Get a single notification
    */
   @Get(':id')
-  async getNotification(@Request() req: any, @Param('id') id: string) {
+  async getNotification(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
     return this.notificationsService.getNotification(id, req.user.sub);
   }
 
@@ -68,7 +69,7 @@ export class NotificationsController {
    * Mark a single notification as read
    */
   @Patch(':id/read')
-  async markOneAsRead(@Request() req: any, @Param('id') id: string) {
+  async markOneAsRead(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
     const result = await this.notificationsService.markAsRead(req.user.sub, {
       notificationId: id,
     });

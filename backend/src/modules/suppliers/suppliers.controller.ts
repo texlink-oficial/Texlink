@@ -192,7 +192,7 @@ export class SuppliersController {
   @Roles(UserRole.SUPPLIER)
   async expressInterest(
     @CurrentUser('id') userId: string,
-    @Param('orderId') orderId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
     @Body('message') message?: string,
   ) {
     return this.suppliersService.expressInterest(userId, orderId, message);
@@ -240,7 +240,7 @@ export class SuppliersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.BRAND)
   async resendInvitation(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ResendInvitationDto,
     @CurrentUser() user: AuthUser,
   ) {
@@ -259,7 +259,7 @@ export class SuppliersController {
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.BRAND, UserRole.ADMIN)
-  async getById(@Param('id') id: string) {
+  async getById(@Param('id', ParseUUIDPipe) id: string) {
     return this.suppliersService.getById(id);
   }
 

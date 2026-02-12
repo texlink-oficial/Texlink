@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
@@ -23,7 +24,7 @@ export class ChatController {
 
   @Get()
   async getMessages(
-    @Param('orderId') orderId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
     @CurrentUser('id') userId: string,
     @Query('limit') limit?: string,
     @Query('cursor') cursor?: string,
@@ -38,7 +39,7 @@ export class ChatController {
 
   @Post()
   async sendMessage(
-    @Param('orderId') orderId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
     @CurrentUser('id') userId: string,
     @Body() dto: SendMessageDto,
   ) {
@@ -47,8 +48,8 @@ export class ChatController {
 
   @Patch('messages/:messageId/accept')
   async acceptProposal(
-    @Param('orderId') orderId: string,
-    @Param('messageId') messageId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.chatService.acceptProposal(messageId, userId);
@@ -56,8 +57,8 @@ export class ChatController {
 
   @Patch('messages/:messageId/reject')
   async rejectProposal(
-    @Param('orderId') orderId: string,
-    @Param('messageId') messageId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.chatService.rejectProposal(messageId, userId);
@@ -65,7 +66,7 @@ export class ChatController {
 
   @Get('unread')
   async getUnreadCount(
-    @Param('orderId') orderId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
     @CurrentUser('id') userId: string,
   ) {
     const count = await this.chatService.getUnreadCount(orderId, userId);

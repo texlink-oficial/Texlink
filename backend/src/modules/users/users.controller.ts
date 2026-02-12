@@ -9,6 +9,7 @@ import {
   Body,
   UseGuards,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -33,7 +34,7 @@ export class UsersController {
 
   @Get(':id')
   @Roles(UserRole.ADMIN)
-  async findById(@Param('id') id: string) {
+  async findById(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.findById(id);
   }
 
@@ -45,20 +46,20 @@ export class UsersController {
 
   @Put(':id')
   @Roles(UserRole.ADMIN)
-  async updateUser(@Param('id') id: string, @Body() dto: AdminUpdateUserDto) {
+  async updateUser(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AdminUpdateUserDto) {
     return this.usersService.updateUser(id, dto);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
-  async deleteUser(@Param('id') id: string) {
+  async deleteUser(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.deleteUser(id);
   }
 
   @Post(':id/reset-password')
   @Roles(UserRole.ADMIN)
   async resetPassword(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ResetPasswordDto,
   ) {
     return this.usersService.resetPassword(id, dto.newPassword);
@@ -67,7 +68,7 @@ export class UsersController {
   @Patch(':id/status')
   @Roles(UserRole.ADMIN)
   async updateStatus(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body('isActive') isActive: boolean,
   ) {
     return this.usersService.updateStatus(id, isActive);

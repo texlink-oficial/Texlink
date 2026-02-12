@@ -8,6 +8,7 @@ import {
   Body,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { EducationalContentService } from './educational-content.service';
@@ -54,7 +55,7 @@ export class EducationalContentController {
   // Get content by ID (public)
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  async findOnePublic(@Param('id') id: string) {
+  async findOnePublic(@Param('id', ParseUUIDPipe) id: string) {
     return this.educationalContentService.findOnePublic(id);
   }
 
@@ -82,7 +83,7 @@ export class EducationalContentController {
   @Get('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.educationalContentService.findOne(id);
   }
 
@@ -99,7 +100,7 @@ export class EducationalContentController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateEducationalContentDto,
   ) {
     return this.educationalContentService.update(id, dto);
@@ -109,7 +110,7 @@ export class EducationalContentController {
   @Delete('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.educationalContentService.remove(id);
   }
 
@@ -117,7 +118,7 @@ export class EducationalContentController {
   @Patch('admin/:id/toggle')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async toggleActive(@Param('id') id: string) {
+  async toggleActive(@Param('id', ParseUUIDPipe) id: string) {
     return this.educationalContentService.toggleActive(id);
   }
 

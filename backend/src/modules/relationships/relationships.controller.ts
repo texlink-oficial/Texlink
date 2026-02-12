@@ -7,6 +7,7 @@ import {
   Param,
   UseGuards,
   Ip,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { RelationshipsService } from './relationships.service';
@@ -54,7 +55,7 @@ export class RelationshipsController {
    */
   @Get('brand/:brandId')
   async findByBrand(
-    @Param('brandId') brandId: string,
+    @Param('brandId', ParseUUIDPipe) brandId: string,
     @CurrentUser() user: AuthUser,
   ) {
     return this.relationshipsService.findByBrand(brandId, user);
@@ -65,7 +66,7 @@ export class RelationshipsController {
    */
   @Get('supplier/:supplierId')
   async findBySupplier(
-    @Param('supplierId') supplierId: string,
+    @Param('supplierId', ParseUUIDPipe) supplierId: string,
     @CurrentUser() user: AuthUser,
   ) {
     return this.relationshipsService.findBySupplier(supplierId, user);
@@ -76,7 +77,7 @@ export class RelationshipsController {
    */
   @Get('available/:brandId')
   async findAvailableForBrand(
-    @Param('brandId') brandId: string,
+    @Param('brandId', ParseUUIDPipe) brandId: string,
     @CurrentUser() user: AuthUser,
   ) {
     return this.relationshipsService.findAvailableForBrand(brandId, user);
@@ -86,7 +87,7 @@ export class RelationshipsController {
    * Buscar relacionamento específico
    */
   @Get(':id')
-  async findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.relationshipsService.findOne(id, user);
   }
 
@@ -95,7 +96,7 @@ export class RelationshipsController {
    */
   @Patch(':id')
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateRelationshipDto,
     @CurrentUser() user: AuthUser,
   ) {
@@ -106,7 +107,7 @@ export class RelationshipsController {
    * Ativar relacionamento
    */
   @Post(':id/activate')
-  async activate(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+  async activate(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.relationshipsService.activate(id, user);
   }
 
@@ -115,7 +116,7 @@ export class RelationshipsController {
    */
   @Post(':id/suspend')
   async suspend(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RelationshipActionDto,
     @CurrentUser() user: AuthUser,
   ) {
@@ -126,7 +127,7 @@ export class RelationshipsController {
    * Reativar relacionamento
    */
   @Post(':id/reactivate')
-  async reactivate(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+  async reactivate(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.relationshipsService.reactivate(id, user);
   }
 
@@ -135,7 +136,7 @@ export class RelationshipsController {
    */
   @Post(':id/terminate')
   async terminate(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RelationshipActionDto,
     @CurrentUser() user: AuthUser,
   ) {
@@ -149,7 +150,7 @@ export class RelationshipsController {
    */
   @Post(':id/contract/generate')
   async generateContract(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() terms: Record<string, any>,
     @CurrentUser() user: AuthUser,
   ) {
@@ -162,7 +163,7 @@ export class RelationshipsController {
    * Visualizar contrato do relacionamento
    */
   @Get(':id/contract')
-  async getContract(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+  async getContract(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     // Verificar acesso ao relacionamento
     await this.relationshipsService.findOne(id, user);
     return this.contractsService.getContractByRelationship(id);
@@ -173,7 +174,7 @@ export class RelationshipsController {
    */
   @Post(':id/contract/sign')
   async signContract(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthUser,
     @Ip() ipAddress: string,
   ) {

@@ -8,6 +8,7 @@ import {
   Query,
   Body,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
@@ -38,7 +39,7 @@ export class AdminController {
 
   @Patch('suppliers/:id/status')
   async updateSupplierStatus(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body('status') status: CompanyStatus,
     @Body('reason') reason: string,
     @CurrentUser() user: any,
@@ -113,12 +114,12 @@ export class AdminController {
   }
 
   @Get('documents/:id/download')
-  async getDocumentDownloadUrl(@Param('id') id: string) {
+  async getDocumentDownloadUrl(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.getDocumentDownloadUrl(id);
   }
 
   @Get('suppliers/:id/documents')
-  async getSupplierDocuments(@Param('id') supplierId: string) {
+  async getSupplierDocuments(@Param('id', ParseUUIDPipe) supplierId: string) {
     return this.adminService.getSupplierDocuments(supplierId);
   }
 
@@ -148,7 +149,7 @@ export class AdminController {
 
   @Patch('companies/:id')
   async updateCompany(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AdminUpdateCompanyDto,
     @CurrentUser() user: any,
   ) {
@@ -157,7 +158,7 @@ export class AdminController {
 
   @Patch('companies/:id/status')
   async updateCompanyStatus(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body('status') status: CompanyStatus,
     @Body('reason') reason: string,
     @CurrentUser() user: any,
@@ -167,7 +168,7 @@ export class AdminController {
 
   @Delete('companies/:id')
   async deleteCompany(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
   ) {
     return this.adminService.deleteCompany(id, user.id);
@@ -175,7 +176,7 @@ export class AdminController {
 
   @Post('companies/:id/users')
   async addUserToCompany(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AddUserToCompanyDto,
     @CurrentUser() user: any,
   ) {
@@ -184,8 +185,8 @@ export class AdminController {
 
   @Delete('companies/:id/users/:userId')
   async removeUserFromCompany(
-    @Param('id') id: string,
-    @Param('userId') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
   ) {
     return this.adminService.removeUserFromCompany(id, userId);
   }
