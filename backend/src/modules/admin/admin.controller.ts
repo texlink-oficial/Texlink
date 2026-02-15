@@ -17,7 +17,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, CompanyStatus, OrderStatus, SupplierDocumentType, SupplierDocumentStatus } from '@prisma/client';
-import { AdminCreateCompanyDto, AdminUpdateCompanyDto, AddUserToCompanyDto } from './dto';
+import { AdminCreateCompanyDto, AdminUpdateCompanyDto, AddUserToCompanyDto, AdminRegisterCompanyDto } from './dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -135,6 +135,14 @@ export class AdminController {
     return this.adminService.getOrdersMonthlyStats(
       months ? parseInt(months, 10) : 6,
     );
+  }
+
+  @Post('register-company')
+  async registerCompany(
+    @Body() dto: AdminRegisterCompanyDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.adminService.registerCompany(dto, user.id);
   }
 
   // ========== Company CRUD ==========

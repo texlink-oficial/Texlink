@@ -3,13 +3,14 @@ import {
     Factory, Star, Package, Filter,
     CheckCircle, Clock, XCircle, Loader2,
     Search, MapPin, ChevronRight, RefreshCw,
-    MoreVertical, Eye, Edit3, Power, Trash2
+    MoreVertical, Eye, Edit3, Power, Trash2, UserPlus
 } from 'lucide-react';
 import { adminService } from '../../services/admin.service';
 import { useToast } from '../../contexts/ToastContext';
 import CompanyDetailsModal from '../../components/admin/CompanyDetailsModal';
 import EditCompanyModal from '../../components/admin/EditCompanyModal';
 import ConfirmActionModal from '../../components/admin/ConfirmActionModal';
+import AdminRegisterCompanyModal from '../../components/admin/AdminRegisterCompanyModal';
 
 interface Supplier {
     id: string;
@@ -42,6 +43,7 @@ const SuppliersPage: React.FC = () => {
     const [showEdit, setShowEdit] = useState(false);
     const [showStatusConfirm, setShowStatusConfirm] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showRegister, setShowRegister] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     const toast = useToast();
@@ -126,9 +128,18 @@ const SuppliersPage: React.FC = () => {
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-display">Facções</h1>
                         <p className="text-gray-500 dark:text-gray-400 font-medium">Gerencie o ecossistema de produtores da rede</p>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-lg border border-sky-500/10 shadow-sm">
-                        <Factory className="w-4 h-4" />
-                        <span className="text-xs font-bold uppercase tracking-wider">{stats.total} Registradas</span>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setShowRegister(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-sky-500 text-white text-sm font-bold rounded-xl hover:bg-sky-600 shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            Registrar Facção
+                        </button>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-lg border border-sky-500/10 shadow-sm">
+                            <Factory className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">{stats.total} Registradas</span>
+                        </div>
                     </div>
                 </div>
 
@@ -252,6 +263,13 @@ const SuppliersPage: React.FC = () => {
                     confirmColor="red"
                     onConfirm={handleDelete}
                     onClose={() => { setShowDeleteConfirm(false); setSelectedSupplier(null); }}
+                />
+            )}
+            {showRegister && (
+                <AdminRegisterCompanyModal
+                    type="SUPPLIER"
+                    onClose={() => setShowRegister(false)}
+                    onSuccess={() => { setShowRegister(false); loadSuppliers(); }}
                 />
             )}
         </div>

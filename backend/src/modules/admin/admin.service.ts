@@ -6,7 +6,8 @@ import { SUPPLIER_STATUS_CHANGED } from '../notifications/events/notification.ev
 import type { SupplierStatusChangedEvent } from '../notifications/events/notification.events';
 import type { StorageProvider } from '../upload/storage.provider';
 import { STORAGE_PROVIDER } from '../upload/storage.provider';
-import { AdminCreateCompanyDto, AdminUpdateCompanyDto, AddUserToCompanyDto } from './dto';
+import { AdminCreateCompanyDto, AdminUpdateCompanyDto, AddUserToCompanyDto, AdminRegisterCompanyDto } from './dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AdminService {
@@ -843,5 +844,136 @@ export class AdminService {
     });
 
     return { success: true, message: 'Usuário removido da empresa' };
+  }
+
+  // ========== Register Company (full flow) ==========
+
+  async registerCompany(dto: AdminRegisterCompanyDto, adminId: string) {
+    // Hash password outside transaction (CPU-intensive)
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Validate unique email
+      const existingUser = await tx.user.findUnique({
+        where: { email: dto.email },
+      });
+      if (existingUser) {
+        throw new ConflictException('Já existe um usuário com este e-mail');
+      }
+
+      // Validate unique CNPJ
+      const existingCompany = await tx.company.findUnique({
+        where: { document: dto.document },
+      });
+      if (existingCompany) {
+        throw new ConflictException('Já existe uma empresa com este CNPJ');
+      }
+
+      // Create user
+      const userRole = dto.type === CompanyType.SUPPLIER ? 'SUPPLIER' : 'BRAND';
+      const user = await tx.user.create({
+        data: {
+          email: dto.email,
+          passwordHash,
+          name: dto.userName,
+          role: userRole,
+          isActive: true,
+        },
+      });
+
+      // Create company
+      const company = await tx.company.create({
+        data: {
+          legalName: dto.legalName,
+          tradeName: dto.tradeName || dto.legalName,
+          document: dto.document,
+          type: dto.type,
+          city: dto.city,
+          state: dto.state,
+          phone: dto.companyPhone || dto.userPhone,
+          email: dto.companyEmail || dto.email,
+          status: CompanyStatus.ACTIVE,
+          statusChangedAt: new Date(),
+          statusChangedById: adminId,
+        },
+      });
+
+      // Create CompanyUser link (owner)
+      await tx.companyUser.create({
+        data: {
+          userId: user.id,
+          companyId: company.id,
+          role: 'OWNER',
+          companyRole: CompanyRole.ADMIN,
+          isCompanyAdmin: true,
+        },
+      });
+
+      // Create profile based on type
+      if (dto.type === CompanyType.SUPPLIER) {
+        const activeWorkers = dto.qtdCostureiras || 0;
+        const monthlyCapacity = activeWorkers > 0 ? activeWorkers * 8 * 60 * 22 : undefined;
+
+        await tx.supplierProfile.create({
+          data: {
+            companyId: company.id,
+            onboardingPhase: 3,
+            onboardingComplete: true,
+            productTypes: dto.productTypes,
+            specialties: dto.machines || [],
+            activeWorkers: activeWorkers || undefined,
+            monthlyCapacity,
+            businessQualification: {
+              qtdColaboradores: dto.qtdCostureiras,
+              tempoMercado: dto.tempoMercado,
+            },
+          },
+        });
+      } else {
+        await tx.brandProfile.create({
+          data: {
+            companyId: company.id,
+            onboardingPhase: 3,
+            onboardingComplete: true,
+            productTypes: dto.productTypes,
+            specialties: dto.specialties || [],
+            monthlyVolume: dto.monthlyVolume,
+            businessQualification: {
+              tempoMercado: dto.tempoMercado,
+            },
+          },
+        });
+      }
+
+      // Audit trail
+      await tx.adminAction.create({
+        data: {
+          companyId: company.id,
+          adminId,
+          action: 'REGISTERED',
+          newStatus: CompanyStatus.ACTIVE,
+        },
+      });
+
+      return { company, user };
+    });
+
+    // Return company with profile and user
+    const company = await this.prisma.company.findUnique({
+      where: { id: result.company.id },
+      include: {
+        supplierProfile: true,
+        brandProfile: true,
+        companyUsers: {
+          include: { user: { select: { id: true, name: true, email: true } } },
+        },
+      },
+    });
+
+    this.logger.log(
+      `Company ${result.company.id} (${dto.type}) registered by admin ${adminId}`,
+    );
+
+    return company;
   }
 }

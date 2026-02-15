@@ -99,6 +99,27 @@ export interface UpdateUserData {
     isActive?: boolean;
 }
 
+export interface AdminRegisterCompanyData {
+    email: string;
+    password: string;
+    userName: string;
+    userPhone?: string;
+    legalName: string;
+    tradeName?: string;
+    document: string;
+    type: 'BRAND' | 'SUPPLIER';
+    city: string;
+    state: string;
+    companyPhone?: string;
+    companyEmail?: string;
+    productTypes: string[];
+    specialties?: string[];
+    tempoMercado?: string;
+    machines?: string[];
+    qtdCostureiras?: number;
+    monthlyVolume?: number;
+}
+
 export interface CreateCompanyData {
     legalName: string;
     tradeName?: string;
@@ -246,6 +267,11 @@ export const adminService = {
 
     async resetPassword(id: string, newPassword: string) {
         const response = await api.post(`/users/${id}/reset-password`, { newPassword });
+        return response.data;
+    },
+
+    async registerCompany(data: AdminRegisterCompanyData) {
+        const response = await api.post('/admin/register-company', data);
         return response.data;
     },
 

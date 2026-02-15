@@ -4,12 +4,13 @@ import {
     Building2, Search, Filter, Package,
     CheckCircle, Clock, XCircle, Loader2,
     Mail, Phone, MapPin, MoreVertical,
-    Eye, Edit3, Power, Trash2
+    Eye, Edit3, Power, Trash2, UserPlus
 } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import CompanyDetailsModal from '../../components/admin/CompanyDetailsModal';
 import EditCompanyModal from '../../components/admin/EditCompanyModal';
 import ConfirmActionModal from '../../components/admin/ConfirmActionModal';
+import AdminRegisterCompanyModal from '../../components/admin/AdminRegisterCompanyModal';
 
 interface Brand {
     id: string;
@@ -39,6 +40,7 @@ const BrandsPage: React.FC = () => {
     const [showEdit, setShowEdit] = useState(false);
     const [showStatusConfirm, setShowStatusConfirm] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showRegister, setShowRegister] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     const toast = useToast();
@@ -127,6 +129,14 @@ const BrandsPage: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                        <button
+                            onClick={() => setShowRegister(true)}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-sky-500 text-white text-sm font-bold rounded-xl hover:bg-sky-600 shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            Registrar Marca
+                        </button>
+
                         {/* Search */}
                         <div className="relative flex-1 sm:w-80 group">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-sky-500 transition-colors" />
@@ -360,6 +370,13 @@ const BrandsPage: React.FC = () => {
                     confirmColor="red"
                     onConfirm={handleDelete}
                     onClose={() => { setShowDeleteConfirm(false); setSelectedBrand(null); }}
+                />
+            )}
+            {showRegister && (
+                <AdminRegisterCompanyModal
+                    type="BRAND"
+                    onClose={() => setShowRegister(false)}
+                    onSuccess={() => { setShowRegister(false); loadBrands(); }}
                 />
             )}
         </div>
