@@ -590,9 +590,18 @@ export class SuppliersService {
     const where: Prisma.CompanyWhereInput = {
       type: CompanyType.SUPPLIER,
       status: CompanyStatus.ACTIVE,
-      supplierProfile: {
-        onboardingComplete: true,
-      },
+      OR: [
+        {
+          supplierProfile: {
+            onboardingComplete: true,
+          },
+        },
+        {
+          onboarding: {
+            isCompleted: true,
+          },
+        },
+      ],
     };
 
     if (filters.city) {

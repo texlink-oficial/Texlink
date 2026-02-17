@@ -11,6 +11,7 @@ import {
   RelationshipStatus,
   UserRole,
   CompanyType,
+  CompanyStatus,
   Prisma,
 } from '@prisma/client';
 import { CreateRelationshipDto } from './dto/create-relationship.dto';
@@ -64,7 +65,11 @@ export class RelationshipsService {
       throw new NotFoundException('Fornecedor não encontrado');
     }
 
-    if (!supplier.onboarding?.isCompleted) {
+    const onboardingComplete =
+      supplier.supplierProfile?.onboardingComplete ||
+      supplier.onboarding?.isCompleted;
+
+    if (!onboardingComplete) {
       throw new BadRequestException(
         'Fornecedor ainda não completou o onboarding',
       );
@@ -241,16 +246,27 @@ export class RelationshipsService {
 
     const existingSupplierIds = existingRelationships.map((r) => r.supplierId);
 
-    // Buscar suppliers com onboarding completo, excluindo os já credenciados
+    // Buscar suppliers com onboarding completo (via SupplierProfile OU SupplierOnboarding),
+    // excluindo os já credenciados
     return this.prisma.company.findMany({
       where: {
         type: CompanyType.SUPPLIER,
-        onboarding: {
-          isCompleted: true,
-        },
+        status: CompanyStatus.ACTIVE,
         id: {
           notIn: existingSupplierIds,
         },
+        OR: [
+          {
+            supplierProfile: {
+              onboardingComplete: true,
+            },
+          },
+          {
+            onboarding: {
+              isCompleted: true,
+            },
+          },
+        ],
       },
       include: {
         supplierProfile: true,
