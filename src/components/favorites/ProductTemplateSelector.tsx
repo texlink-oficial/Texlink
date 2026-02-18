@@ -94,9 +94,9 @@ export const ProductTemplateSelector: React.FC<ProductTemplateSelectorProps> = (
                                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
                                             {template.productType} • {template.productName}
                                         </p>
-                                        {template.defaultPrice && (
+                                        {template.defaultPrice != null && (
                                             <p className="text-xs text-brand-600 dark:text-brand-400 mt-1">
-                                                R$ {template.defaultPrice.toFixed(2)}/un
+                                                R$ {Number(template.defaultPrice).toFixed(2)}/un
                                             </p>
                                         )}
                                     </div>

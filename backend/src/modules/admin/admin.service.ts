@@ -141,7 +141,7 @@ export class AdminService {
     });
 
     // Create audit trail record
-    const actionLabel = status === CompanyStatus.ACTIVE ? 'APPROVED' : 'REJECTED';
+    const actionLabel = status === CompanyStatus.ACTIVE ? 'ACTIVATED' : 'SUSPENDED';
     await this.prisma.adminAction.create({
       data: {
         companyId,

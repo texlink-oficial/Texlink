@@ -60,7 +60,11 @@ const DocumentsPage: React.FC = () => {
         setExpiryDate('');
         setCompetenceMonth('');
         setCompetenceYear('');
-        fileInputRef.current?.click();
+        // Only trigger file picker immediately if no extra metadata is needed
+        // Otherwise, let the modal render first so user fills in expiry/competence
+        if (!item.requiresExpiry && !item.isMonthly) {
+            fileInputRef.current?.click();
+        }
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,14 +144,14 @@ const DocumentsPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+            <div className="bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-24">
                 <RefreshCw className="w-8 h-8 text-brand-500 animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="bg-gray-50 dark:bg-gray-900">
             {/* Hidden file input */}
             <input
                 ref={fileInputRef}
@@ -348,7 +352,8 @@ const DocumentsPage: React.FC = () => {
                                 </button>
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
+                                    disabled={!expiryDate}
+                                    className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Selecionar Arquivo
                                 </button>
@@ -410,7 +415,8 @@ const DocumentsPage: React.FC = () => {
                                 </button>
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
+                                    disabled={!competenceMonth || !competenceYear}
+                                    className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Selecionar Arquivo
                                 </button>

@@ -236,9 +236,9 @@ const FavoritesPage: React.FC = () => {
                                                     </p>
                                                 )}
                                                 <div className="flex items-center justify-between text-sm">
-                                                    {template.defaultPrice && (
+                                                    {template.defaultPrice != null && (
                                                         <span className="text-brand-600 dark:text-brand-400 font-medium">
-                                                            R$ {template.defaultPrice.toFixed(2)}/un
+                                                            R$ {Number(template.defaultPrice).toFixed(2)}/un
                                                         </span>
                                                     )}
                                                     <span className={`px-2 py-0.5 rounded text-xs ${template.materialsProvided

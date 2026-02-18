@@ -68,7 +68,7 @@ export default function EditCompanyModal({ company, onClose, onSuccess }: Props)
             onSuccess();
         } catch (err: any) {
             const msg = err?.response?.data?.message || err?.message || 'Erro ao atualizar empresa.';
-            setError(typeof msg === 'string' ? msg : 'Erro ao atualizar empresa.');
+            setError(Array.isArray(msg) ? msg.join('. ') : typeof msg === 'string' ? msg : 'Erro ao atualizar empresa.');
         } finally {
             setIsLoading(false);
         }

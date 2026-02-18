@@ -321,16 +321,20 @@ export const PortalSidebar: React.FC = () => {
         <div className={`px-3 py-2 border-b border-gray-200/50 dark:border-gray-700/50 flex-shrink-0 ${collapsed ? 'flex justify-center' : ''}`}>
           {collapsed ? (
             <CollapsedTooltip
-              label={`${supplierProfile.company?.status === 'ACTIVE' ? 'Disponível' : 'Indisponível'} • ⭐ ${Number(supplierProfile.company?.avgRating || 0).toFixed(1)} • ${supplierProfile.stats?.capacityUsage || 0}% capacidade`}
+              label={`${supplierProfile.company?.status === 'ACTIVE' ? 'Ativa' : supplierProfile.company?.status === 'SUSPENDED' ? 'Suspensa' : 'Pendente'} • ⭐ ${Number(supplierProfile.company?.avgRating || 0).toFixed(1)} • ${supplierProfile.stats?.capacityUsage || 0}% ocupação`}
               collapsed={collapsed}
             >
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${supplierProfile.company?.status === 'ACTIVE'
                   ? 'bg-green-100 dark:bg-green-900/30'
-                  : 'bg-red-100 dark:bg-red-900/30'
+                  : supplierProfile.company?.status === 'SUSPENDED'
+                    ? 'bg-red-100 dark:bg-red-900/30'
+                    : 'bg-yellow-100 dark:bg-yellow-900/30'
                 }`}>
                 <div className={`w-2.5 h-2.5 rounded-full ${supplierProfile.company?.status === 'ACTIVE'
                     ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]'
-                    : 'bg-red-500'
+                    : supplierProfile.company?.status === 'SUSPENDED'
+                      ? 'bg-red-500'
+                      : 'bg-yellow-500'
                   }`} />
               </div>
             </CollapsedTooltip>
@@ -364,15 +368,19 @@ export const PortalSidebar: React.FC = () => {
               </div>
 
               {/* Availability Badge with Glow */}
-              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium transition-all ${supplierProfile.company?.status === 'APPROVED'
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium transition-all ${supplierProfile.company?.status === 'ACTIVE'
                   ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                  : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                  : supplierProfile.company?.status === 'SUSPENDED'
+                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                    : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
                 }`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${supplierProfile.company?.status === 'APPROVED'
+                <div className={`w-1.5 h-1.5 rounded-full ${supplierProfile.company?.status === 'ACTIVE'
                     ? 'bg-green-500 animate-glow-pulse'
-                    : 'bg-yellow-500'
-                  }`} style={supplierProfile.company?.status === 'APPROVED' ? { boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)' } : {}} />
-                {supplierProfile.company?.status === 'APPROVED' ? 'Ativa' : 'Pendente'}
+                    : supplierProfile.company?.status === 'SUSPENDED'
+                      ? 'bg-red-500'
+                      : 'bg-yellow-500'
+                  }`} style={supplierProfile.company?.status === 'ACTIVE' ? { boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)' } : {}} />
+                {supplierProfile.company?.status === 'ACTIVE' ? 'Ativa' : supplierProfile.company?.status === 'SUSPENDED' ? 'Suspensa' : 'Pendente'}
               </div>
             </div>
           )}

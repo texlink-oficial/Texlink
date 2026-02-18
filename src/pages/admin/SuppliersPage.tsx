@@ -80,7 +80,7 @@ const SuppliersPage: React.FC = () => {
         if (!selectedSupplier) return;
         const newStatus = selectedSupplier.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
         try {
-            await adminService.updateCompanyStatus(selectedSupplier.id, newStatus, reason);
+            await adminService.updateSupplierStatus(selectedSupplier.id, newStatus, reason);
             toast.success('Status atualizado', `Facção ${newStatus === 'ACTIVE' ? 'ativada' : 'suspensa'} com sucesso`);
             setShowStatusConfirm(false);
             setSelectedSupplier(null);

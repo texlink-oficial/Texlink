@@ -259,8 +259,13 @@ interface AuditTrailProps {
 const AuditTrail: React.FC<AuditTrailProps> = ({ actions, isLoading }) => {
     const actionLabels: Record<string, { label: string; className: string }> = {
         APPROVED: { label: 'Aprovado', className: 'text-green-600 dark:text-green-400' },
+        ACTIVATED: { label: 'Ativado', className: 'text-green-600 dark:text-green-400' },
         REJECTED: { label: 'Rejeitado', className: 'text-red-600 dark:text-red-400' },
         SUSPENDED: { label: 'Suspenso', className: 'text-orange-600 dark:text-orange-400' },
+        CREATED: { label: 'Criado', className: 'text-blue-600 dark:text-blue-400' },
+        UPDATED: { label: 'Atualizado', className: 'text-sky-600 dark:text-sky-400' },
+        DELETED: { label: 'Excluído', className: 'text-red-600 dark:text-red-400' },
+        REGISTERED: { label: 'Registrado', className: 'text-blue-600 dark:text-blue-400' },
     };
 
     return (
