@@ -42,6 +42,7 @@ export interface User {
         company: {
             id: string;
             tradeName: string;
+            legalName?: string | null;
             type: string;
             status: string;
             logoUrl?: string | null;

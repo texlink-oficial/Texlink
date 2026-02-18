@@ -9,11 +9,15 @@ import {
     Loader2,
     Camera,
     X,
+    Lock,
 } from 'lucide-react';
 import { settingsService } from '../../services/settings.service';
 import { CompanyData } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
 
 const CompanyDataSection: React.FC = () => {
+    const { user } = useAuth();
+    const isSupplier = user?.role === 'SUPPLIER';
     const [data, setData] = useState<CompanyData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -213,14 +217,20 @@ const CompanyDataSection: React.FC = () => {
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Razão Social
+                            {isSupplier && <Lock className="inline w-3.5 h-3.5 ml-1.5 text-gray-400" />}
                         </label>
                         <input
                             type="text"
                             name="legalName"
                             value={formData.legalName}
                             onChange={handleChange}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                            readOnly={isSupplier}
+                            title={isSupplier ? 'Alterações devem ser solicitadas ao suporte' : undefined}
+                            className={`w-full px-4 py-2 border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent ${isSupplier ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 cursor-not-allowed' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'}`}
                         />
+                        {isSupplier && (
+                            <p className="text-xs text-gray-400 mt-1">Alterações devem ser solicitadas ao suporte</p>
+                        )}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { User, Users, Settings, ChevronDown, LogOut } from 'lucide-react';
 
 interface UserMenuDropdownProps {
-  user: { name: string; email: string; companyUsers?: { company: { logoUrl?: string | null } }[] } | null;
+  user: { name: string; email: string; companyUsers?: { company: { logoUrl?: string | null; tradeName?: string | null; legalName?: string | null } }[] } | null;
   collapsed: boolean;
   onNavigate?: () => void;
   onLogout: () => void;
@@ -82,7 +82,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
           <>
             <div className="flex-1 text-left min-w-0">
               <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                {user?.name || 'Parceiro'}
+                {user?.companyUsers?.[0]?.company?.tradeName || user?.companyUsers?.[0]?.company?.legalName || user?.name || 'Parceiro'}
               </p>
             </div>
             <ChevronDown

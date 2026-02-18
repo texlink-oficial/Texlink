@@ -297,39 +297,7 @@ const CapacityDashboardPage: React.FC = () => {
                     {/* ============================================================= */}
                     <div className="lg:col-span-1">
                         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Ocupação Atual</h2>
-
-                            {/* Circular Gauge */}
-                            <div className="relative w-48 h-48 mx-auto mb-6">
-                                <svg className="w-full h-full transform -rotate-90">
-                                    <circle
-                                        cx="96"
-                                        cy="96"
-                                        r="88"
-                                        stroke="currentColor"
-                                        strokeWidth="12"
-                                        fill="none"
-                                        className="text-gray-200 dark:text-gray-700"
-                                    />
-                                    <circle
-                                        cx="96"
-                                        cy="96"
-                                        r="88"
-                                        stroke="currentColor"
-                                        strokeWidth="12"
-                                        fill="none"
-                                        strokeDasharray={`${occupancyPercent * 5.52} 552`}
-                                        strokeLinecap="round"
-                                        className={getCapacityColor()}
-                                    />
-                                </svg>
-                                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span className={`text-4xl font-bold ${getCapacityColor()}`}>
-                                        {occupancyPercent}%
-                                    </span>
-                                    <span className="text-sm text-gray-500 dark:text-gray-400">ocupado</span>
-                                </div>
-                            </div>
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Resumo</h2>
 
                             {/* Stats */}
                             <div className="space-y-4">

@@ -88,11 +88,7 @@ const navGroups: NavGroup[] = [
         id: 'financeiro',
         label: 'Financeiro',
         icon: <DollarSign className="h-5 w-5" />,
-        children: [
-          { label: 'Depósitos', path: '/portal/financeiro/depositos' },
-          { label: 'Frequência de Repasse', path: '/portal/financeiro/frequencia' },
-          { label: 'Antecipação', path: '/portal/financeiro/antecipacao' },
-        ],
+        path: '/portal/financeiro/depositos',
       },
       {
         id: 'marcas',
@@ -100,18 +96,18 @@ const navGroups: NavGroup[] = [
         icon: <Building2 className="h-5 w-5" />,
         path: '/portal/marcas',
       },
-      {
-        id: 'solicitacoes',
-        label: 'Solicitações',
-        icon: <Star className="h-5 w-5" />,
-        path: '/portal/solicitacoes',
-      },
     ],
   },
   {
     id: 'recursos',
     label: 'Recursos',
     items: [
+      {
+        id: 'solicitacoes',
+        label: 'Solicitações de Vínculo',
+        icon: <Star className="h-5 w-5" />,
+        path: '/portal/solicitacoes',
+      },
       {
         id: 'documentos',
         label: 'Documentos',

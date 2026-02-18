@@ -560,8 +560,8 @@ const PerformancePage: React.FC = () => {
                 />
             </div>
 
-            {/* Platform Comparison Card */}
-            {data?.platformAverage && (
+            {/* Platform Comparison Card — hidden until sufficient data */}
+            {false && data?.platformAverage && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2.5 rounded-xl bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">

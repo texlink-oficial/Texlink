@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { adminService, PendingApproval, AdminAction, SupplierDocument } from '../../services';
 import {
     ArrowLeft, CheckCircle, XCircle, Factory,
-    Mail, MapPin, Calendar, Loader2, AlertCircle,
+    Mail, Calendar, Loader2, AlertCircle,
     FileText, Eye, Download,
     ChevronDown, ChevronUp, Clock, Shield, X
 } from 'lucide-react';
@@ -453,13 +453,23 @@ const ApprovalsPage: React.FC = () => {
                                         </div>
                                         <div>
                                             <h3 className="text-gray-900 dark:text-white font-semibold">{approval.tradeName || approval.legalName}</h3>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">{approval.document}</p>
+
+                                            {/* Summary details */}
+                                            <div className="mt-2 space-y-1">
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    <span className="font-semibold text-gray-600 dark:text-gray-300">CNPJ:</span> {approval.document}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    <span className="font-semibold text-gray-600 dark:text-gray-300">Cidade:</span> {approval.city}, {approval.state}
+                                                </p>
+                                                {approval.supplierProfile?.productTypes && approval.supplierProfile.productTypes.length > 0 && (
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        <span className="font-semibold text-gray-600 dark:text-gray-300">Especialidades:</span> {approval.supplierProfile.productTypes.join(', ')}
+                                                    </p>
+                                                )}
+                                            </div>
 
                                             <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
-                                                <span className="flex items-center gap-1">
-                                                    <MapPin className="w-4 h-4" />
-                                                    {approval.city}, {approval.state}
-                                                </span>
                                                 <span className="flex items-center gap-1">
                                                     <Mail className="w-4 h-4" />
                                                     {approval.companyUsers[0]?.user.email}
@@ -469,19 +479,6 @@ const ApprovalsPage: React.FC = () => {
                                                     {new Date(approval.createdAt).toLocaleDateString('pt-BR')}
                                                 </span>
                                             </div>
-
-                                            {approval.supplierProfile && (
-                                                <div className="mt-3 flex flex-wrap gap-2">
-                                                    {approval.supplierProfile.productTypes?.map((type) => (
-                                                        <span
-                                                            key={type}
-                                                            className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded-lg text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/[0.06]"
-                                                        >
-                                                            {type}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
 

@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
-    Factory, Star, Package, Filter,
-    CheckCircle, Clock, XCircle, Loader2,
+    Factory, Filter, Loader2,
     Search, MapPin, ChevronRight, RefreshCw,
     MoreVertical, Eye, Edit3, Power, Trash2, UserPlus
 } from 'lucide-react';
@@ -195,36 +194,128 @@ const SuppliersPage: React.FC = () => {
                         <p className="text-gray-500 max-w-sm mx-auto font-medium">Não encontramos resultados para os filtros aplicados.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredSuppliers.map((supplier) => (
-                            <SupplierCard
-                                key={supplier.id}
-                                supplier={supplier}
-                                isMenuOpen={openActionId === supplier.id}
-                                menuRef={openActionId === supplier.id ? menuRef : undefined}
-                                onToggleMenu={() => setOpenActionId(openActionId === supplier.id ? null : supplier.id)}
-                                onViewDetails={() => {
-                                    setSelectedSupplier(supplier);
-                                    setShowDetails(true);
-                                    setOpenActionId(null);
-                                }}
-                                onEdit={() => {
-                                    setSelectedSupplier(supplier);
-                                    setShowEdit(true);
-                                    setOpenActionId(null);
-                                }}
-                                onToggleStatus={() => {
-                                    setSelectedSupplier(supplier);
-                                    setShowStatusConfirm(true);
-                                    setOpenActionId(null);
-                                }}
-                                onDelete={() => {
-                                    setSelectedSupplier(supplier);
-                                    setShowDeleteConfirm(true);
-                                    setOpenActionId(null);
-                                }}
-                            />
-                        ))}
+                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-2xl overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-gray-100 dark:border-white/[0.06]">
+                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Razão Social</th>
+                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cidade</th>
+                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Capacidade</th>
+                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data Cadastro</th>
+                                        <th className="text-right px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-white/[0.04]">
+                                    {filteredSuppliers.map((supplier) => (
+                                        <tr key={supplier.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors group">
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center border border-gray-100 dark:border-white/[0.08] flex-shrink-0">
+                                                        <Factory className="w-4 h-4 text-sky-500 dark:text-sky-400" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-sky-500 transition-colors">
+                                                            {supplier.legalName || supplier.tradeName}
+                                                        </p>
+                                                        {supplier.tradeName && supplier.legalName && supplier.tradeName !== supplier.legalName && (
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{supplier.tradeName}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <StatusBadge status={supplier.status} />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                                    <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                                    <span className="truncate">{supplier.city}, {supplier.state}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className="text-sm text-gray-700 dark:text-gray-300">
+                                                    {supplier.supplierProfile?.monthlyCapacity != null
+                                                        ? `${supplier.supplierProfile.monthlyCapacity} pç/mês`
+                                                        : <span className="text-gray-400">-</span>
+                                                    }
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                                {new Date(supplier.createdAt).toLocaleDateString('pt-BR', {
+                                                    day: '2-digit',
+                                                    month: '2-digit',
+                                                    year: 'numeric',
+                                                })}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <div className="relative inline-block" ref={openActionId === supplier.id ? menuRef : undefined}>
+                                                    <button
+                                                        onClick={() => setOpenActionId(openActionId === supplier.id ? null : supplier.id)}
+                                                        className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition-colors"
+                                                    >
+                                                        <MoreVertical className="w-4 h-4" />
+                                                    </button>
+                                                    {openActionId === supplier.id && (
+                                                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl shadow-xl z-20 overflow-hidden">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedSupplier(supplier);
+                                                                    setShowDetails(true);
+                                                                    setOpenActionId(null);
+                                                                }}
+                                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
+                                                            >
+                                                                <Eye className="w-4 h-4" />
+                                                                Ver Detalhes
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedSupplier(supplier);
+                                                                    setShowEdit(true);
+                                                                    setOpenActionId(null);
+                                                                }}
+                                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
+                                                            >
+                                                                <Edit3 className="w-4 h-4" />
+                                                                Editar
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedSupplier(supplier);
+                                                                    setShowStatusConfirm(true);
+                                                                    setOpenActionId(null);
+                                                                }}
+                                                                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                                                                    supplier.status === 'ACTIVE'
+                                                                        ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                                                                        : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
+                                                                }`}
+                                                            >
+                                                                <Power className="w-4 h-4" />
+                                                                {supplier.status === 'ACTIVE' ? 'Suspender' : 'Ativar'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedSupplier(supplier);
+                                                                    setShowDeleteConfirm(true);
+                                                                    setOpenActionId(null);
+                                                                }}
+                                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                                Excluir
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </main>
@@ -272,135 +363,6 @@ const SuppliersPage: React.FC = () => {
                     onSuccess={() => { setShowRegister(false); loadSuppliers(); }}
                 />
             )}
-        </div>
-    );
-};
-
-const SupplierCard: React.FC<{
-    supplier: Supplier;
-    isMenuOpen: boolean;
-    menuRef?: React.RefObject<HTMLDivElement>;
-    onToggleMenu: () => void;
-    onViewDetails: () => void;
-    onEdit: () => void;
-    onToggleStatus: () => void;
-    onDelete: () => void;
-}> = ({ supplier, isMenuOpen, menuRef, onToggleMenu, onViewDetails, onEdit, onToggleStatus, onDelete }) => {
-    const ratingValue = typeof supplier.avgRating === 'string'
-        ? parseFloat(supplier.avgRating)
-        : supplier.avgRating;
-
-    const displayRating = isNaN(ratingValue) ? 'N/A' : ratingValue.toFixed(1);
-
-    return (
-        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden">
-            {/* Background Accent */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-sky-500/10 transition-colors" />
-
-            <div className="relative space-y-5">
-                <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center border border-gray-100 dark:border-white/[0.08] shadow-sm group-hover:scale-110 transition-transform">
-                            <Factory className="w-6 h-6 text-sky-500 dark:text-sky-400" />
-                        </div>
-                        <div className="min-w-0">
-                            <h3 className="font-bold text-gray-900 dark:text-white font-display text-lg truncate group-hover:text-sky-500 transition-colors">
-                                {supplier.tradeName || supplier.legalName}
-                            </h3>
-                            <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs font-medium">
-                                <MapPin className="w-3.5 h-3.5" />
-                                <span className="truncate">{supplier.city}, {supplier.state}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <StatusBadge status={supplier.status} />
-                        <div className="relative" ref={menuRef}>
-                            <button
-                                onClick={onToggleMenu}
-                                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition-colors"
-                            >
-                                <MoreVertical className="w-4 h-4" />
-                            </button>
-                            {isMenuOpen && (
-                                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl shadow-xl z-20 overflow-hidden">
-                                    <button
-                                        onClick={onViewDetails}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
-                                    >
-                                        <Eye className="w-4 h-4" />
-                                        Ver Detalhes
-                                    </button>
-                                    <button
-                                        onClick={onEdit}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
-                                    >
-                                        <Edit3 className="w-4 h-4" />
-                                        Editar
-                                    </button>
-                                    <button
-                                        onClick={onToggleStatus}
-                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
-                                            supplier.status === 'ACTIVE'
-                                                ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
-                                                : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
-                                        }`}
-                                    >
-                                        <Power className="w-4 h-4" />
-                                        {supplier.status === 'ACTIVE' ? 'Suspender' : 'Ativar'}
-                                    </button>
-                                    <button
-                                        onClick={onDelete}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        Excluir
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-gray-50 dark:bg-white/[0.02] rounded-2xl p-3 border border-gray-100 dark:border-white/[0.04]">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Avaliação</p>
-                        <div className="flex items-center gap-1.5">
-                            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                            <span className="text-lg font-bold text-gray-900 dark:text-white font-display">{displayRating}</span>
-                        </div>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-white/[0.02] rounded-2xl p-3 border border-gray-100 dark:border-white/[0.04]">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Carga</p>
-                        <div className="flex items-center gap-1.5">
-                            <Package className="w-4 h-4 text-sky-500" />
-                            <span className="text-lg font-bold text-gray-900 dark:text-white font-display">{supplier._count?.ordersAsSupplier || 0}</span>
-                            <span className="text-[10px] text-gray-500 font-bold uppercase">Ordens</span>
-                        </div>
-                    </div>
-                </div>
-
-                {supplier.supplierProfile?.productTypes && supplier.supplierProfile.productTypes.length > 0 && (
-                    <div className="space-y-2">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Especialidades</p>
-                        <div className="flex flex-wrap gap-1.5">
-                            {supplier.supplierProfile.productTypes.slice(0, 3).map((type) => (
-                                <span
-                                    key={type}
-                                    className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-gray-100 dark:border-white/[0.08] rounded-lg text-[10px] font-bold text-gray-600 dark:text-gray-400 shadow-sm"
-                                >
-                                    {type}
-                                </span>
-                            ))}
-                            {supplier.supplierProfile.productTypes.length > 3 && (
-                                <span className="px-2 py-1 text-[10px] font-bold text-gray-400">
-                                    +{supplier.supplierProfile.productTypes.length - 3}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
         </div>
     );
 };
