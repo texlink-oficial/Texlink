@@ -42,8 +42,14 @@ export interface Order {
     approvalCount?: number;
     rejectionCount?: number;
     secondQualityCount?: number;
+    // Datas
+    plannedStartDate?: string;
+    plannedEndDate?: string;
+    actualStartDate?: string;
+    actualEndDate?: string;
     // Relações
     createdAt: string;
+    updatedAt?: string;
     brand?: { id: string; tradeName: string; avgRating?: number; logoUrl?: string | null };
     supplier?: { id: string; tradeName: string; avgRating?: number; logoUrl?: string | null };
     attachments?: Attachment[];

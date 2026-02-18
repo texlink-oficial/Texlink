@@ -36,11 +36,14 @@ export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps)
     hoursPerDay: 8,
   });
 
-  const monthlyCapacityMinutes = formData.activeWorkers > 0
-    ? Math.round(formData.activeWorkers * formData.hoursPerDay * 60 * 22)
+  const dailyCapacityMinutes = formData.activeWorkers > 0
+    ? Math.round(formData.activeWorkers * formData.hoursPerDay * 60)
     : 0;
 
-  const monthlyCapacityHours = Math.round(monthlyCapacityMinutes / 60);
+  const dailyCapacityHours = Math.round(dailyCapacityMinutes / 60);
+  const weeklyCapacityHours = dailyCapacityHours * 5;
+  const monthlyCapacityMinutes = dailyCapacityMinutes * 22;
+  const monthlyCapacityHours = dailyCapacityHours * 22;
 
   const toggleProductType = (type: string) => {
     setFormData((prev) => ({
@@ -224,15 +227,18 @@ export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps)
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-blue-900">
-                Capacidade mensal estimada
+                Capacidade diária estimada
               </span>
               <span className="text-sm font-bold text-blue-600">
-                {monthlyCapacityHours.toLocaleString('pt-BR')} horas/mês
+                {dailyCapacityHours.toLocaleString('pt-BR')} horas/dia
               </span>
             </div>
             <p className="text-xs text-blue-700">
-              {formData.activeWorkers} costureiro(s) x {formData.hoursPerDay}h/dia x 22 dias úteis
-              = {monthlyCapacityMinutes.toLocaleString('pt-BR')} minutos/mês
+              {formData.activeWorkers} costureiro(s) x {formData.hoursPerDay}h/dia
+              = {dailyCapacityMinutes.toLocaleString('pt-BR')} minutos/dia
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              Projeção: {weeklyCapacityHours.toLocaleString('pt-BR')}h/semana • {monthlyCapacityHours.toLocaleString('pt-BR')}h/mês (22 dias úteis)
             </p>
           </div>
         </div>

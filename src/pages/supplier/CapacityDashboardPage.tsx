@@ -585,8 +585,8 @@ const CapacityDashboardPage: React.FC = () => {
                             {/* Preview */}
                             <div className="p-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg">
                                 <p className="text-sm text-brand-700 dark:text-brand-300">
-                                    Ocupação estimada: <strong>{minutesToHours(Math.round(editWorkers * editHours * 60 * 22))}</strong>/mês
-                                    <span className="text-xs ml-1 opacity-75">(22 dias úteis)</span>
+                                    Capacidade diária: <strong>{minutesToHours(Math.round(editWorkers * editHours * 60))}</strong>/dia
+                                    <span className="text-xs ml-1 opacity-75">({minutesToHours(Math.round(editWorkers * editHours * 60 * 5))}/semana • {minutesToHours(Math.round(editWorkers * editHours * 60 * 22))}/mês)</span>
                                 </p>
                             </div>
                         </div>

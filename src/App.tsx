@@ -95,6 +95,7 @@ const PortalLayout = React.lazy(() => import('./components/portal/PortalLayout')
 const PortalDashboard = React.lazy(() => import('./pages/portal/PortalDashboard'));
 const PerformancePage = React.lazy(() => import('./pages/portal/PerformancePage'));
 const ReportsPage = React.lazy(() => import('./pages/portal/ReportsPage'));
+const PortalMessages = React.lazy(() => import('./pages/portal/MessagesPage'));
 const DepositsPage = React.lazy(() => import('./pages/portal/financial/DepositsPage'));
 const DepositDetailPage = React.lazy(() => import('./pages/portal/financial/DepositDetailPage'));
 
@@ -171,6 +172,8 @@ const App: React.FC = () => {
                                                 <Route path="pedidos/lista" element={<SupplierOrdersList />} />
                                                 <Route path="pedidos/:id" element={<SupplierOrderDetails />} />
                                                 <Route path="oportunidades" element={<SupplierOpportunities />} />
+                                                {/* Mensagens */}
+                                                <Route path="mensagens" element={<PortalMessages />} />
                                                 <Route path="capacidade" element={<SupplierCapacity />} />
                                                 {/* Marcas (V3 N:M Relationships) */}
                                                 <Route path="marcas" element={<SupplierBrandsPage />} />

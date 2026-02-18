@@ -513,6 +513,11 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                             <Calendar className="h-3 w-3" />
                                             {new Date(order.deliveryDeadline).getFullYear()}
                                         </div>
+                                        {order.plannedStartDate && (
+                                            <div className="mt-2 text-xs text-brand-600 dark:text-brand-400">
+                                                Início previsto: {new Date(order.plannedStartDate).toLocaleDateString('pt-BR')}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="space-y-3">

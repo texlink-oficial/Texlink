@@ -28,6 +28,7 @@ import {
   Star,
   Activity,
   FileSignature,
+  MessageSquare,
 } from 'lucide-react';
 import { suppliersService, SupplierDashboard } from '../../services';
 import { brandDocumentsService } from '../../services/brandDocuments.service';
@@ -65,6 +66,12 @@ const navGroups: NavGroup[] = [
           { label: 'Gerenciamento', path: '/portal/pedidos' },
           { label: 'Oportunidades', path: '/portal/oportunidades' },
         ],
+      },
+      {
+        id: 'mensagens',
+        label: 'Mensagens',
+        icon: <MessageSquare className="h-5 w-5" />,
+        path: '/portal/mensagens',
       },
       {
         id: 'capacidade',

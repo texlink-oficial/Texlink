@@ -65,7 +65,9 @@ export interface Order {
   techSheetUrl?: string;
   attachments?: Attachment[];
   materialsProvided: boolean;
+  plannedStartDate?: string;
   createdAt: string;
+  updatedAt?: string;
   timeline: TimelineEvent[];
 }
 

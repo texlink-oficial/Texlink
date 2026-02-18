@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { onboardingService } from '../../services/onboarding.service';
-import { Package, Users, Clock, Building2, Loader2, CheckCircle, ArrowLeft, Wrench } from 'lucide-react';
+import { Package, Users, Clock, Building2, Loader2, CheckCircle, ArrowLeft, Wrench, ArrowRight, FileText } from 'lucide-react';
 import { PRODUCT_TYPE_OPTIONS, MACHINE_OPTIONS } from '../../constants/supplierOptions';
 
 const productTypeOptions = [...PRODUCT_TYPE_OPTIONS];
@@ -26,6 +26,9 @@ const OnboardingBusinessPage: React.FC = () => {
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [showContractStep, setShowContractStep] = useState(false);
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     const [formData, setFormData] = useState<FormData>({
         productTypes: [],
@@ -59,7 +62,7 @@ const OnboardingBusinessPage: React.FC = () => {
         }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleAdvanceToContract = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
@@ -68,6 +71,11 @@ const OnboardingBusinessPage: React.FC = () => {
             return;
         }
 
+        setShowContractStep(true);
+    };
+
+    const handleSubmit = async () => {
+        setError('');
         setIsSubmitting(true);
 
         try {
@@ -81,7 +89,7 @@ const OnboardingBusinessPage: React.FC = () => {
                 monthlyCapacity: (formData.qtdCostureiras || 1) * 8 * 60 * 22,
             });
             await onboardingService.completeOnboarding();
-            navigate('/portal/inicio');
+            setShowSuccessModal(true);
         } catch (err: any) {
             const msg = err.response?.data?.message;
             setError(Array.isArray(msg) ? msg.join('. ') : msg || 'Erro ao salvar dados da empresa');
@@ -90,6 +98,116 @@ const OnboardingBusinessPage: React.FC = () => {
         }
     };
 
+    // Success modal overlay
+    if (showSuccessModal) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md mx-4 text-center">
+                    <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full mb-6">
+                        <CheckCircle className="w-12 h-12 text-green-500" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                        Cadastro Enviado com Sucesso!
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-8">
+                        Seu cadastro está em análise. Você será notificado por e-mail quando for aprovado pela equipe Texlink.
+                    </p>
+                    <button
+                        onClick={() => navigate('/portal/inicio')}
+                        className="w-full py-3 px-6 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300"
+                    >
+                        Entendi
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Contract acceptance step
+    if (showContractStep) {
+        return (
+            <div>
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-brand-500/20 rounded-full mb-4">
+                        <FileText className="w-8 h-8 text-brand-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white mb-2">
+                        Termos e Condições de Uso
+                    </h2>
+                    <p className="text-brand-300">
+                        Leia atentamente os termos antes de concluir seu cadastro
+                    </p>
+                </div>
+
+                {error && (
+                    <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
+                        <p className="text-sm text-red-200">{error}</p>
+                    </div>
+                )}
+
+                {/* Scrollable terms container */}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6 max-h-96 overflow-y-auto">
+                    <p className="text-brand-200 leading-relaxed">
+                        Os termos e condições de uso da plataforma Texlink estão sendo finalizados.
+                        Ao prosseguir, você concorda com os termos gerais de uso da plataforma,
+                        incluindo políticas de privacidade e proteção de dados conforme a LGPD.
+                    </p>
+                    <p className="text-brand-200 leading-relaxed mt-4">
+                        O documento completo será disponibilizado em breve e enviado por e-mail
+                        para todos os usuários cadastrados.
+                    </p>
+                </div>
+
+                {/* Checkbox */}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            checked={acceptedTerms}
+                            onChange={(e) => setAcceptedTerms(e.target.checked)}
+                            className="w-5 h-5 text-brand-500 border-white/20 rounded focus:ring-2 focus:ring-brand-500 bg-white/10"
+                        />
+                        <span className="text-brand-200 group-hover:text-white transition-colors">
+                            Li e concordo com os termos e condições de uso
+                        </span>
+                    </label>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-3">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setShowContractStep(false);
+                            setAcceptedTerms(false);
+                            setError('');
+                        }}
+                        className="px-6 py-3 bg-white/10 border border-white/20 text-brand-300 font-medium rounded-xl hover:bg-white/20 transition-all flex items-center gap-2"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                        Voltar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={!acceptedTerms || isSubmitting}
+                        className="flex-1 py-3 px-6 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSubmitting ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                            <>
+                                <CheckCircle className="w-5 h-5" />
+                                Concluir Cadastro
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Business qualification form (original)
     return (
         <div>
             <div className="text-center mb-8">
@@ -110,7 +228,7 @@ const OnboardingBusinessPage: React.FC = () => {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleAdvanceToContract} className="space-y-6">
                 {/* O que você produz */}
                 <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
@@ -227,14 +345,8 @@ const OnboardingBusinessPage: React.FC = () => {
                         disabled={!isFormValid || isSubmitting}
                         className="flex-1 py-3 px-6 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isSubmitting ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                            <>
-                                <CheckCircle className="w-5 h-5" />
-                                Concluir Cadastro
-                            </>
-                        )}
+                        <ArrowRight className="w-5 h-5" />
+                        Avançar
                     </button>
                 </div>
             </form>
