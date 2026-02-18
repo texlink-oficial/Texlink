@@ -60,11 +60,11 @@ export class FavoritesService {
     });
 
     if (!template) {
-      throw new NotFoundException('Template not found');
+      throw new NotFoundException('Template não encontrado');
     }
 
     if (template.companyId !== company.id) {
-      throw new ForbiddenException('You do not have access to this template');
+      throw new ForbiddenException('Você não tem acesso a este template');
     }
 
     return template;
@@ -136,7 +136,7 @@ export class FavoritesService {
     });
 
     if (!supplier || supplier.type !== CompanyType.SUPPLIER) {
-      throw new NotFoundException('Supplier not found');
+      throw new NotFoundException('Facção não encontrada');
     }
 
     // Check if already favorited
@@ -150,7 +150,7 @@ export class FavoritesService {
     });
 
     if (existing) {
-      throw new ConflictException('Supplier is already in favorites');
+      throw new ConflictException('Esta facção já está nos favoritos');
     }
 
     return this.prisma.favoriteSupplier.create({
@@ -189,7 +189,7 @@ export class FavoritesService {
     });
 
     if (!favorite) {
-      throw new NotFoundException('Favorite supplier not found');
+      throw new NotFoundException('Facção favorita não encontrada');
     }
 
     return this.prisma.favoriteSupplier.update({
@@ -211,7 +211,7 @@ export class FavoritesService {
     });
 
     if (!favorite) {
-      throw new NotFoundException('Favorite supplier not found');
+      throw new NotFoundException('Facção favorita não encontrada');
     }
 
     return this.prisma.favoriteSupplier.delete({
@@ -279,11 +279,11 @@ export class FavoritesService {
     });
 
     if (!preset) {
-      throw new NotFoundException('Payment preset not found');
+      throw new NotFoundException('Configuração de pagamento não encontrada');
     }
 
     if (preset.companyId !== company.id) {
-      throw new ForbiddenException('You do not have access to this preset');
+      throw new ForbiddenException('Você não tem acesso a esta configuração');
     }
 
     // If setting as default, unset others
@@ -311,11 +311,11 @@ export class FavoritesService {
     });
 
     if (!preset) {
-      throw new NotFoundException('Payment preset not found');
+      throw new NotFoundException('Configuração de pagamento não encontrada');
     }
 
     if (preset.companyId !== company.id) {
-      throw new ForbiddenException('You do not have access to this preset');
+      throw new ForbiddenException('Você não tem acesso a esta configuração');
     }
 
     return this.prisma.paymentTermsPreset.delete({

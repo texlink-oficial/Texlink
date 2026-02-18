@@ -76,7 +76,7 @@ export class PortalService {
     });
 
     if (!companyUser) {
-      throw new NotFoundException('Supplier company not found');
+      throw new NotFoundException('Empresa da facção não encontrada');
     }
 
     return companyUser.company;

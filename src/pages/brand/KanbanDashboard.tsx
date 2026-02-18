@@ -14,7 +14,7 @@ import { Filter, LayoutGrid, List, Loader2, Plus, Search } from 'lucide-react';
 
 // Kanban column definitions with grouped statuses (Brand perspective)
 const KANBAN_COLUMNS = [
-    { id: 'waiting_supplier', label: 'Aguardando Facção', statuses: [OrderStatus.NEW, OrderStatus.AVAILABLE_FOR_OTHERS] },
+    { id: 'waiting_supplier', label: 'Aguardando Facção de Costura', statuses: [OrderStatus.NEW, OrderStatus.AVAILABLE_FOR_OTHERS] },
     { id: 'negotiation', label: 'Em Análise/Negociação', statuses: [OrderStatus.NEGOTIATING] },
     { id: 'sending_materials', label: 'Enviando Insumos', statuses: [OrderStatus.ACCEPTED, OrderStatus.PREPARING_BRAND, OrderStatus.TRANSIT_TO_SUPPLIER, OrderStatus.RECEIVED_SUPPLIER] },
     { id: 'production_queue', label: 'Fila de Produção', statuses: [OrderStatus.PRODUCTION_QUEUE] },
@@ -44,7 +44,7 @@ const convertApiOrder = (apiOrder: ApiOrder): Order => ({
     displayId: apiOrder.displayId,
     brand: {
         id: apiOrder.supplier?.id || apiOrder.supplierId || '',
-        name: apiOrder.supplier?.tradeName || 'Aguardando Facção',
+        name: apiOrder.supplier?.tradeName || 'Aguardando Facção de Costura',
         rating: Number(apiOrder.supplier?.avgRating) || 0,
         location: 'Brasil',
         image: apiOrder.supplier?.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(apiOrder.supplier?.tradeName || 'AF')}&background=10b981&color=fff`,

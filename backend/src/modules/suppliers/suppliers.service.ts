@@ -48,7 +48,7 @@ export class SuppliersService {
     });
 
     if (!companyUser) {
-      throw new NotFoundException('Supplier profile not found');
+      throw new NotFoundException('Perfil de facção não encontrado');
     }
 
     return companyUser.company;
@@ -59,7 +59,7 @@ export class SuppliersService {
     const company = await this.getMyProfile(userId);
 
     if (!company.supplierProfile) {
-      throw new NotFoundException('Supplier profile not found');
+      throw new NotFoundException('Perfil de facção não encontrado');
     }
 
     return this.prisma.supplierProfile.update({
@@ -76,7 +76,7 @@ export class SuppliersService {
     const company = await this.getMyProfile(userId);
 
     if (!company.supplierProfile) {
-      throw new NotFoundException('Supplier profile not found');
+      throw new NotFoundException('Perfil de facção não encontrado');
     }
 
     return this.prisma.supplierProfile.update({
@@ -99,7 +99,7 @@ export class SuppliersService {
     const company = await this.getMyProfile(userId);
 
     if (!company.supplierProfile) {
-      throw new NotFoundException('Supplier profile not found');
+      throw new NotFoundException('Perfil de facção não encontrado');
     }
 
     return this.prisma.supplierProfile.update({
@@ -682,7 +682,7 @@ export class SuppliersService {
     });
 
     if (!supplier) {
-      throw new NotFoundException('Supplier not found');
+      throw new NotFoundException('Facção não encontrada');
     }
 
     return supplier;

@@ -147,7 +147,7 @@ const BrandDashboard: React.FC = () => {
         },
         {
             id: 'suppliers',
-            label: 'Buscar Facções',
+            label: 'Buscar Facções de Costura',
             description: 'Encontrar fornecedores',
             icon: <Factory className="h-6 w-6" />,
             href: '/brand/fornecedores',
@@ -156,7 +156,7 @@ const BrandDashboard: React.FC = () => {
         {
             id: 'messages',
             label: 'Mensagens',
-            description: 'Comunicação com facções',
+            description: 'Comunicação com facções de costura',
             icon: <Users className="h-6 w-6" />,
             href: '/brand/mensagens',
             color: 'blue',

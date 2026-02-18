@@ -45,9 +45,9 @@ const RegisterPage: React.FC = () => {
 
     const validatePassword = (pwd: string): string | null => {
         if (pwd.length < 8) return 'A senha deve ter pelo menos 8 caracteres';
-        if (!/[A-Z]/.test(pwd)) return 'A senha deve conter pelo menos uma letra maiuscula';
-        if (!/[a-z]/.test(pwd)) return 'A senha deve conter pelo menos uma letra minuscula';
-        if (!/\d/.test(pwd)) return 'A senha deve conter pelo menos um numero';
+        if (!/[A-Z]/.test(pwd)) return 'A senha deve conter pelo menos uma letra maiúscula';
+        if (!/[a-z]/.test(pwd)) return 'A senha deve conter pelo menos uma letra minúscula';
+        if (!/\d/.test(pwd)) return 'A senha deve conter pelo menos um número';
         return null;
     };
 
@@ -72,7 +72,7 @@ const RegisterPage: React.FC = () => {
         }
 
         if (!termsAccepted) {
-            setError('Voce precisa aceitar os termos de uso e a politica de privacidade para continuar.');
+            setError('Você precisa aceitar os termos de uso e a política de privacidade para continuar.');
             return;
         }
 
@@ -147,7 +147,7 @@ const RegisterPage: React.FC = () => {
                                         }`}
                                 >
                                     <Factory className="w-6 h-6 mx-auto mb-2" />
-                                    <span className="text-sm font-medium">Facção</span>
+                                    <span className="text-sm font-medium">Facção de Costura</span>
                                 </button>
                                 <button
                                     type="button"
@@ -250,7 +250,7 @@ const RegisterPage: React.FC = () => {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full pl-11 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                                    placeholder="Minimo 8 caracteres (maiuscula, minuscula e numero)"
+                                    placeholder="Mínimo 8 caracteres (maiúscula, minúscula e número)"
                                     minLength={8}
                                     required
                                 />
@@ -279,7 +279,7 @@ const RegisterPage: React.FC = () => {
                                 className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-brand-500 focus:ring-brand-500 focus:ring-offset-0"
                             />
                             <label htmlFor="termsAccepted" className="text-sm text-brand-300 leading-relaxed cursor-pointer">
-                                Eu aceito os termos de uso do aplicativo e estou de acordo com a politica de privacidade.
+                                Eu aceito os termos de uso do aplicativo e estou de acordo com a política de privacidade.
                             </label>
                         </div>
 
@@ -301,7 +301,7 @@ const RegisterPage: React.FC = () => {
 
                     <div className="mt-6 text-center">
                         <p className="text-brand-300 text-sm">
-                            Ja tem conta?{' '}
+                            Já tem conta?{' '}
                             <Link to="/login" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
                                 Entrar
                             </Link>

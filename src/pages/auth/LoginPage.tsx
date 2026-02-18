@@ -61,7 +61,7 @@ const LoginPage: React.FC = () => {
                         </div>
                     </div>
                     <h1 className="text-4xl font-bold text-white mb-2">TEXLINK</h1>
-                    <p className="text-brand-300">Conectando marcas e facções</p>
+                    <p className="text-brand-300">Conectando marcas e facções de costura</p>
                 </div>
 
                 {/* Demo Quick Access - only visible in development */}
@@ -85,7 +85,7 @@ const LoginPage: React.FC = () => {
                                 className="flex flex-col items-center gap-1 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-white text-xs"
                             >
                                 <Users className="w-4 h-4" />
-                                <span>Facção</span>
+                                <span>Facção de Costura</span>
                             </button>
                             <button
                                 type="button"

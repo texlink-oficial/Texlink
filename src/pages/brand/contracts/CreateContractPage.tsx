@@ -94,7 +94,7 @@ export const CreateContractPage: React.FC = () => {
     e.preventDefault();
 
     if (!relationshipId || !validFrom || !validUntil) {
-      addToast({ type: 'error', message: 'Preencha todos os campos obrigatorios' });
+      addToast({ type: 'error', message: 'Preencha todos os campos obrigatórios' });
       return;
     }
 
@@ -143,11 +143,11 @@ export const CreateContractPage: React.FC = () => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       if (selectedFile.type !== 'application/pdf') {
-        addToast({ type: 'error', message: 'Apenas arquivos PDF sao aceitos' });
+        addToast({ type: 'error', message: 'Apenas arquivos PDF são aceitos' });
         return;
       }
       if (selectedFile.size > 10 * 1024 * 1024) {
-        addToast({ type: 'error', message: 'Arquivo deve ter no maximo 10MB' });
+        addToast({ type: 'error', message: 'Arquivo deve ter no máximo 10MB' });
         return;
       }
       setFile(selectedFile);
@@ -346,7 +346,7 @@ export const CreateContractPage: React.FC = () => {
                 htmlFor="validFrom"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
               >
-                Inicio da Vigencia <span className="text-red-500">*</span>
+                Início da Vigência <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -365,7 +365,7 @@ export const CreateContractPage: React.FC = () => {
                 htmlFor="validUntil"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
               >
-                Fim da Vigencia <span className="text-red-500">*</span>
+                Fim da Vigência <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -417,7 +417,7 @@ export const CreateContractPage: React.FC = () => {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Clique ou arraste um arquivo PDF aqui
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Maximo 10MB</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Máximo 10MB</p>
                   </>
                 )}
               </div>

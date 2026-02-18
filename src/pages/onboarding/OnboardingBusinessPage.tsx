@@ -64,7 +64,7 @@ const OnboardingBusinessPage: React.FC = () => {
         setError('');
 
         if (!isFormValid) {
-            setError('Por favor, preencha todos os campos obrigatorios');
+            setError('Por favor, preencha todos os campos obrigatórios');
             return;
         }
 
@@ -143,7 +143,7 @@ const OnboardingBusinessPage: React.FC = () => {
                 <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
                         <Wrench className="w-4 h-4" />
-                        Quais maquinas possui? (selecione todas que se aplicam)
+                        Quais máquinas possui? (selecione todas que se aplicam)
                     </label>
                     <div className="flex flex-wrap gap-2">
                         {machineOptions.map((machine) => (
@@ -162,7 +162,7 @@ const OnboardingBusinessPage: React.FC = () => {
                     </div>
                     {formData.machines.length > 0 && (
                         <p className="text-sm text-brand-400 mt-2">
-                            {formData.machines.length} maquina(s) selecionada(s)
+                            {formData.machines.length} máquina(s) selecionada(s)
                         </p>
                     )}
                 </div>
@@ -171,7 +171,7 @@ const OnboardingBusinessPage: React.FC = () => {
                 <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
                         <Users className="w-4 h-4" />
-                        Numero de Costureiras
+                        Número de Costureiras
                     </label>
                     <input
                         type="number"

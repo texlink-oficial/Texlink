@@ -37,7 +37,7 @@ export class EducationalContentService {
     });
 
     if (!content) {
-      throw new NotFoundException('Educational content not found');
+      throw new NotFoundException('Conteúdo educativo não encontrado');
     }
 
     return content;
@@ -82,7 +82,7 @@ export class EducationalContentService {
     });
 
     if (!content) {
-      throw new NotFoundException('Educational content not found');
+      throw new NotFoundException('Conteúdo educativo não encontrado');
     }
 
     return content;
@@ -102,7 +102,7 @@ export class EducationalContentService {
     });
 
     if (!content) {
-      throw new NotFoundException('Educational content not found');
+      throw new NotFoundException('Conteúdo educativo não encontrado');
     }
 
     return this.prisma.educationalContent.update({
@@ -118,7 +118,7 @@ export class EducationalContentService {
     });
 
     if (!content) {
-      throw new NotFoundException('Educational content not found');
+      throw new NotFoundException('Conteúdo educativo não encontrado');
     }
 
     await this.prisma.educationalContent.delete({
@@ -135,7 +135,7 @@ export class EducationalContentService {
     });
 
     if (!content) {
-      throw new NotFoundException('Educational content not found');
+      throw new NotFoundException('Conteúdo educativo não encontrado');
     }
 
     return this.prisma.educationalContent.update({

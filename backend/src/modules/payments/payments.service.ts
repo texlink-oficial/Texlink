@@ -35,14 +35,14 @@ export class PaymentsService {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     const isBrandUser = order.brand.companyUsers.some(
       (cu) => cu.userId === userId,
     );
     if (!isBrandUser) {
-      throw new ForbiddenException('Only brand can create payments');
+      throw new ForbiddenException('Apenas marcas podem criar pagamentos');
     }
 
     const payment = await this.prisma.payment.create({
@@ -95,7 +95,7 @@ export class PaymentsService {
     });
 
     if (!payment) {
-      throw new NotFoundException('Payment not found');
+      throw new NotFoundException('Pagamento não encontrado');
     }
 
     // Verify user has access (brand or supplier member)
@@ -152,7 +152,7 @@ export class PaymentsService {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     const isBrandUser = order.brand.companyUsers.some(
@@ -183,7 +183,7 @@ export class PaymentsService {
     });
 
     if (!companyUser) {
-      throw new NotFoundException('Supplier company not found');
+      throw new NotFoundException('Empresa da facção não encontrada');
     }
 
     const supplierId = companyUser.companyId;

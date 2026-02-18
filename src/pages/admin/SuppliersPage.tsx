@@ -81,7 +81,7 @@ const SuppliersPage: React.FC = () => {
         const newStatus = selectedSupplier.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
         try {
             await adminService.updateSupplierStatus(selectedSupplier.id, newStatus, reason);
-            toast.success('Status atualizado', `Facção ${newStatus === 'ACTIVE' ? 'ativada' : 'suspensa'} com sucesso`);
+            toast.success('Status atualizado', `Facção de costura ${newStatus === 'ACTIVE' ? 'ativada' : 'suspensa'} com sucesso`);
             setShowStatusConfirm(false);
             setSelectedSupplier(null);
             loadSuppliers();
@@ -94,12 +94,12 @@ const SuppliersPage: React.FC = () => {
         if (!selectedSupplier) return;
         try {
             await adminService.deleteCompany(selectedSupplier.id);
-            toast.success('Facção excluída', 'Facção excluída com sucesso');
+            toast.success('Facção de costura excluída', 'Facção de costura excluída com sucesso');
             setShowDeleteConfirm(false);
             setSelectedSupplier(null);
             loadSuppliers();
         } catch (error) {
-            toast.error('Erro', 'Não foi possível excluir a facção');
+            toast.error('Erro', 'Não foi possível excluir a facção de costura');
         }
     };
 
@@ -125,7 +125,7 @@ const SuppliersPage: React.FC = () => {
                 {/* Header Section */}
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-display">Facções</h1>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-display">Facções de Costura</h1>
                         <p className="text-gray-500 dark:text-gray-400 font-medium">Gerencie o ecossistema de produtores da rede</p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -134,7 +134,7 @@ const SuppliersPage: React.FC = () => {
                             className="flex items-center gap-2 px-4 py-2 bg-sky-500 text-white text-sm font-bold rounded-xl hover:bg-sky-600 shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all"
                         >
                             <UserPlus className="w-4 h-4" />
-                            Registrar Facção
+                            Registrar Facção de Costura
                         </button>
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-lg border border-sky-500/10 shadow-sm">
                             <Factory className="w-4 h-4" />
@@ -191,7 +191,7 @@ const SuppliersPage: React.FC = () => {
                         <div className="w-20 h-20 bg-gray-50 dark:bg-white/[0.02] rounded-3xl flex items-center justify-center mx-auto mb-6">
                             <Factory className="w-10 h-10 text-gray-300" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 font-display">Nenhuma facção encontrada</h3>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 font-display">Nenhuma facção de costura encontrada</h3>
                         <p className="text-gray-500 max-w-sm mx-auto font-medium">Não encontramos resultados para os filtros aplicados.</p>
                     </div>
                 ) : (
@@ -245,8 +245,8 @@ const SuppliersPage: React.FC = () => {
             )}
             {showStatusConfirm && selectedSupplier && (
                 <ConfirmActionModal
-                    title={selectedSupplier.status === 'ACTIVE' ? 'Suspender Facção' : 'Ativar Facção'}
-                    message={`Tem certeza que deseja ${selectedSupplier.status === 'ACTIVE' ? 'suspender' : 'ativar'} a facção "${selectedSupplier.tradeName || selectedSupplier.legalName}"?`}
+                    title={selectedSupplier.status === 'ACTIVE' ? 'Suspender Facção de Costura' : 'Ativar Facção de Costura'}
+                    message={`Tem certeza que deseja ${selectedSupplier.status === 'ACTIVE' ? 'suspender' : 'ativar'} a facção de costura "${selectedSupplier.tradeName || selectedSupplier.legalName}"?`}
                     confirmLabel={selectedSupplier.status === 'ACTIVE' ? 'Suspender' : 'Ativar'}
                     confirmColor={selectedSupplier.status === 'ACTIVE' ? 'amber' : undefined}
                     showReasonField={selectedSupplier.status === 'ACTIVE'}
@@ -257,8 +257,8 @@ const SuppliersPage: React.FC = () => {
             )}
             {showDeleteConfirm && selectedSupplier && (
                 <ConfirmActionModal
-                    title="Excluir Facção"
-                    message={`Tem certeza que deseja excluir a facção "${selectedSupplier.tradeName || selectedSupplier.legalName}"? Esta ação não pode ser desfeita.`}
+                    title="Excluir Facção de Costura"
+                    message={`Tem certeza que deseja excluir a facção de costura "${selectedSupplier.tradeName || selectedSupplier.legalName}"? Esta ação não pode ser desfeita.`}
                     confirmLabel="Excluir"
                     confirmColor="red"
                     onConfirm={handleDelete}

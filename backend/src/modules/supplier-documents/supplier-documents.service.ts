@@ -181,7 +181,7 @@ export class SupplierDocumentsService {
     });
 
     if (!document) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException('Documento não encontrado');
     }
 
     return document;
@@ -248,7 +248,7 @@ export class SupplierDocumentsService {
     });
 
     if (!document) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException('Documento não encontrado');
     }
 
     // Delete old file if exists
@@ -369,7 +369,7 @@ export class SupplierDocumentsService {
     });
 
     if (!document) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException('Documento não encontrado');
     }
 
     const expiresAt = dto.expiresAt
@@ -402,7 +402,7 @@ export class SupplierDocumentsService {
     });
 
     if (!document) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException('Documento não encontrado');
     }
 
     // Delete file if exists

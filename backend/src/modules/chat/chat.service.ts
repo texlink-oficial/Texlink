@@ -128,7 +128,7 @@ export class ChatService {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     const messageData: any = {
@@ -239,7 +239,7 @@ export class ChatService {
     });
 
     if (!message || message.type !== MessageType.PROPOSAL) {
-      throw new NotFoundException('Proposal not found');
+      throw new NotFoundException('Proposta não encontrada');
     }
 
     await this.verifyOrderAccess(message.orderId, userId);
@@ -247,7 +247,7 @@ export class ChatService {
     const proposalData = message.proposalData as any;
 
     if (proposalData.status !== ProposalStatus.PENDING) {
-      throw new ForbiddenException('Proposal already processed');
+      throw new ForbiddenException('Esta proposta já foi processada');
     }
 
     const responder = await this.prisma.user.findUnique({
@@ -315,7 +315,7 @@ export class ChatService {
     });
 
     if (!message || message.type !== MessageType.PROPOSAL) {
-      throw new NotFoundException('Proposal not found');
+      throw new NotFoundException('Proposta não encontrada');
     }
 
     await this.verifyOrderAccess(message.orderId, userId);
@@ -323,7 +323,7 @@ export class ChatService {
     const proposalData = message.proposalData as any;
 
     if (proposalData.status !== ProposalStatus.PENDING) {
-      throw new ForbiddenException('Proposal already processed');
+      throw new ForbiddenException('Esta proposta já foi processada');
     }
 
     const responder = await this.prisma.user.findUnique({
@@ -381,7 +381,7 @@ export class ChatService {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     const hasAccess =
@@ -390,7 +390,7 @@ export class ChatService {
         order.supplier.companyUsers.some((cu) => cu.userId === userId));
 
     if (!hasAccess) {
-      throw new ForbiddenException('You do not have access to this order');
+      throw new ForbiddenException('Você não tem acesso a este pedido');
     }
   }
 }

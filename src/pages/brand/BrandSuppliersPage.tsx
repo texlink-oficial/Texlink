@@ -272,7 +272,7 @@ const BrandSuppliersPage: React.FC = () => {
                         Meus Fornecedores
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400">
-                        Gerencie as facções credenciadas para sua marca
+                        Gerencie as facções de costura credenciadas para sua marca
                     </p>
                 </div>
                 <Link

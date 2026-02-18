@@ -59,7 +59,7 @@ export class AuthController {
   @ThrottleAuth() // 5 requests per minute
   async refreshTokens(@Body('refreshToken') refreshToken: string) {
     if (!refreshToken) {
-      throw new BadRequestException('refreshToken is required');
+      throw new BadRequestException('Token de renovação é obrigatório');
     }
     return this.authService.refreshTokens(refreshToken);
   }

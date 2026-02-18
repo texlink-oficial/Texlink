@@ -48,7 +48,7 @@ function getStatusLabel(status: string): string {
         AGUARDANDO_RETRABALHO: 'Retrabalho',
         FINALIZADO: 'Finalizado',
         RECUSADO_PELA_FACCAO: 'Recusado',
-        DISPONIVEL_PARA_OUTRAS: 'Disponivel',
+        DISPONIVEL_PARA_OUTRAS: 'Disponível',
     };
     return map[status] || status;
 }
@@ -225,12 +225,12 @@ const CapacityDashboardPage: React.FC = () => {
                 hoursPerDay: editHours,
             });
             setConfig(updated);
-            success('Capacidade atualizada com sucesso');
+            success('Ocupação atualizada com sucesso');
             setIsEditingCapacity(false);
             // Reload calendar to reflect new capacity
             await loadCalendar(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
         } catch (err) {
-            toastError('Erro ao atualizar capacidade. Tente novamente.');
+            toastError('Erro ao atualizar ocupação. Tente novamente.');
         } finally {
             setIsSaving(false);
         }
@@ -261,8 +261,8 @@ const CapacityDashboardPage: React.FC = () => {
                                 <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                             </Link>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestao de Capacidade</h1>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Calendario de entregas e ocupacao</p>
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestão de Ocupação</h1>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Calendário de entregas e ocupação</p>
                             </div>
                         </div>
                         <button
@@ -274,7 +274,7 @@ const CapacityDashboardPage: React.FC = () => {
                             className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         >
                             <Settings className="h-4 w-4" />
-                            Ajustar Capacidade
+                            Ajustar Ocupação
                         </button>
                     </div>
                 </div>
@@ -297,7 +297,7 @@ const CapacityDashboardPage: React.FC = () => {
                     {/* ============================================================= */}
                     <div className="lg:col-span-1">
                         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Ocupacao Atual</h2>
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Ocupação Atual</h2>
 
                             {/* Circular Gauge */}
                             <div className="relative w-48 h-48 mx-auto mb-6">
@@ -354,7 +354,7 @@ const CapacityDashboardPage: React.FC = () => {
                                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                                     <div className="flex items-center gap-2">
                                         <Package className="h-5 w-5 text-gray-400" />
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">Capacidade Mensal</span>
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">Ocupação Mensal</span>
                                     </div>
                                     <span className="font-semibold text-gray-900 dark:text-white">
                                         {config?.monthlyCapacity != null
@@ -513,7 +513,7 @@ const CapacityDashboardPage: React.FC = () => {
                                             </p>
                                         </div>
                                         <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-center">
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">Disponivel</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Disponível</p>
                                             <p className="text-lg font-semibold text-green-600 dark:text-green-400">
                                                 {minutesToHours(selectedDay.availableMinutes)}
                                             </p>
@@ -574,7 +574,7 @@ const CapacityDashboardPage: React.FC = () => {
                     <div className="absolute inset-0 bg-black/50" onClick={() => setIsEditingCapacity(false)} />
                     <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Ajustar Capacidade
+                            Ajustar Ocupação
                         </h3>
 
                         <div className="space-y-4 mb-6">
@@ -617,8 +617,8 @@ const CapacityDashboardPage: React.FC = () => {
                             {/* Preview */}
                             <div className="p-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg">
                                 <p className="text-sm text-brand-700 dark:text-brand-300">
-                                    Capacidade estimada: <strong>{minutesToHours(Math.round(editWorkers * editHours * 60 * 22))}</strong>/mes
-                                    <span className="text-xs ml-1 opacity-75">(22 dias uteis)</span>
+                                    Ocupação estimada: <strong>{minutesToHours(Math.round(editWorkers * editHours * 60 * 22))}</strong>/mês
+                                    <span className="text-xs ml-1 opacity-75">(22 dias úteis)</span>
                                 </p>
                             </div>
                         </div>

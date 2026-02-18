@@ -85,7 +85,7 @@ const Dashboard: React.FC = () => {
                             Olá, {user?.name}! 👋
                         </h2>
                         <p className="text-brand-400">
-                            Gerencie seus pedidos e encontre facções
+                            Gerencie seus pedidos e encontre facções de costura
                         </p>
                     </div>
                     <Link
@@ -131,8 +131,8 @@ const Dashboard: React.FC = () => {
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <QuickActionCard
-                        title="Buscar Facções"
-                        description="Encontre facções para seus projetos"
+                        title="Buscar Facções de Costura"
+                        description="Encontre facções de costura para seus projetos"
                         href="/brand/suppliers"
                     />
                     <QuickActionCard

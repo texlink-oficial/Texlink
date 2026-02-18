@@ -30,12 +30,12 @@ export class RatingsService {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     // Order must be finalized
     if (order.status !== OrderStatus.FINALIZADO) {
-      throw new BadRequestException('Order must be finalized before rating');
+      throw new BadRequestException('O pedido deve ser finalizado antes de avaliar');
     }
 
     // Check if user belongs to brand or supplier
@@ -45,7 +45,7 @@ export class RatingsService {
     );
 
     if (!isBrand && !isSupplier) {
-      throw new ForbiddenException('You do not have access to this order');
+      throw new ForbiddenException('Você não tem acesso a este pedido');
     }
 
     const fromCompanyId = isBrand ? order.brandId : order.supplierId!;
@@ -62,7 +62,7 @@ export class RatingsService {
     });
 
     if (existingRating) {
-      throw new BadRequestException('You have already rated this order');
+      throw new BadRequestException('Você já avaliou este pedido');
     }
 
     // Create rating

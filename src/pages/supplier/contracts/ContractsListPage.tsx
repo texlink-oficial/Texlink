@@ -104,7 +104,7 @@ export const ContractsListPage: React.FC = () => {
             <AlertTriangle className="w-5 h-5 text-amber-500" />
             <div>
               <p className="font-medium text-amber-800 dark:text-amber-200">
-                Voce tem {pendingSignatureCount} contrato{pendingSignatureCount > 1 ? 's' : ''} aguardando sua assinatura
+                Você tem {pendingSignatureCount} contrato{pendingSignatureCount > 1 ? 's' : ''} aguardando sua assinatura
               </p>
               <p className="text-sm text-amber-600 dark:text-amber-400">
                 Revise e assine os contratos para formalizar as parcerias

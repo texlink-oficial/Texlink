@@ -159,7 +159,7 @@ const AcceptInvitePage: React.FC = () => {
             <div>
               <p className="text-white font-medium">{invitation.company?.tradeName}</p>
               <p className="text-gray-400 text-sm">
-                {invitation.company?.type === 'BRAND' ? 'Marca' : 'Facção'}
+                {invitation.company?.type === 'BRAND' ? 'Marca' : 'Facção de Costura'}
               </p>
             </div>
           </div>

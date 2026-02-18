@@ -369,7 +369,7 @@ const EducationalContentPage: React.FC = () => {
                                     <h2 className="text-xl font-bold text-gray-900 dark:text-white font-display leading-tight">
                                         {editingContent ? 'Editar Conteúdo' : 'Novo Conteúdo'}
                                     </h2>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium tracking-tight">Capacite as facções com novos conhecimentos</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium tracking-tight">Capacite as facções de costura com novos conhecimentos</p>
                                 </div>
                             </div>
                             <button

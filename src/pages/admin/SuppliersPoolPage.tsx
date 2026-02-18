@@ -202,7 +202,7 @@ const SuppliersPoolPage: React.FC = () => {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pool de Facções</h1>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pool de Facções de Costura</h1>
                         <p className="text-gray-500 dark:text-gray-400">Gerenciamento global de fornecedores no ecossistema</p>
                     </div>
                 </div>
@@ -210,7 +210,7 @@ const SuppliersPoolPage: React.FC = () => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <StatCard
                         icon={Factory}
-                        label="Total de Facções"
+                        label="Total de Facções de Costura"
                         value={stats.total}
                         color="text-sky-500 dark:text-sky-400"
                     />
@@ -272,12 +272,12 @@ const SuppliersPoolPage: React.FC = () => {
                         <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-white/[0.06] rounded-2xl p-12 text-center">
                             <Factory className="w-12 h-12 text-gray-300 dark:text-slate-700 mx-auto mb-4" />
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                Nenhuma facção encontrada
+                                Nenhuma facção de costura encontrada
                             </h3>
                             <p className="text-gray-500 dark:text-gray-400">
                                 {searchTerm || filter
                                     ? 'Tente ajustar os filtros de busca'
-                                    : 'Nenhuma facção cadastrada no sistema'}
+                                    : 'Nenhuma facção de costura cadastrada no sistema'}
                             </p>
                         </div>
                     ) : (
@@ -506,10 +506,10 @@ const SuppliersPoolPage: React.FC = () => {
                                         <div className="bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 text-center">
                                             <Building2 className="w-8 h-8 text-gray-300 dark:text-slate-700 mx-auto mb-2" />
                                             <p className="text-gray-500 dark:text-gray-400">
-                                                Nenhuma marca vinculada a esta facção
+                                                Nenhuma marca vinculada a esta facção de costura
                                             </p>
                                             <p className="text-gray-400 text-xs mt-1">
-                                                Facção disponível para credenciamento
+                                                Facção de costura disponível para credenciamento
                                             </p>
                                         </div>
                                     ) : (

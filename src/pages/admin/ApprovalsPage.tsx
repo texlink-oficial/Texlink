@@ -123,7 +123,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 // ---- Document Status Badge ----
 const DocumentStatusBadge: React.FC<{ status: string }> = ({ status }) => {
     const config: Record<string, { label: string; className: string }> = {
-        VALID: { label: 'Valido', className: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' },
+        VALID: { label: 'Válido', className: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' },
         PENDING: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400' },
         EXPIRED: { label: 'Expirado', className: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400' },
         EXPIRING_SOON: { label: 'Vencendo', className: 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400' },
@@ -426,7 +426,7 @@ const ApprovalsPage: React.FC = () => {
                     </Link>
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Aprovações Pendentes</h1>
-                        <p className="text-gray-500 dark:text-gray-400">{approvals.length} facções aguardando revisão</p>
+                        <p className="text-gray-500 dark:text-gray-400">{approvals.length} facções de costura aguardando revisão</p>
                     </div>
                 </div>
 

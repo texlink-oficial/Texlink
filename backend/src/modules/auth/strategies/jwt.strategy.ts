@@ -37,7 +37,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (cached) {
       // Ensure cached user is still active
       if (!cached.isActive) {
-        throw new UnauthorizedException('User not found or inactive');
+        throw new UnauthorizedException('Usuário não encontrado ou inativo');
       }
       return cached;
     }
@@ -60,7 +60,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('User not found or inactive');
+      throw new UnauthorizedException('Usuário não encontrado ou inativo');
     }
 
     // Extract companyId matching user role; fall back to first association

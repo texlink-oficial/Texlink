@@ -23,7 +23,7 @@ export class BrandsService {
     });
 
     if (!companyUser) {
-      throw new NotFoundException('Brand profile not found');
+      throw new NotFoundException('Perfil de marca não encontrado');
     }
 
     return companyUser.company;
@@ -33,7 +33,7 @@ export class BrandsService {
     const company = await this.getMyProfile(userId);
 
     if (!company.brandProfile) {
-      throw new NotFoundException('Brand profile not found');
+      throw new NotFoundException('Perfil de marca não encontrado');
     }
 
     return this.prisma.brandProfile.update({
@@ -49,7 +49,7 @@ export class BrandsService {
     const company = await this.getMyProfile(userId);
 
     if (!company.brandProfile) {
-      throw new NotFoundException('Brand profile not found');
+      throw new NotFoundException('Perfil de marca não encontrado');
     }
 
     return this.prisma.brandProfile.update({
@@ -68,7 +68,7 @@ export class BrandsService {
     const company = await this.getMyProfile(userId);
 
     if (!company.brandProfile) {
-      throw new NotFoundException('Brand profile not found');
+      throw new NotFoundException('Perfil de marca não encontrado');
     }
 
     return this.prisma.brandProfile.update({

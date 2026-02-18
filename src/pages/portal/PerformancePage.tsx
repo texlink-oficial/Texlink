@@ -194,7 +194,7 @@ const TrendChart: React.FC<TrendChartProps> = ({
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">{title}</h3>
                 <div className="h-48 flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
-                    Sem dados disponiveis para o periodo
+                    Sem dados disponíveis para o período
                 </div>
             </div>
         );
@@ -435,7 +435,7 @@ const PerformancePage: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Desempenho</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        Acompanhe os principais indicadores da sua operacao
+                        Acompanhe os principais indicadores da sua operação
                     </p>
                 </div>
                 <button
@@ -453,7 +453,7 @@ const PerformancePage: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
                         <Calendar className="h-5 w-5 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Periodo:</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Período:</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {(['7', '30', '90'] as PeriodPreset[]).map((preset) => (

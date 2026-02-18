@@ -68,7 +68,7 @@ const navGroups: NavGroup[] = [
       },
       {
         id: 'capacidade',
-        label: 'Capacidade',
+        label: 'Ocupação',
         icon: <Gauge className="h-5 w-5" />,
         path: '/portal/capacidade',
       },

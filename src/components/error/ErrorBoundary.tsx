@@ -97,7 +97,7 @@ class ErrorBoundary extends Component<Props, State> {
                 onClick={this.handleGoHome}
                 className="px-4 py-2 bg-brand-800 hover:bg-brand-700 text-white rounded-lg transition-colors"
               >
-                Ir para o inicio
+                Ir para o início
               </button>
             </div>
           </div>

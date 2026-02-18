@@ -516,7 +516,7 @@ export class OrdersService {
     });
 
     if (!companyUser) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException('Empresa não encontrada');
     }
 
     const whereClause: any =
@@ -609,7 +609,7 @@ export class OrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     // Check if user belongs to the brand
@@ -709,7 +709,7 @@ export class OrdersService {
     });
 
     if (!companyUser) {
-      throw new ForbiddenException('Only suppliers can accept orders');
+      throw new ForbiddenException('Apenas facções podem aceitar pedidos');
     }
 
     const order = await this.prisma.order.findUnique({
@@ -718,7 +718,7 @@ export class OrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     // Check if this supplier can accept
@@ -734,7 +734,7 @@ export class OrdersService {
       order.status === OrderStatus.DISPONIVEL_PARA_OUTRAS;
 
     if (!canAccept) {
-      throw new ForbiddenException('You cannot accept this order');
+      throw new ForbiddenException('Você não pode aceitar este pedido');
     }
 
     // Update order
@@ -811,7 +811,7 @@ export class OrdersService {
     });
 
     if (!companyUser) {
-      throw new ForbiddenException('Only suppliers can reject orders');
+      throw new ForbiddenException('Apenas facções podem recusar pedidos');
     }
 
     const order = await this.prisma.order.findUnique({
@@ -820,7 +820,7 @@ export class OrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     // For DIRECT orders, make available to others
@@ -1098,7 +1098,7 @@ export class OrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     // Validate quantities
@@ -1233,7 +1233,7 @@ export class OrdersService {
     });
 
     if (!parentOrder) {
-      throw new NotFoundException('Parent order not found');
+      throw new NotFoundException('Pedido principal não encontrado');
     }
 
     // Calculate next revision number
@@ -1353,7 +1353,7 @@ export class OrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     // If this is a child order, get the root parent
@@ -1408,7 +1408,7 @@ export class OrdersService {
       where: { id: orderId },
     });
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     const createdItems = await this.prisma.secondQualityItem.createMany({
@@ -1510,7 +1510,7 @@ export class OrdersService {
     });
 
     if (!companyUser) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException('Empresa não encontrada');
     }
 
     const startDate = new Date();

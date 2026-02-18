@@ -19,7 +19,7 @@ export class CompaniesService {
     });
 
     if (existing) {
-      throw new ConflictException('Company with this document already exists');
+      throw new ConflictException('Já existe uma empresa com este CNPJ/CPF');
     }
 
     // Create company and associate user as owner
@@ -82,7 +82,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException('Empresa não encontrada');
     }
 
     // Verify user belongs to this company

@@ -124,15 +124,15 @@ const AdminDashboard: React.FC = () => {
     const quickActions: QuickActionItem[] = [
         {
             id: 'suppliers',
-            label: 'Gerenciar Facções',
-            description: 'Ver todas as facções cadastradas',
+            label: 'Gerenciar Facções de Costura',
+            description: 'Ver todas as facções de costura cadastradas',
             icon: <Factory className="h-6 w-6" />,
             href: '/admin/suppliers',
             color: 'purple',
         },
         {
             id: 'suppliers-pool',
-            label: 'Pool de Facções',
+            label: 'Pool de Facções de Costura',
             description: 'Relacionamentos N:M e conexões',
             icon: <Users className="h-6 w-6" />,
             href: '/admin/suppliers-pool',
@@ -230,7 +230,7 @@ const AdminDashboard: React.FC = () => {
                     />
                     <MetricCard
                         icon={<Factory className="h-6 w-6" />}
-                        label="Facções Ativas"
+                        label="Facções de Costura Ativas"
                         value={metrics.activeSuppliers}
                         color="purple"
                         sparklineData={generateSparklineData(metrics.activeSuppliers)}
@@ -268,7 +268,7 @@ const AdminDashboard: React.FC = () => {
                                 </div>
                                 <div>
                                     <p className="text-amber-900 dark:text-white font-semibold">{metrics.pendingSuppliers} Aprovações Pendentes</p>
-                                    <p className="text-amber-800/80 dark:text-amber-400/70 text-sm">Facções aguardando aprovação</p>
+                                    <p className="text-amber-800/80 dark:text-amber-400/70 text-sm">Facções de costura aguardando aprovação</p>
                                 </div>
                             </div>
                             <ChevronRight className="w-5 h-5 text-amber-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform" />
@@ -292,7 +292,7 @@ const AdminDashboard: React.FC = () => {
                     </ChartCard>
 
                     <ChartCard
-                        title="Status das Facções"
+                        title="Status das Facções de Costura"
                         subtitle="Distribuição atual"
                         showPeriodSelector={false}
                         minHeight="320px"

@@ -264,7 +264,7 @@ const TeamPage: React.FC = () => {
                 onChange={e => setRoleFilter(e.target.value as CompanyRole | 'ALL')}
                 className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               >
-                <option value="ALL">Todos os Roles</option>
+                <option value="ALL">Todos os Tipos de Acesso</option>
                 {ALL_COMPANY_ROLES.map(role => (
                   <option key={role} value={role}>
                     {ROLE_NAMES[role]}

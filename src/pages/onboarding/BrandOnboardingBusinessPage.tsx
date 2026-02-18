@@ -47,7 +47,7 @@ const BrandOnboardingBusinessPage: React.FC = () => {
         setError('');
 
         if (!isFormValid) {
-            setError('Por favor, preencha todos os campos obrigatorios');
+            setError('Por favor, preencha todos os campos obrigatórios');
             return;
         }
 

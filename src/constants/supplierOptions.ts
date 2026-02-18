@@ -44,7 +44,6 @@ export const MACHINE_OPTIONS = [
     'Reta industrial',
     'Reta doméstica',
     'Travete',
-    'Type',
     'Vaporizador',
     'Zig-zag',
 ] as const;

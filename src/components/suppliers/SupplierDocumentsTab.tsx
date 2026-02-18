@@ -49,7 +49,7 @@ const DOCUMENT_TYPE_LABELS: Record<string, string> = {
 
 const STATUS_CONFIG = {
   VALID: {
-    label: 'Valido',
+    label: 'Válido',
     color: 'text-green-600 dark:text-green-400',
     bg: 'bg-green-100 dark:bg-green-900/30',
     icon: CheckCircle,

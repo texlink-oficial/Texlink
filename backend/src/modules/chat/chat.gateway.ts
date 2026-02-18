@@ -147,7 +147,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const payload = this.jwtService.verify<JwtPayload>(token as string);
 
         if (!payload.sub) {
-          throw new UnauthorizedException('Invalid token payload');
+          throw new UnauthorizedException('Token de autenticação inválido');
         }
 
         // Get user info

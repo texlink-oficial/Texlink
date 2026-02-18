@@ -46,7 +46,7 @@ export class AuthService {
       });
 
       if (existingUser) {
-        throw new ConflictException('Email already registered');
+        throw new ConflictException('Este e-mail já está cadastrado');
       }
 
       // Check if document already exists (for SUPPLIER and BRAND)
@@ -192,7 +192,7 @@ export class AuthService {
 
     if (!user) {
       await this.incrementFailedAttempts(attemptsKey, lockoutKey);
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('E-mail ou senha incorretos');
     }
 
     // Check password
@@ -203,11 +203,11 @@ export class AuthService {
 
     if (!isPasswordValid) {
       await this.incrementFailedAttempts(attemptsKey, lockoutKey);
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('E-mail ou senha incorretos');
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('Account is inactive');
+      throw new UnauthorizedException('Conta inativa. Entre em contato com o suporte.');
     }
 
     // Clear failed attempts on successful login
@@ -274,7 +274,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Usuário não encontrado');
     }
 
     // Extract primary company matching user role; fall back to first association
@@ -353,7 +353,7 @@ export class AuthService {
       });
 
       if (!user || !user.isActive) {
-        throw new UnauthorizedException('User not found or inactive');
+        throw new UnauthorizedException('Usuário não encontrado ou inativo');
       }
 
       // Check if token was invalidated (logout)
@@ -361,7 +361,7 @@ export class AuthService {
         `auth:refresh:blacklist:${refreshToken}`,
       );
       if (isBlacklisted) {
-        throw new UnauthorizedException('Token has been revoked');
+        throw new UnauthorizedException('Sessão expirada. Faça login novamente.');
       }
 
       const newAccessToken = this.generateToken(user.id, user.email, user.role);
@@ -386,7 +386,7 @@ export class AuthService {
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) throw error;
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Sessão inválida. Faça login novamente.');
     }
   }
 
