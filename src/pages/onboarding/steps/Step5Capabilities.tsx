@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Package, Sparkles, Users, Clock, Factory } from 'lucide-react';
+import { Package, Sparkles, Users, Clock, Factory, Info } from 'lucide-react';
 import { PRODUCT_TYPE_OPTIONS, MACHINE_OPTIONS } from '../../../constants/supplierOptions';
+import { getCurrentMonthWorkingDays, getMonthName } from '../../../utils/workingDays';
 
 interface Step5CapabilitiesProps {
   token: string;
@@ -36,14 +37,17 @@ export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps)
     hoursPerDay: 8,
   });
 
+  const workingDaysThisMonth = getCurrentMonthWorkingDays();
+  const currentMonthName = getMonthName(new Date().getMonth());
+
   const dailyCapacityMinutes = formData.activeWorkers > 0
     ? Math.round(formData.activeWorkers * formData.hoursPerDay * 60)
     : 0;
 
   const dailyCapacityHours = Math.round(dailyCapacityMinutes / 60);
   const weeklyCapacityHours = dailyCapacityHours * 5;
-  const monthlyCapacityMinutes = dailyCapacityMinutes * 22;
-  const monthlyCapacityHours = dailyCapacityHours * 22;
+  const monthlyCapacityMinutes = dailyCapacityMinutes * workingDaysThisMonth;
+  const monthlyCapacityHours = dailyCapacityHours * workingDaysThisMonth;
 
   const toggleProductType = (type: string) => {
     setFormData((prev) => ({
@@ -238,7 +242,11 @@ export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps)
               = {dailyCapacityMinutes.toLocaleString('pt-BR')} minutos/dia
             </p>
             <p className="text-xs text-blue-600 mt-1">
-              Projeção: {weeklyCapacityHours.toLocaleString('pt-BR')}h/semana • {monthlyCapacityHours.toLocaleString('pt-BR')}h/mês (22 dias úteis)
+              Projeção: {weeklyCapacityHours.toLocaleString('pt-BR')}h/semana • {monthlyCapacityHours.toLocaleString('pt-BR')}h/mês ({workingDaysThisMonth} dias úteis)
+            </p>
+            <p className="text-xs text-blue-500 mt-1 flex items-center gap-1">
+              <Info className="w-3 h-3" />
+              Baseado em {workingDaysThisMonth} dias úteis em {currentMonthName}
             </p>
           </div>
         </div>

@@ -32,7 +32,11 @@ import CreateUserModal from '../../components/team/CreateUserModal';
 import EditMemberModal from '../../components/team/EditMemberModal';
 import EditPermissionsModal from '../../components/team/EditPermissionsModal';
 
-const TeamPage: React.FC = () => {
+interface TeamPageProps {
+  embedded?: boolean;
+}
+
+const TeamPage: React.FC<TeamPageProps> = ({ embedded = false }) => {
   const { user } = useAuth();
   // Pick the company matching user role; fall back to first association
   const matchingCompanyUser =
@@ -188,37 +192,62 @@ const TeamPage: React.FC = () => {
     );
   }
 
-  return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+  const teamContent = (
+    <>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Equipe</h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-              Gerencie os membros e permissões da sua equipe
-            </p>
-          </div>
-
-          <AdminOnly>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowInviteModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                <Mail className="w-4 h-4" />
-                Convidar por Email
-              </button>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
-              >
-                <UserPlus className="w-4 h-4" />
-                Criar Usuário
-              </button>
+        {/* Header - only show when standalone */}
+        {!embedded && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Equipe</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                Gerencie os membros e permissões da sua equipe
+              </p>
             </div>
-          </AdminOnly>
-        </div>
+
+            <AdminOnly>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowInviteModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  Convidar por Email
+                </button>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Criar Usuário
+                </button>
+              </div>
+            </AdminOnly>
+          </div>
+        )}
+
+        {embedded && (
+          <div className="flex justify-end">
+            <AdminOnly>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowInviteModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  Convidar por Email
+                </button>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Criar Usuário
+                </button>
+              </div>
+            </AdminOnly>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700">
@@ -546,6 +575,14 @@ const TeamPage: React.FC = () => {
         {/* Click outside to close menu */}
         {openMenuId && <div className="fixed inset-0 z-0" onClick={() => setOpenMenuId(null)} />}
       </div>
+    </>
+  );
+
+  if (embedded) return teamContent;
+
+  return (
+    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+      {teamContent}
     </div>
   );
 };

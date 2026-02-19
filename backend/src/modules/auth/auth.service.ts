@@ -3,21 +3,28 @@ import {
   Inject,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
-import { RegisterDto, LoginDto, UpdateProfileDto } from './dto';
+import { IntegrationService } from '../integrations/services/integration.service';
+import { RegisterDto, LoginDto, UpdateProfileDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
+import { generatePasswordResetEmailHtml } from './templates/password-reset-email.template';
 import type { StorageProvider } from '../upload/storage.provider';
 import { STORAGE_PROVIDER } from '../upload/storage.provider';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_SECONDS = 900; // 15 minutes
+const PASSWORD_RESET_EXPIRY_HOURS = 24;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly refreshSecret: string;
   private readonly refreshExpiresIn: string;
 
@@ -26,6 +33,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private cache: CacheService,
+    private integrationService: IntegrationService,
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {
     this.refreshSecret =
@@ -413,6 +421,124 @@ export class AuthService {
     } catch {
       // Token already expired or invalid — no need to blacklist
     }
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
+    const message =
+      'Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.';
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      select: { id: true, name: true, email: true, isActive: true },
+    });
+
+    // Always return success to avoid email enumeration
+    if (!user || !user.isActive) {
+      return { message };
+    }
+
+    // Generate cryptographically secure token
+    const token = crypto.randomBytes(32).toString('hex');
+
+    // Calculate expiry
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + PASSWORD_RESET_EXPIRY_HOURS);
+
+    // Store reset token
+    await this.prisma.passwordReset.create({
+      data: {
+        token,
+        userId: user.id,
+        expiresAt,
+      },
+    });
+
+    // Build reset URL
+    const frontendUrl = this.configService.getOrThrow<string>('FRONTEND_URL');
+    const resetUrl = `${frontendUrl}/redefinir-senha?token=${token}`;
+
+    // Send email
+    const emailHtml = generatePasswordResetEmailHtml({
+      userName: user.name,
+      resetUrl,
+      expiresInHours: PASSWORD_RESET_EXPIRY_HOURS,
+    });
+
+    const emailResult = await this.integrationService.sendEmail({
+      to: user.email,
+      subject: 'Redefinir sua senha - Texlink',
+      content: emailHtml,
+    });
+
+    if (!emailResult.success) {
+      this.logger.warn(
+        `Falha ao enviar e-mail de redefinição de senha para userId=${user.id}: ${emailResult.error}`,
+      );
+      // TODO: Implement retry via queue if email sending fails
+    }
+
+    return { message };
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    // Find valid, unused, non-expired token
+    const passwordReset = await this.prisma.passwordReset.findUnique({
+      where: { token: dto.token },
+      include: {
+        user: {
+          select: { id: true, isActive: true },
+        },
+      },
+    });
+
+    if (!passwordReset) {
+      throw new BadRequestException(
+        'Token inválido ou expirado. Solicite uma nova redefinição de senha.',
+      );
+    }
+
+    if (passwordReset.usedAt) {
+      throw new BadRequestException(
+        'Este link já foi utilizado. Solicite uma nova redefinição de senha.',
+      );
+    }
+
+    if (new Date() > passwordReset.expiresAt) {
+      throw new BadRequestException(
+        'Este link expirou. Solicite uma nova redefinição de senha.',
+      );
+    }
+
+    if (!passwordReset.user.isActive) {
+      throw new BadRequestException(
+        'Conta inativa. Entre em contato com o suporte.',
+      );
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+
+    // Update password and mark token as used in a transaction
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: passwordReset.userId },
+        data: {
+          passwordHash,
+          passwordChangedAt: new Date(),
+        },
+      });
+
+      // Invalidate ALL tokens for this user (not just the one used)
+      await tx.passwordReset.updateMany({
+        where: { userId: passwordReset.userId, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+    });
+
+    // Invalidate JWT user cache so next request picks up new data
+    await this.cache.del(`jwt:user:${passwordReset.userId}`);
+
+    return { message: 'Senha redefinida com sucesso.' };
   }
 
   private generateToken(userId: string, email: string, role: string): string {

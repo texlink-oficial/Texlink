@@ -160,7 +160,13 @@ const LoginPage: React.FC = () => {
                         </button>
                     </form>
 
-                    <div className="mt-6 text-center">
+                    <div className="mt-4 text-center">
+                        <Link to="/esqueci-senha" className="text-brand-400 hover:text-brand-300 text-sm font-medium transition-colors">
+                            Esqueci minha senha
+                        </Link>
+                    </div>
+
+                    <div className="mt-4 text-center">
                         <p className="text-brand-300 text-sm">
                             Não tem conta?{' '}
                             <Link to="/register" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">

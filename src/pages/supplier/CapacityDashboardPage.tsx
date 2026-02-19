@@ -16,8 +16,10 @@ import {
     Settings,
     ChevronLeft,
     ChevronRight,
-    X
+    X,
+    Info
 } from 'lucide-react';
+import { getWorkingDaysInMonth, getMonthName } from '../../utils/workingDays';
 
 const monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -583,12 +585,22 @@ const CapacityDashboardPage: React.FC = () => {
                             </div>
 
                             {/* Preview */}
-                            <div className="p-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg">
-                                <p className="text-sm text-brand-700 dark:text-brand-300">
-                                    Capacidade diária: <strong>{minutesToHours(Math.round(editWorkers * editHours * 60))}</strong>/dia
-                                    <span className="text-xs ml-1 opacity-75">({minutesToHours(Math.round(editWorkers * editHours * 60 * 5))}/semana • {minutesToHours(Math.round(editWorkers * editHours * 60 * 22))}/mês)</span>
-                                </p>
-                            </div>
+                            {(() => {
+                                const now = new Date();
+                                const workingDays = getWorkingDaysInMonth(now.getFullYear(), now.getMonth() + 1);
+                                return (
+                                    <div className="p-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg">
+                                        <p className="text-sm text-brand-700 dark:text-brand-300">
+                                            Capacidade diária: <strong>{minutesToHours(Math.round(editWorkers * editHours * 60))}</strong>/dia
+                                            <span className="text-xs ml-1 opacity-75">({minutesToHours(Math.round(editWorkers * editHours * 60 * 5))}/semana • {minutesToHours(Math.round(editWorkers * editHours * 60 * workingDays))}/mês)</span>
+                                        </p>
+                                        <p className="text-xs text-brand-600 dark:text-brand-400 mt-1 flex items-center gap-1">
+                                            <Info className="w-3 h-3" />
+                                            Baseado em {workingDays} dias úteis em {getMonthName(now.getMonth())}
+                                        </p>
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         <div className="flex gap-3">

@@ -481,6 +481,9 @@ model User {
   // Admin actions
   adminActionsPerformed AdminAction[] @relation("AdminActionsPerformed")
 
+  // Password resets
+  passwordResets PasswordReset[]
+
   // Performance indexes
   @@index([email])
   @@index([role])
@@ -1982,4 +1985,21 @@ model AdminAction {
   @@index([adminId])
   @@index([createdAt])
   @@map("admin_actions")
+}
+
+// ==================== PASSWORD RESET ====================
+
+model PasswordReset {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_resets")
 }

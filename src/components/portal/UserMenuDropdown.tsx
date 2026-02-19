@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { User, Users, Settings, ChevronDown, LogOut } from 'lucide-react';
+import { User, Users, Building2, ChevronDown, LogOut } from 'lucide-react';
 
 interface UserMenuDropdownProps {
   user: { name: string; email: string; companyUsers?: { company: { logoUrl?: string | null; tradeName?: string | null; legalName?: string | null } }[] } | null;
@@ -102,7 +102,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
           aria-orientation="vertical"
         >
           <NavLink
-            to="/portal/perfil"
+            to="/portal/configuracoes?tab=profile"
             onClick={handleLinkClick}
             role="menuitem"
             className={({ isActive }) =>
@@ -117,7 +117,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
             Meu Perfil
           </NavLink>
           <NavLink
-            to="/portal/equipe"
+            to="/portal/configuracoes?tab=team"
             onClick={handleLinkClick}
             role="menuitem"
             className={({ isActive }) =>
@@ -129,10 +129,10 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
             }
           >
             <Users className="h-4 w-4" aria-hidden="true" />
-            Equipe
+            Minha Equipe
           </NavLink>
           <NavLink
-            to="/portal/configuracoes"
+            to="/portal/configuracoes?tab=company"
             onClick={handleLinkClick}
             role="menuitem"
             className={({ isActive }) =>
@@ -143,8 +143,8 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
               }`
             }
           >
-            <Settings className="h-4 w-4" aria-hidden="true" />
-            Configurações
+            <Building2 className="h-4 w-4" aria-hidden="true" />
+            Minha Empresa
           </NavLink>
           <div className="border-t border-gray-200 dark:border-gray-700" />
           <button

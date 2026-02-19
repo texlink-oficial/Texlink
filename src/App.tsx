@@ -17,6 +17,8 @@ const ServerErrorPage = React.lazy(() => import('./pages/errors/ServerErrorPage'
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+const ForgotPasswordPage = React.lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = React.lazy(() => import('./pages/auth/ResetPasswordPage'));
 const AcceptInvitePage = React.lazy(() => import('./pages/auth/AcceptInvitePage'));
 const AcceptInvitationPage = React.lazy(() => import('./pages/public/AcceptInvitationPage'));
 
@@ -143,6 +145,8 @@ const App: React.FC = () => {
                                             {/* Public routes */}
                                             <Route path="/login" element={<LoginPage />} />
                                             <Route path="/register" element={<RegisterPage />} />
+                                            <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
+                                            <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
                                             <Route path="/convite/:token" element={<AcceptInvitePage />} />
                                             <Route path="/aceitar-convite/:token" element={<AcceptInvitationPage />} />
 
