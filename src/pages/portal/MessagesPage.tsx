@@ -109,14 +109,14 @@ const MessagesPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="h-full flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="h-[calc(100vh-4rem)] flex bg-gray-100 dark:bg-gray-900">
+        <div className="h-full flex bg-gray-100 dark:bg-gray-900">
             {/* Conversations List - Left Panel */}
             <div
                 className={`w-full md:w-96 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col ${selectedConv ? 'hidden md:flex' : 'flex'
