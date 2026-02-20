@@ -97,18 +97,18 @@ const navGroups: NavGroup[] = [
         icon: <DollarSign className="h-5 w-5" />,
         path: '/portal/financeiro/depositos',
       },
-      {
-        id: 'marcas',
-        label: 'Minhas Marcas',
-        icon: <Building2 className="h-5 w-5" />,
-        path: '/portal/marcas',
-      },
     ],
   },
   {
     id: 'recursos',
     label: 'Recursos',
     items: [
+      {
+        id: 'marcas',
+        label: 'Minhas Marcas',
+        icon: <Building2 className="h-5 w-5" />,
+        path: '/portal/marcas',
+      },
       {
         id: 'solicitacoes',
         label: 'Solicitações de Vínculo',
