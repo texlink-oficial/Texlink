@@ -26,11 +26,11 @@ if [ "$NODE_ENV" = "production" ]; then
     fi
   fi
 
-  # Sync schema to ensure DB matches schema.prisma (without data loss)
+  # Sync schema to ensure DB matches schema.prisma
   echo "Syncing database schema..."
-  npx prisma db push --schema=./prisma/schema.prisma
+  npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma
 else
-  npx prisma db push --schema=./prisma/schema.prisma
+  npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma
 fi
 
 echo "Running database seed..."
