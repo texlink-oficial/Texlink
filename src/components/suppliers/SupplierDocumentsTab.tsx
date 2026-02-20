@@ -17,35 +17,12 @@ import {
   type SupplierDocumentSummaryForBrand,
 } from '../../services/supplierDocuments.service';
 import type { SupplierDocument, SupplierDocumentType, SupplierDocumentStatus } from '../../types';
+import { SUPPLIER_DOCUMENT_TYPE_LABELS as DOCUMENT_TYPE_LABELS } from '../../types';
 
 interface SupplierDocumentsTabProps {
   supplierId: string;
   supplierName: string;
 }
-
-// Document type labels in Portuguese
-const DOCUMENT_TYPE_LABELS: Record<string, string> = {
-  ABVTEX_TERMO: 'Termo ABVTEX',
-  CNPJ_ATIVO: 'Cartão CNPJ',
-  CND_FEDERAL: 'CND Federal',
-  CRF_FGTS: 'CRF FGTS',
-  GUIA_INSS: 'Guia INSS',
-  GUIA_FGTS: 'Guia FGTS',
-  GUIA_SIMPLES_DAS: 'Guia DAS',
-  LICENCA_FUNCIONAMENTO: 'Licença de Funcionamento',
-  AVCB: 'AVCB',
-  CONTRATO_SOCIAL: 'Contrato Social',
-  INSCRICAO_MUNICIPAL: 'Inscrição Municipal',
-  RELATORIO_EMPREGADOS: 'Relatório de Empregados',
-  RELACAO_SUBCONTRATADOS: 'Relação de Subcontratados',
-  LICENCA_AMBIENTAL: 'Licença Ambiental',
-  LAUDO_NR1_GRO_PGR: 'Laudo NR-1 (PGR)',
-  LAUDO_NR7_PCMSO: 'Laudo NR-7 (PCMSO)',
-  LAUDO_NR10_SEGURANCA_ELETRICA: 'Laudo NR-10',
-  LAUDO_NR15_INSALUBRIDADE: 'Laudo NR-15',
-  LAUDO_NR17_AET: 'Laudo NR-17 (AET)',
-  OUTRO: 'Outro',
-};
 
 const STATUS_CONFIG = {
   VALID: {

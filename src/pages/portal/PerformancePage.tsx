@@ -23,7 +23,6 @@ import {
     Calendar,
     Download,
     Loader2,
-    Award,
     BarChart3,
     ArrowUp,
     ArrowDown,
@@ -317,51 +316,6 @@ const TrendChart: React.FC<TrendChartProps> = ({
     );
 };
 
-// --- Platform Comparison Card ---
-
-interface ComparisonItemProps {
-    label: string;
-    supplierValue: number;
-    platformValue: number;
-    unit: string;
-    invertColor?: boolean;
-}
-
-const ComparisonItem: React.FC<ComparisonItemProps> = ({
-    label,
-    supplierValue,
-    platformValue,
-    unit,
-    invertColor = false,
-}) => {
-    const diff = supplierValue - platformValue;
-    const isGood = invertColor ? diff <= 0 : diff >= 0;
-    const absDiff = Math.abs(diff);
-
-    return (
-        <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-            <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
-            <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {supplierValue}{unit}
-                </span>
-                <span className="text-xs text-gray-400">vs</span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {platformValue}{unit}
-                </span>
-                {absDiff >= 0.5 && (
-                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${isGood
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        }`}>
-                        {isGood ? '+' : ''}{diff.toFixed(1)}{unit}
-                    </span>
-                )}
-            </div>
-        </div>
-    );
-};
-
 // --- Main Page ---
 
 const PerformancePage: React.FC = () => {
@@ -539,81 +493,23 @@ const PerformancePage: React.FC = () => {
                     title="Entrega no Prazo"
                     data={data?.onTimeDeliveryTrend || []}
                     color="#10b981"
-                    platformAvgValue={data?.platformAverage?.onTimeDeliveryRate}
                     unit="%"
                 />
                 <TrendChart
                     title="Qualidade (Aprovação)"
                     data={data?.qualityScoreTrend || []}
                     color="#6366f1"
-                    platformAvgValue={data?.platformAverage?.qualityScore}
                     unit="%"
                 />
                 <TrendChart
                     title="Taxa de Rejeição"
                     data={data?.rejectionRateTrend || []}
                     color="#ef4444"
-                    platformAvgValue={data?.platformAverage?.rejectionRate}
                     unit="%"
                     invertColor
                     yDomain={[0, Math.max(20, ...(data?.rejectionRateTrend?.map(p => p.value) || []))]}
                 />
             </div>
-
-            {/* Platform Comparison Card — hidden until sufficient data */}
-            {false && data?.platformAverage && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2.5 rounded-xl bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
-                            <Award className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                Comparativo com a Plataforma
-                            </h2>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Veja como seu desempenho se compara à média de todos os fornecedores
-                            </p>
-                        </div>
-                    </div>
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                        <ComparisonItem
-                            label="Entrega no Prazo"
-                            supplierValue={
-                                data.onTimeDeliveryTrend?.length
-                                    ? data.onTimeDeliveryTrend[data.onTimeDeliveryTrend.length - 1].value
-                                    : data.acceptanceRate
-                            }
-                            platformValue={data.platformAverage.onTimeDeliveryRate}
-                            unit="%"
-                        />
-                        <ComparisonItem
-                            label="Qualidade (Aprovação)"
-                            supplierValue={
-                                data.qualityScoreTrend?.length
-                                    ? data.qualityScoreTrend[data.qualityScoreTrend.length - 1].value
-                                    : 0
-                            }
-                            platformValue={data.platformAverage.qualityScore}
-                            unit="%"
-                        />
-                        <ComparisonItem
-                            label="Taxa de Rejeição"
-                            supplierValue={data.cancellationRate}
-                            platformValue={data.platformAverage.rejectionRate}
-                            unit="%"
-                            invertColor
-                        />
-                        <ComparisonItem
-                            label="Lead Time Médio"
-                            supplierValue={data.avgLeadTime}
-                            platformValue={data.platformAverage.avgLeadTime}
-                            unit=" dias"
-                            invertColor
-                        />
-                    </div>
-                </div>
-            )}
 
             {/* Revenue Chart */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-8">

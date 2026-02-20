@@ -187,6 +187,12 @@ const OrderDetailsPage: React.FC = () => {
                                 </div>
                                 <InfoCard icon={Calendar} label="Entrega" value={formatDate(order.deliveryDeadline)} />
                             </div>
+                            {order.plannedStartDate && (
+                                <div className="mt-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <Calendar className="w-4 h-4" />
+                                    <span>Início previsto: <strong className="text-gray-900 dark:text-white">{new Date(order.plannedStartDate).toLocaleDateString('pt-BR')}</strong></span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Supplier Info */}

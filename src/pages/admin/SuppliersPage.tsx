@@ -200,9 +200,10 @@ const SuppliersPage: React.FC = () => {
                                 <thead>
                                     <tr className="border-b border-gray-100 dark:border-white/[0.06]">
                                         <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Razão Social</th>
+                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">CNPJ</th>
                                         <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                         <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cidade</th>
-                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Capacidade</th>
+                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Especialidades</th>
                                         <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data Cadastro</th>
                                         <th className="text-right px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
                                     </tr>
@@ -226,6 +227,9 @@ const SuppliersPage: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
+                                                <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">{supplier.document || '-'}</span>
+                                            </td>
+                                            <td className="px-4 py-3">
                                                 <StatusBadge status={supplier.status} />
                                             </td>
                                             <td className="px-4 py-3">
@@ -235,12 +239,21 @@ const SuppliersPage: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className="text-sm text-gray-700 dark:text-gray-300">
-                                                    {supplier.supplierProfile?.monthlyCapacity != null
-                                                        ? `${supplier.supplierProfile.monthlyCapacity} pç/mês`
-                                                        : <span className="text-gray-400">-</span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {supplier.supplierProfile?.productTypes?.length
+                                                        ? supplier.supplierProfile.productTypes.slice(0, 2).map((type, i) => (
+                                                            <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+                                                                {type}
+                                                            </span>
+                                                        ))
+                                                        : <span className="text-sm text-gray-400">-</span>
                                                     }
-                                                </span>
+                                                    {(supplier.supplierProfile?.productTypes?.length || 0) > 2 && (
+                                                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">
+                                                            +{supplier.supplierProfile!.productTypes.length - 2}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                                                 {new Date(supplier.createdAt).toLocaleDateString('pt-BR', {

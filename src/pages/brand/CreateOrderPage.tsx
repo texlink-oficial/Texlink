@@ -242,7 +242,7 @@ const CreateOrderPage: React.FC = () => {
             productName: template.productName,
             description: template.description || '',
             materialsProvided: template.materialsProvided,
-            pricePerUnit: template.defaultPrice?.toString() || '',
+            pricePerUnit: template.defaultPrice != null ? Number(template.defaultPrice).toFixed(2) : '',
             observations: template.observations || '',
         }));
     };

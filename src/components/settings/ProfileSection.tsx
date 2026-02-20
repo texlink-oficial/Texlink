@@ -66,10 +66,8 @@ const ProfileSection: React.FC = () => {
 
     const companyStatusLabel = (status: string) => {
         const map: Record<string, { label: string; color: string }> = {
-            APPROVED: { label: 'Aprovada', color: 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30' },
+            ACTIVE: { label: 'Ativa', color: 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30' },
             PENDING: { label: 'Pendente', color: 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30' },
-            PENDING_ONBOARDING: { label: 'Em Onboarding', color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30' },
-            REJECTED: { label: 'Rejeitada', color: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30' },
             SUSPENDED: { label: 'Suspensa', color: 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-900/30' },
         };
         return map[status] || { label: status, color: 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-900/30' };

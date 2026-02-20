@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { onboardingService } from '../../services/onboarding.service';
 import { Package, Users, Clock, Building2, Loader2, CheckCircle, ArrowLeft, Wrench, ArrowRight, FileText } from 'lucide-react';
 import { PRODUCT_TYPE_OPTIONS, MACHINE_OPTIONS } from '../../constants/supplierOptions';
+import { getCurrentMonthWorkingDays } from '../../utils/workingDays';
 
 const productTypeOptions = [...PRODUCT_TYPE_OPTIONS];
 const machineOptions = [...MACHINE_OPTIONS];
@@ -86,7 +87,7 @@ const OnboardingBusinessPage: React.FC = () => {
             await onboardingService.updatePhase3({
                 productTypes: formData.productTypes,
                 specialties: formData.machines,
-                monthlyCapacity: (formData.qtdCostureiras || 1) * 8 * 60 * 22,
+                monthlyCapacity: (formData.qtdCostureiras || 1) * 8 * 60 * getCurrentMonthWorkingDays(),
             });
             await onboardingService.completeOnboarding();
             setShowSuccessModal(true);

@@ -92,7 +92,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Role (Função)</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Função</label>
               <div className="space-y-3">
                 <select
                   value={companyRole}
