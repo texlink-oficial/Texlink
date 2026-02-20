@@ -1,0 +1,49 @@
+# ===========================================
+# TEXLINK Staging - Docker Compose
+# ===========================================
+# Usage: docker compose -f docker-compose.staging.yml up -d
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: texlink-staging-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: texlink
+      POSTGRES_PASSWORD: texlink_staging_2026
+      POSTGRES_DB: texlink_staging
+    ports:
+      - "5433:5432"
+    volumes:
+      - texlink_staging_pgdata:/var/lib/postgresql/data
+    networks:
+      - texlink-staging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U texlink -d texlink_staging"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: texlink-staging-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - texlink_staging_redis:/data
+    networks:
+      - texlink-staging
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  texlink_staging_pgdata:
+  texlink_staging_redis:
+
+networks:
+  texlink-staging:
+    driver: bridge
