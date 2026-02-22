@@ -320,7 +320,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ embedded = false }) => {
             </div>
 
             {/* Members List */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-x-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-visible">
               <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
@@ -395,7 +395,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ embedded = false }) => {
                             </button>
 
                             {openMenuId === member.id && (
-                              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-10">
+                              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50">
                                 <button
                                   onClick={() => handleEditMember(member)}
                                   className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
@@ -612,7 +612,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ embedded = false }) => {
         )}
 
         {/* Click outside to close menu */}
-        {openMenuId && <div className="fixed inset-0 z-0" onClick={() => setOpenMenuId(null)} />}
+        {openMenuId && <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />}
       </div>
     </>
   );
