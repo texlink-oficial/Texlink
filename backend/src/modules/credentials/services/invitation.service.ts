@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { IntegrationService } from '../../integrations/services/integration.service';
 import {
@@ -59,6 +60,7 @@ export class InvitationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly integrationService: IntegrationService,
+    private readonly configService: ConfigService,
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
 
@@ -632,7 +634,7 @@ export class InvitationService {
    * Gera link de onboarding
    */
   private generateOnboardingLink(token: string): string {
-    const baseUrl = process.env.FRONTEND_URL || 'https://app.texlink.com.br';
+    const baseUrl = this.configService.getOrThrow<string>('frontendUrl');
     return `${baseUrl}/onboarding/${token}`;
   }
 

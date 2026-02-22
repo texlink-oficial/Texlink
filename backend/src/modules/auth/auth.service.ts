@@ -454,7 +454,7 @@ export class AuthService {
     });
 
     // Build reset URL
-    const frontendUrl = this.configService.get<string>('frontendUrl') || this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const frontendUrl = this.configService.getOrThrow<string>('frontendUrl');
     const resetUrl = `${frontendUrl}/redefinir-senha?token=${token}`;
 
     // Send email
