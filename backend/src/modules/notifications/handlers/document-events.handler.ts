@@ -89,7 +89,7 @@ export class DocumentEventsHandler {
           title: 'Documento Vencido',
           body: `O documento "${event.documentName}" está vencido. Atualize-o o mais rápido possível.`,
           data: event,
-          actionUrl: '/documentos',
+          actionUrl: '/portal/documentos',
           entityType: 'document',
           entityId: event.documentId,
         });
@@ -131,7 +131,7 @@ export class DocumentEventsHandler {
             supplierName: event.supplierName,
             reason: event.reason,
           },
-          actionUrl: `/fornecedores/${event.supplierId}`,
+          actionUrl: `/brand/fornecedores/${event.supplierId}`,
           entityType: 'relationship',
           entityId: event.relationshipId,
         });
@@ -174,7 +174,7 @@ export class DocumentEventsHandler {
             documentType: event.documentType,
             daysRemaining: event.daysRemaining,
           },
-          actionUrl: `/fornecedores/${event.supplierId}/documentos`,
+          actionUrl: `/brand/fornecedores/${event.supplierId}/documentos`,
           entityType: 'supplier_document',
           entityId: event.documentId,
         });
@@ -230,7 +230,7 @@ export class DocumentEventsHandler {
               documentType: event.documentType,
               action: event.action,
             },
-            actionUrl: `/fornecedores/${event.supplierId}/documentos`,
+            actionUrl: `/brand/fornecedores/${event.supplierId}/documentos`,
             entityType: 'supplier_document',
             entityId: event.documentId,
           });

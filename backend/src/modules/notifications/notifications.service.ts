@@ -247,7 +247,7 @@ export class NotificationsService {
       title: 'Novo Pedido Recebido',
       body: `${data.brandName} enviou um novo pedido: ${data.productName} (${data.quantity} peças)`,
       data,
-      actionUrl: `/pedidos/${data.orderId}`,
+      actionUrl: `/portal/pedidos/${data.orderId}`,
       entityType: 'order',
       entityId: data.orderId,
     });
@@ -255,6 +255,7 @@ export class NotificationsService {
 
   /**
    * Notify about order status change
+   * @deprecated Use notify() directly with correct /brand/ or /portal/ prefix
    */
   async notifyOrderStatusChanged(
     recipientId: string,
@@ -286,6 +287,7 @@ export class NotificationsService {
 
   /**
    * Notify about order deadline approaching
+   * @deprecated Use notify() directly with correct /brand/ or /portal/ prefix
    */
   async notifyDeadlineApproaching(
     recipientId: string,
@@ -317,6 +319,7 @@ export class NotificationsService {
 
   /**
    * Notify about new message
+   * @deprecated Use notify() directly with correct /brand/ or /portal/ prefix
    */
   async notifyNewMessage(
     recipientId: string,
@@ -341,6 +344,7 @@ export class NotificationsService {
 
   /**
    * Notify about proposal received
+   * @deprecated Use notify() directly with correct /brand/ or /portal/ prefix
    */
   async notifyProposalReceived(
     recipientId: string,
@@ -372,6 +376,7 @@ export class NotificationsService {
 
   /**
    * Notify about payment registered
+   * @deprecated Use notify() directly with correct /brand/ or /portal/ prefix
    */
   async notifyPaymentRegistered(
     recipientId: string,
@@ -397,6 +402,7 @@ export class NotificationsService {
 
   /**
    * Notify about payment received
+   * @deprecated Use notify() directly with correct /brand/ or /portal/ prefix
    */
   async notifyPaymentReceived(
     recipientId: string,
@@ -444,7 +450,7 @@ export class NotificationsService {
       title: 'Documento Próximo do Vencimento',
       body: `O documento "${data.documentName}" vence em ${data.daysRemaining} dias`,
       data,
-      actionUrl: '/documentos',
+      actionUrl: '/portal/documentos',
       entityType: 'document',
       entityId: data.documentId,
     });
@@ -579,7 +585,7 @@ export class NotificationsService {
           : `A validação do CNPJ de ${credential.tradeName || 'Facção'} falhou. Verifique os dados.`,
         entityType: 'credential',
         entityId: credentialId,
-        actionUrl: `/credenciamento/${credentialId}`,
+        actionUrl: `/brand/credenciamento/${credentialId}`,
       });
     } catch (error) {
       this.logger.error(
@@ -622,7 +628,7 @@ export class NotificationsService {
         body: `${credential.tradeName || 'Facção'} aceitou o convite e iniciou o processo de credenciamento.`,
         entityType: 'credential',
         entityId: credentialId,
-        actionUrl: `/credenciamento/${credentialId}`,
+        actionUrl: `/brand/credenciamento/${credentialId}`,
       });
     } catch (error) {
       this.logger.error(`Error notifying onboarding started: ${error.message}`);
@@ -662,7 +668,7 @@ export class NotificationsService {
         body: `A análise de compliance de ${credential.tradeName || 'Facção'} foi aprovada. Risco: ${credential.compliance?.riskLevel || 'MEDIUM'}`,
         entityType: 'credential',
         entityId: credentialId,
-        actionUrl: `/credenciamento/${credentialId}`,
+        actionUrl: `/brand/credenciamento/${credentialId}`,
       });
     } catch (error) {
       this.logger.error(
