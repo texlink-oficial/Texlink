@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authService } from './auth.service';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -9,9 +10,9 @@ const api = axios.create({
     },
 });
 
-// Add auth token to requests
+// SEC-F001: Read access token from in-memory store instead of sessionStorage
 api.interceptors.request.use((config) => {
-    const token = sessionStorage.getItem('token');
+    const token = authService.getToken();
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -37,9 +38,9 @@ const processQueue = (error: unknown, token: string | null = null) => {
  * Unwrap envelope: { data, meta } → data
  * Falls back to raw response if no envelope detected (backward compat)
  */
-const unwrapEnvelope = (responseData: any) => {
+const unwrapEnvelope = (responseData: unknown) => {
     if (responseData && typeof responseData === 'object' && 'data' in responseData && 'meta' in responseData) {
-        return responseData.data;
+        return (responseData as Record<string, unknown>).data;
     }
     return responseData;
 };
@@ -85,7 +86,8 @@ api.interceptors.response.use(
             originalRequest._retry = true;
             isRefreshing = true;
 
-            const refreshToken = localStorage.getItem('refreshToken');
+            // SEC-F001: Read refresh token from in-memory store
+            const refreshToken = authService.getRefreshToken();
             if (refreshToken) {
                 try {
                     const response = await axios.post(
@@ -93,18 +95,16 @@ api.interceptors.response.use(
                         { refreshToken },
                     );
                     // Raw axios call gets the full envelope — unwrap it
-                    const refreshData = unwrapEnvelope(response.data);
+                    const refreshData = unwrapEnvelope(response.data) as Record<string, string>;
                     const { accessToken, refreshToken: newRefreshToken } = refreshData;
-                    sessionStorage.setItem('token', accessToken);
-                    localStorage.setItem('refreshToken', newRefreshToken);
+                    // Store new tokens in memory only
+                    authService.setTokens(accessToken, newRefreshToken);
                     originalRequest.headers.Authorization = `Bearer ${accessToken}`;
                     processQueue(null, accessToken);
                     return api(originalRequest);
                 } catch (refreshError) {
                     processQueue(refreshError, null);
-                    sessionStorage.removeItem('token');
-                    localStorage.removeItem('refreshToken');
-                    localStorage.removeItem('user');
+                    authService.clearTokens();
                     window.location.href = '/login';
                     return Promise.reject(refreshError);
                 } finally {
@@ -113,8 +113,7 @@ api.interceptors.response.use(
             }
 
             // No refresh token available
-            sessionStorage.removeItem('token');
-            localStorage.removeItem('user');
+            authService.clearTokens();
             window.location.href = '/login';
         }
 

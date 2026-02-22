@@ -8,8 +8,8 @@ export interface UpdateProfileDto {
 
 export const profileService = {
     async updateProfile(data: UpdateProfileDto): Promise<User> {
+        // SEC-F001: No longer store user PII in localStorage — caller should update React context
         const response = await api.patch<User>('/auth/me', data);
-        localStorage.setItem('user', JSON.stringify(response.data));
         return response.data;
     },
 };

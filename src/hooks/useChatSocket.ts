@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
+import { authService } from '../services/auth.service';
 import { useMessageQueue } from './useMessageQueue';
 import { useNetworkStatus } from './useNetworkStatus';
 
@@ -143,9 +144,9 @@ export function useChatSocket(
         cleanupOld();
     }, [cleanupOld]);
 
-    // Get auth token
+    // SEC-F001: Get auth token from in-memory store
     const getToken = useCallback(() => {
-        return sessionStorage.getItem('token');
+        return authService.getToken();
     }, []);
 
     // Initialize socket connection
