@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
     Factory, Filter, Loader2,
     Search, MapPin, ChevronRight, RefreshCw,
-    MoreVertical, Eye, Edit3, Power, Trash2, UserPlus
+    MoreVertical, Eye, Edit3, Power, Trash2, UserPlus, FileSpreadsheet
 } from 'lucide-react';
 import { adminService } from '../../services/admin.service';
 import { useToast } from '../../contexts/ToastContext';
@@ -10,6 +10,7 @@ import CompanyDetailsModal from '../../components/admin/CompanyDetailsModal';
 import EditCompanyModal from '../../components/admin/EditCompanyModal';
 import ConfirmActionModal from '../../components/admin/ConfirmActionModal';
 import AdminRegisterCompanyModal from '../../components/admin/AdminRegisterCompanyModal';
+import BulkImportSuppliersModal from '../../components/suppliers/BulkImportSuppliersModal';
 
 interface Supplier {
     id: string;
@@ -43,6 +44,7 @@ const SuppliersPage: React.FC = () => {
     const [showStatusConfirm, setShowStatusConfirm] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
+    const [showBulkImport, setShowBulkImport] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     const toast = useToast();
@@ -128,6 +130,13 @@ const SuppliersPage: React.FC = () => {
                         <p className="text-gray-500 dark:text-gray-400 font-medium">Gerencie o ecossistema de produtores da rede</p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setShowBulkImport(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] text-gray-700 dark:text-gray-300 text-sm font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.04] shadow-sm active:scale-[0.98] transition-all"
+                        >
+                            <FileSpreadsheet className="w-4 h-4" />
+                            Importar Planilha
+                        </button>
                         <button
                             onClick={() => setShowRegister(true)}
                             className="flex items-center gap-2 px-4 py-2 bg-sky-500 text-white text-sm font-bold rounded-xl hover:bg-sky-600 shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all"
@@ -376,6 +385,16 @@ const SuppliersPage: React.FC = () => {
                     onSuccess={() => { setShowRegister(false); loadSuppliers(); }}
                 />
             )}
+            <BulkImportSuppliersModal
+                isOpen={showBulkImport}
+                onClose={() => setShowBulkImport(false)}
+                onComplete={(results) => {
+                    if (results.success > 0) {
+                        toast.success('Importação concluída', `${results.success} convite(s) enviado(s) com sucesso`);
+                        loadSuppliers();
+                    }
+                }}
+            />
         </div>
     );
 };
