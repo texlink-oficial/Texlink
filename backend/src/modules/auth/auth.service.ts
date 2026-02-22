@@ -446,15 +446,17 @@ export class AuthService {
 
     // Generate cryptographically secure token
     const token = crypto.randomBytes(32).toString('hex');
+    // Hash the token before storing — only the hash is persisted in the DB
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     // Calculate expiry
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + PASSWORD_RESET_EXPIRY_HOURS);
 
-    // Store reset token
+    // Store hashed token (raw token is sent to user via email)
     await this.prisma.passwordReset.create({
       data: {
-        token,
+        token: hashedToken,
         userId: user.id,
         expiresAt,
       },
@@ -488,9 +490,12 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    // Hash the raw token from the URL to match against stored hash
+    const hashedToken = crypto.createHash('sha256').update(dto.token).digest('hex');
+
     // Find valid, unused, non-expired token
     const passwordReset = await this.prisma.passwordReset.findUnique({
-      where: { token: dto.token },
+      where: { token: hashedToken },
       include: {
         user: {
           select: { id: true, isActive: true },
