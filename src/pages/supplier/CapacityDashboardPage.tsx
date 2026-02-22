@@ -19,6 +19,17 @@ import {
     X,
     Info
 } from 'lucide-react';
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+    Cell,
+    TooltipProps,
+} from 'recharts';
+import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { getWorkingDaysInMonth, getMonthName } from '../../utils/workingDays';
 
 const monthNames = [
@@ -149,6 +160,46 @@ const CapacityDashboardPage: React.FC = () => {
         if (isOverloaded) return 'text-red-500';
         if (isWarning) return 'text-yellow-500';
         return 'text-green-500';
+    };
+
+    const gaugeColor = isOverloaded ? '#ef4444' : isWarning ? '#eab308' : '#22c55e';
+    const gaugeTrackColor = 'rgba(156,163,175,0.2)';
+
+    // Daily occupancy data for bar chart (working days only)
+    const dailyOccupancyData = useMemo(() => {
+        return calendarDays
+            .filter(d => !d.isWeekend && d.totalCapacityMinutes > 0)
+            .map(d => {
+                const pct = Math.round((d.allocatedMinutes / d.totalCapacityMinutes) * 100);
+                const dayNum = parseInt(d.date.split('-')[2], 10);
+                return {
+                    day: dayNum,
+                    date: d.date,
+                    pct: Math.min(pct, 100),
+                    allocated: d.allocatedMinutes,
+                    capacity: d.totalCapacityMinutes,
+                    available: d.availableMinutes,
+                };
+            });
+    }, [calendarDays]);
+
+    const getBarColor = (pct: number) => {
+        if (pct > 80) return '#ef4444';
+        if (pct >= 50) return '#eab308';
+        return '#22c55e';
+    };
+
+    const DailyTooltip: React.FC<TooltipProps<ValueType, NameType>> = ({ active, payload }) => {
+        if (!active || !payload || !payload.length) return null;
+        const d = payload[0].payload;
+        return (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-3 text-sm">
+                <p className="font-medium text-gray-900 dark:text-white mb-1">Dia {d.day}</p>
+                <p className="text-gray-600 dark:text-gray-400">Ocupação: <strong className="text-gray-900 dark:text-white">{d.pct}%</strong></p>
+                <p className="text-gray-600 dark:text-gray-400">Alocado: {minutesToHours(d.allocated)}</p>
+                <p className="text-gray-600 dark:text-gray-400">Disponível: {minutesToHours(d.available)}</p>
+            </div>
+        );
     };
 
     // ---------------------------------------------------------------------------
@@ -297,12 +348,94 @@ const CapacityDashboardPage: React.FC = () => {
                     {/* ============================================================= */}
                     {/* Left Sidebar - Occupancy Gauge & Stats                        */}
                     {/* ============================================================= */}
-                    <div className="lg:col-span-1">
+                    <div className="lg:col-span-1 space-y-6">
+                        {/* Occupancy Gauge */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Resumo</h2>
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ocupação do Mês</h2>
 
-                            {/* Stats */}
-                            <div className="space-y-4">
+                            {/* SVG Gauge */}
+                            <div className="flex justify-center mb-4">
+                                <div className="relative w-40 h-40">
+                                    <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+                                        {/* Track */}
+                                        <circle
+                                            cx="60" cy="60" r="50"
+                                            fill="none"
+                                            stroke={gaugeTrackColor}
+                                            strokeWidth="12"
+                                        />
+                                        {/* Value */}
+                                        <circle
+                                            cx="60" cy="60" r="50"
+                                            fill="none"
+                                            stroke={gaugeColor}
+                                            strokeWidth="12"
+                                            strokeLinecap="round"
+                                            strokeDasharray={`${(occupancyPercent / 100) * 314.16} 314.16`}
+                                            className="transition-all duration-700 ease-out"
+                                        />
+                                    </svg>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                        <span className={`text-3xl font-bold ${getCapacityColor()}`}>
+                                            {occupancyPercent}%
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">ocupado</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Capacity summary */}
+                            <div className="grid grid-cols-2 gap-3 text-center">
+                                <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Alocado</p>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{minutesToHours(totalAllocated)}</p>
+                                </div>
+                                <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Disponível</p>
+                                    <p className="text-sm font-semibold text-green-600 dark:text-green-400">{minutesToHours(totalCapacity - totalAllocated)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Daily Occupancy Chart */}
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ocupação Diária</h2>
+
+                            {dailyOccupancyData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={180}>
+                                    <BarChart data={dailyOccupancyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <XAxis
+                                            dataKey="day"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                            interval={Math.max(0, Math.floor(dailyOccupancyData.length / 8) - 1)}
+                                        />
+                                        <YAxis
+                                            domain={[0, 100]}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                            tickFormatter={(v) => `${v}%`}
+                                            width={45}
+                                        />
+                                        <Tooltip content={<DailyTooltip />} cursor={{ fill: 'rgba(156,163,175,0.1)' }} />
+                                        <Bar dataKey="pct" radius={[3, 3, 0, 0]} maxBarSize={14}>
+                                            {dailyOccupancyData.map((entry, index) => (
+                                                <Cell key={index} fill={getBarColor(entry.pct)} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">Sem dados de ocupação</p>
+                            )}
+                        </div>
+
+                        {/* Stats */}
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Resumo</h2>
+                            <div className="space-y-3">
                                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                                     <div className="flex items-center gap-2">
                                         <Users className="h-5 w-5 text-gray-400" />
