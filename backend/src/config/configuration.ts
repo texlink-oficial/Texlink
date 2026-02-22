@@ -1,7 +1,7 @@
 export default () => {
   // Validate required environment variables in production
   if (process.env.NODE_ENV === 'production') {
-    const requiredEnvVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DATABASE_URL', 'CORS_ORIGINS'];
+    const requiredEnvVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DATABASE_URL', 'CORS_ORIGINS', 'FRONTEND_URL'];
     const missing = requiredEnvVars.filter((v) => !process.env[v]);
     if (missing.length > 0) {
       throw new Error(
