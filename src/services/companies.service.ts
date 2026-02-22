@@ -21,7 +21,7 @@ export interface SupplierProfile {
     onboardingComplete: boolean;
     productTypes: string[];
     specialties: string[];
-    monthlyCapacity?: number;
+    dailyCapacity?: number;
     currentOccupancy: number;
 }
 

@@ -36,7 +36,7 @@ interface PoolSupplier {
     supplierProfile?: {
         productTypes: string[];
         specialties: string[];
-        monthlyCapacity: number;
+        dailyCapacity: number;
         currentOccupancy: number;
         onboardingComplete: boolean;
     };

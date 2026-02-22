@@ -120,7 +120,7 @@ async function main() {
             onboardingComplete: true,
             productTypes: ['Camiseta', 'Calça', 'Vestido'],
             specialties: ['Malha', 'Jeans'],
-            monthlyCapacity: 5000,
+            dailyCapacity: 5000,
             currentOccupancy: 30,
         },
     });

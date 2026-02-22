@@ -25,7 +25,7 @@ interface Supplier {
     createdAt: string;
     supplierProfile?: {
         productTypes: string[];
-        monthlyCapacity: number;
+        dailyCapacity: number;
         onboardingComplete: boolean;
     };
     _count: { ordersAsSupplier: number };

@@ -25,7 +25,7 @@ const CapacitySection: React.FC = () => {
     const [formData, setFormData] = useState({
         activeWorkers: 0,
         hoursPerDay: 8,
-        monthlyCapacity: 0,
+        dailyCapacity: 0,
         currentOccupancy: 0,
         productTypes: [] as string[],
         specialties: [] as string[],
@@ -48,7 +48,7 @@ const CapacitySection: React.FC = () => {
             setFormData({
                 activeWorkers: workers,
                 hoursPerDay: hours,
-                monthlyCapacity: workers > 0 ? workers * hours * 60 : (capacity.monthlyCapacity || 0),
+                dailyCapacity: workers > 0 ? workers * hours * 60 : (capacity.dailyCapacity || 0),
                 currentOccupancy: capacity.currentOccupancy || 0,
                 productTypes: capacity.productTypes || [],
                 specialties: capacity.specialties || [],
@@ -73,9 +73,9 @@ const CapacitySection: React.FC = () => {
                 [name]: type === 'number' ? numericValue : value,
             };
 
-            // Auto-calculate monthlyCapacity when workers or hours change
+            // Auto-calculate dailyCapacity when workers or hours change
             if (name === 'activeWorkers' || name === 'hoursPerDay') {
-                updated.monthlyCapacity = updated.activeWorkers * updated.hoursPerDay * 60;
+                updated.dailyCapacity = updated.activeWorkers * updated.hoursPerDay * 60;
             }
 
             return updated;
@@ -225,8 +225,8 @@ const CapacitySection: React.FC = () => {
                         </label>
                         <input
                             type="number"
-                            name="monthlyCapacity"
-                            value={formData.monthlyCapacity}
+                            name="dailyCapacity"
+                            value={formData.dailyCapacity}
                             readOnly
                             disabled
                             className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 cursor-not-allowed"
@@ -261,7 +261,7 @@ const CapacitySection: React.FC = () => {
                             Ocupação: {formData.currentOccupancy}%
                         </span>
                         <span className="text-sm text-gray-600 dark:text-gray-300">
-                            Disponível: {Math.round((100 - formData.currentOccupancy) * formData.monthlyCapacity / 100)} min
+                            Disponível: {Math.round((100 - formData.currentOccupancy) * formData.dailyCapacity / 100)} min
                         </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">

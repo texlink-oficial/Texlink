@@ -52,13 +52,13 @@ export class CapabilitiesDto {
   hoursPerDay: number;
 
   @ApiPropertyOptional({
-    description: 'Capacidade mensal em minutos (calculado automaticamente)',
-    example: 126720,
+    description: 'Capacidade diaria em minutos (calculado automaticamente)',
+    example: 5760,
   })
   @IsOptional()
   @IsNumber()
   @Min(0)
-  monthlyCapacity?: number;
+  dailyCapacity?: number;
 
   @ApiPropertyOptional({
     description: 'Ocupação atual da capacidade (0-100%)',

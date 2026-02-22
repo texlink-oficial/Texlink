@@ -176,7 +176,7 @@ describe('Relationships V3 N:M (e2e)', () => {
         companyId: supplierId,
         productTypes: ['CAMISETA', 'CALCA'],
         specialties: ['Jeans', 'Malha'],
-        monthlyCapacity: 10000,
+        dailyCapacity: 10000,
         currentOccupancy: 0,
       },
     });

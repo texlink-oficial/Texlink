@@ -912,7 +912,7 @@ export class AdminService {
       // Create profile based on type
       if (dto.type === CompanyType.SUPPLIER) {
         const activeWorkers = dto.qtdCostureiras || 0;
-        const monthlyCapacity = activeWorkers > 0 ? activeWorkers * 8 * 60 * 22 : undefined;
+        const dailyCapacity = activeWorkers > 0 ? activeWorkers * 8 * 60 : undefined;
 
         await tx.supplierProfile.create({
           data: {
@@ -922,7 +922,7 @@ export class AdminService {
             productTypes: dto.productTypes,
             specialties: dto.machines || [],
             activeWorkers: activeWorkers || undefined,
-            monthlyCapacity,
+            dailyCapacity,
             businessQualification: {
               qtdColaboradores: dto.qtdCostureiras,
               tempoMercado: dto.tempoMercado,

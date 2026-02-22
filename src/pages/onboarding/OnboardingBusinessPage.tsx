@@ -87,7 +87,7 @@ const OnboardingBusinessPage: React.FC = () => {
             await onboardingService.updatePhase3({
                 productTypes: formData.productTypes,
                 specialties: formData.machines,
-                monthlyCapacity: (formData.qtdCostureiras || 1) * 8 * 60 * getCurrentMonthWorkingDays(),
+                dailyCapacity: (formData.qtdCostureiras || 1) * 8 * 60,
             });
             await onboardingService.completeOnboarding();
             setShowSuccessModal(true);

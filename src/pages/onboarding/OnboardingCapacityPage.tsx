@@ -68,7 +68,7 @@ const OnboardingCapacityPage: React.FC = () => {
             await onboardingService.updatePhase3({
                 productTypes: formData.productTypes,
                 specialties: formData.specialties.length > 0 ? formData.specialties : undefined,
-                monthlyCapacity: dailyCapacityMinutes,
+                dailyCapacity: dailyCapacityMinutes,
                 activeWorkers: formData.activeWorkers,
                 hoursPerDay: formData.hoursPerDay,
             });

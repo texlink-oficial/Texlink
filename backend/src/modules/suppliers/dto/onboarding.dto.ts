@@ -43,7 +43,7 @@ export class OnboardingPhase3Dto {
   specialties?: string[]; // e.g., ["Jeans", "Malha", "Tricô"]
 
   @IsNumber()
-  monthlyCapacity: number; // minutes per month
+  dailyCapacity: number; // minutes per day
 
   @IsNumber()
   @IsOptional()

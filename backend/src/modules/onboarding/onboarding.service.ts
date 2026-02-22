@@ -782,15 +782,15 @@ export class OnboardingService {
 
     // Update supplier profile with capabilities
     if (supplier) {
-      const monthlyCapacity = data.monthlyCapacity
-        || Math.round(data.activeWorkers * data.hoursPerDay * 60 * 22);
+      const dailyCapacity = data.dailyCapacity
+        || Math.round(data.activeWorkers * data.hoursPerDay * 60);
 
       const profileData = {
         productTypes: data.productTypes,
         specialties: data.specialties || [],
         activeWorkers: data.activeWorkers,
         hoursPerDay: data.hoursPerDay,
-        monthlyCapacity,
+        dailyCapacity,
         currentOccupancy: data.currentOccupancy ?? 0,
         updatedAt: new Date(),
       };

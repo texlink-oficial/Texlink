@@ -56,7 +56,7 @@ export class CapacityService {
       select: {
         activeWorkers: true,
         hoursPerDay: true,
-        monthlyCapacity: true,
+        dailyCapacity: true,
         currentOccupancy: true,
         productTypes: true,
         specialties: true,
@@ -67,7 +67,7 @@ export class CapacityService {
       return {
         activeWorkers: null,
         hoursPerDay: null,
-        monthlyCapacity: null,
+        dailyCapacity: null,
         currentOccupancy: 0,
         productTypes: [],
         specialties: [],
@@ -80,9 +80,9 @@ export class CapacityService {
   async updateConfig(userId: string, dto: UpdateCapacityConfigDto) {
     const companyId = await this.getSupplierCompanyId(userId);
 
-    // Total available minutes per month: workers * hours/day * 60 min * 22 working days
-    const monthlyCapacity = Math.round(
-      dto.activeWorkers * dto.hoursPerDay * 60 * 22,
+    // Daily capacity in minutes: workers * hours/day * 60 min
+    const dailyCapacity = Math.round(
+      dto.activeWorkers * dto.hoursPerDay * 60,
     );
 
     const profile = await this.prisma.supplierProfile.upsert({
@@ -90,18 +90,18 @@ export class CapacityService {
       update: {
         activeWorkers: dto.activeWorkers,
         hoursPerDay: dto.hoursPerDay,
-        monthlyCapacity,
+        dailyCapacity,
       },
       create: {
         companyId,
         activeWorkers: dto.activeWorkers,
         hoursPerDay: dto.hoursPerDay,
-        monthlyCapacity,
+        dailyCapacity,
       },
       select: {
         activeWorkers: true,
         hoursPerDay: true,
-        monthlyCapacity: true,
+        dailyCapacity: true,
         currentOccupancy: true,
         productTypes: true,
         specialties: true,

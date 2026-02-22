@@ -373,8 +373,8 @@ const AddSupplierPage: React.FC = () => {
 
     const getCapacityPercentage = (supplier: SupplierCompany) => {
         const profile = supplier.supplierProfile;
-        if (!profile?.monthlyCapacity) return 0;
-        return Math.round((profile.currentOccupancy / profile.monthlyCapacity) * 100);
+        if (!profile?.dailyCapacity) return 0;
+        return Math.round((profile.currentOccupancy / profile.dailyCapacity) * 100);
     };
 
     const getCapacityColor = (percentage: number) => {
@@ -563,7 +563,7 @@ const AddSupplierPage: React.FC = () => {
                                                     )}
 
                                                 {/* Capacity */}
-                                                {supplier.supplierProfile?.monthlyCapacity && (
+                                                {supplier.supplierProfile?.dailyCapacity && (
                                                     <div>
                                                         <div className="flex items-center justify-between text-xs mb-1">
                                                             <span className="text-gray-500 dark:text-gray-400">
