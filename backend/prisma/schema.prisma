@@ -581,6 +581,7 @@ model CompanyUser {
   role           CompanyUserRole @default(MEMBER) // Mantido para compatibilidade
   companyRole    CompanyRole     @default(VIEWER) // Role pré-definido
   isCompanyAdmin Boolean         @default(false) // Flag de admin
+  isActive       Boolean         @default(true) // Tenant-scoped active status
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -639,7 +640,7 @@ model SupplierProfile {
   productTypes       String[] // e.g., ["Infantil", "Adulto", "Fitness"]
   specialties        String[] // e.g., ["Jeans", "Malha", "Tricô"]
 
-  monthlyCapacity  Int? // peças/mês (legacy/cached)
+  dailyCapacity    Int? @map("monthlyCapacity") // capacidade diária em minutos
   currentOccupancy Int      @default(0) // % ocupação atual
   activeWorkers    Int? // número de colaboradores ativos na produção
   hoursPerDay      Decimal? @db.Decimal(4, 2) // horas de trabalho por dia

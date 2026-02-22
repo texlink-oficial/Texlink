@@ -36,7 +36,6 @@ export class TeamService {
             email: true,
             name: true,
             role: true,
-            isActive: true,
             createdAt: true,
           },
         },
@@ -51,7 +50,7 @@ export class TeamService {
       email: member.user.email,
       name: member.user.name,
       userRole: member.user.role,
-      isActive: member.user.isActive,
+      isActive: member.isActive,
       companyRole: member.companyRole,
       isCompanyAdmin: member.isCompanyAdmin,
       permissionOverrides: member.permissions,
@@ -77,7 +76,6 @@ export class TeamService {
             email: true,
             name: true,
             role: true,
-            isActive: true,
           },
         },
         permissions: true,
@@ -94,7 +92,7 @@ export class TeamService {
       email: member.user.email,
       name: member.user.name,
       userRole: member.user.role,
-      isActive: member.user.isActive,
+      isActive: member.isActive,
       companyRole: member.companyRole,
       isCompanyAdmin: member.isCompanyAdmin,
       permissionOverrides: member.permissions,
@@ -389,7 +387,6 @@ export class TeamService {
 
     const member = await this.prisma.companyUser.findFirst({
       where: { id: memberId, companyId },
-      include: { user: true },
     });
 
     if (!member) {
@@ -401,13 +398,13 @@ export class TeamService {
       throw new BadRequestException('Você não pode desativar a si mesmo');
     }
 
-    // Toggle isActive no User
-    const updatedUser = await this.prisma.user.update({
-      where: { id: member.userId },
-      data: { isActive: !member.user.isActive },
+    // Toggle isActive no CompanyUser (tenant-scoped, não afeta outras empresas)
+    const updatedCompanyUser = await this.prisma.companyUser.update({
+      where: { id: memberId },
+      data: { isActive: !member.isActive },
     });
 
-    return { isActive: updatedUser.isActive };
+    return { isActive: updatedCompanyUser.isActive };
   }
 
   /**
