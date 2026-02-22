@@ -133,7 +133,7 @@ const CredentialDetailsPage: React.FC = () => {
         try {
             // In a real app, call API endpoint
             // await credentialsService.approveManually(id!, data);
-            console.log('Approving credential with data:', data);
+            if (import.meta.env.DEV) console.log('Approving credential with data:', data);
             await loadCredential();
             await loadHistory();
         } catch (error) {
@@ -146,7 +146,7 @@ const CredentialDetailsPage: React.FC = () => {
         try {
             // In a real app, call API endpoint
             // await credentialsService.rejectManually(id!, data);
-            console.log('Rejecting credential with data:', data);
+            if (import.meta.env.DEV) console.log('Rejecting credential with data:', data);
             await loadCredential();
             await loadHistory();
         } catch (error) {

@@ -7,12 +7,12 @@ export function useNetworkStatus() {
 
   useEffect(() => {
     const handleOnline = () => {
-      console.log('Network: ONLINE');
+      if (import.meta.env.DEV) console.log('Network: ONLINE');
       setIsOnline(true);
     };
 
     const handleOffline = () => {
-      console.log('Network: OFFLINE');
+      if (import.meta.env.DEV) console.log('Network: OFFLINE');
       setIsOnline(false);
     };
 

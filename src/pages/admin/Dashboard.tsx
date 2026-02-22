@@ -33,13 +33,13 @@ const AdminDashboard: React.FC = () => {
 
     const loadDashboard = async () => {
         try {
-            console.log('[AdminDashboard] Loading data...');
+            if (import.meta.env.DEV) console.log('[AdminDashboard] Loading data...');
             const [data, revenue] = await Promise.all([
                 adminService.getDashboard(),
                 adminService.getRevenueHistory(6).catch(() => []),
             ]);
-            console.log('[AdminDashboard] Dashboard data:', data);
-            console.log('[AdminDashboard] Revenue history:', revenue);
+            if (import.meta.env.DEV) console.log('[AdminDashboard] Dashboard data:', data);
+            if (import.meta.env.DEV) console.log('[AdminDashboard] Revenue history:', revenue);
             setDashboard(data);
             setRevenueHistory(revenue);
         } catch (error) {

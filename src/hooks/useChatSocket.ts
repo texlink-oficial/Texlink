@@ -117,7 +117,7 @@ export function useChatSocket(
     } = useMessageQueue({
         orderId: orderId || '',
         onSendSuccess: (msg) => {
-            console.log('Queued message sent successfully:', msg.id);
+            if (import.meta.env.DEV) console.log('Queued message sent successfully:', msg.id);
             // Remove mensagem temporária e adicionar a mensagem real do servidor
             setMessages(prev => prev.filter(m => m.id !== msg.id));
         },
@@ -180,12 +180,12 @@ export function useChatSocket(
 
         // Connection events
         socket.on('connect', () => {
-            console.log('Chat socket connected, waiting for authentication...');
+            if (import.meta.env.DEV) console.log('Chat socket connected, waiting for authentication...');
         });
 
         // Wait for server to confirm authentication before joining room
         socket.on('connected', (data: { userId: string; userName: string }) => {
-            console.log('Chat socket authenticated:', data.userName);
+            if (import.meta.env.DEV) console.log('Chat socket authenticated:', data.userName);
             setIsConnected(true);
             onConnectRef.current?.();
 
@@ -214,7 +214,7 @@ export function useChatSocket(
         });
 
         socket.on('disconnect', (reason) => {
-            console.log('Chat socket disconnected:', reason);
+            if (import.meta.env.DEV) console.log('Chat socket disconnected:', reason);
             setIsConnected(false);
             onDisconnectRef.current?.();
         });
@@ -227,7 +227,7 @@ export function useChatSocket(
 
         // Log reconnection attempts
         socket.io.on('reconnect_attempt', (attempt) => {
-            console.log(`[Chat] Reconnection attempt ${attempt}`);
+            if (import.meta.env.DEV) console.log(`[Chat] Reconnection attempt ${attempt}`);
         });
 
         // Handle failed reconnection
@@ -329,7 +329,7 @@ export function useChatSocket(
     // Process queue when reconnecting
     useEffect(() => {
         if (isConnected && isOnline && pendingCount > 0 && !isProcessing) {
-            console.log(`Processing ${pendingCount} queued messages...`);
+            if (import.meta.env.DEV) console.log(`Processing ${pendingCount} queued messages...`);
             // Use a simple send function that wraps the socket emit
             const simpleSend = async (data: SendMessageData): Promise<boolean> => {
                 if (!socketRef.current || !orderId) return false;
@@ -360,7 +360,7 @@ export function useChatSocket(
 
             // If offline or not connected, queue the message
             if (!socketRef.current || !isConnected || !isOnline) {
-                console.log('Offline - queueing message');
+                if (import.meta.env.DEV) console.log('Offline - queueing message');
 
                 const tempId = await queueMessage({
                     orderId,

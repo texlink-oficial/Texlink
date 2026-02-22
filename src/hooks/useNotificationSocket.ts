@@ -52,14 +52,14 @@ export function useNotificationSocket(options: UseNotificationSocketOptions): Us
 
         // Connection events
         socket.on('connect', () => {
-            console.log('[NotificationSocket] Connected');
+            if (import.meta.env.DEV) console.log('[NotificationSocket] Connected');
             setIsConnected(true);
             onConnectionChange?.(true);
             reconnectAttempts.current = 0;
         });
 
         socket.on('disconnect', (reason) => {
-            console.log('[NotificationSocket] Disconnected:', reason);
+            if (import.meta.env.DEV) console.log('[NotificationSocket] Disconnected:', reason);
             setIsConnected(false);
             onConnectionChange?.(false);
         });
@@ -76,13 +76,13 @@ export function useNotificationSocket(options: UseNotificationSocketOptions): Us
 
         // Initial connection data
         socket.on('connected', (data: { userId: string; unreadCount: number }) => {
-            console.log('[NotificationSocket] Authenticated:', data);
+            if (import.meta.env.DEV) console.log('[NotificationSocket] Authenticated:', data);
             onUnreadCountChange?.(data.unreadCount);
         });
 
         // New notification received
         socket.on('notification:new', (notification: WebSocketNotificationPayload) => {
-            console.log('[NotificationSocket] New notification:', notification);
+            if (import.meta.env.DEV) console.log('[NotificationSocket] New notification:', notification);
 
             const fullNotification: AppNotification = {
                 ...notification,
@@ -131,7 +131,7 @@ export function useNotificationSocket(options: UseNotificationSocketOptions): Us
         (options?: { limit?: number; cursor?: string; unreadOnly?: boolean }) => {
             socketRef.current?.emit('get-notifications', options, (response: any) => {
                 if (response.success) {
-                    console.log('[NotificationSocket] Fetched notifications:', response.notifications.length);
+                    if (import.meta.env.DEV) console.log('[NotificationSocket] Fetched notifications:', response.notifications.length);
                 }
             });
         },
