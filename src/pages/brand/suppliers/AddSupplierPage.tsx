@@ -19,12 +19,14 @@ import {
     MessageCircle,
     Send,
     XCircle,
+    FileSpreadsheet,
 } from 'lucide-react';
 import { relationshipsService, partnershipRequestsService } from '../../../services';
 import { suppliersService, type CNPJValidationResult, type InvitationChannel } from '../../../services/suppliers.service';
 import type { SupplierCompany, CreateRelationshipDto } from '../../../types/relationships';
 import { RequestPartnershipModal, PartnershipRequestBadge } from '../../../components/partnership-requests';
 import type { CheckExistingResponse } from '../../../services/partnershipRequests.service';
+import BulkImportSuppliersModal from '../../../components/suppliers/BulkImportSuppliersModal';
 
 type TabType = 'new' | 'pool';
 
@@ -50,6 +52,9 @@ const AddSupplierPage: React.FC = () => {
     const [showCredentialModal, setShowCredentialModal] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+
+    // Bulk import modal state
+    const [showBulkImportModal, setShowBulkImportModal] = useState(false);
 
     // Partnership Request Modal state
     const [showRequestModal, setShowRequestModal] = useState(false);
@@ -386,21 +391,30 @@ const AddSupplierPage: React.FC = () => {
     return (
         <div className="p-6 lg:p-8 space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <button
-                    onClick={() => navigate('/brand/fornecedores')}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                </button>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        Credenciar Fornecedor
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400">
-                        Adicione uma nova facção à sua rede de fornecedores
-                    </p>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate('/brand/fornecedores')}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            Credenciar Fornecedor
+                        </h1>
+                        <p className="text-gray-500 dark:text-gray-400">
+                            Adicione uma nova facção à sua rede de fornecedores
+                        </p>
+                    </div>
                 </div>
+                <button
+                    onClick={() => setShowBulkImportModal(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                    <FileSpreadsheet className="w-5 h-5" />
+                    Importar Planilha
+                </button>
             </div>
 
             {/* Error Message */}
@@ -1102,6 +1116,12 @@ const AddSupplierPage: React.FC = () => {
                     <span>Solicitação enviada com sucesso!</span>
                 </div>
             )}
+
+            {/* Bulk Import Modal */}
+            <BulkImportSuppliersModal
+                isOpen={showBulkImportModal}
+                onClose={() => setShowBulkImportModal(false)}
+            />
         </div>
     );
 };
