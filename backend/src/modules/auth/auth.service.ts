@@ -37,8 +37,7 @@ export class AuthService {
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {
     this.refreshSecret =
-      this.configService.get<string>('jwt.refreshSecret') ||
-      this.configService.get<string>('jwt.secret') + '-refresh';
+      this.configService.getOrThrow<string>('jwt.refreshSecret');
     this.refreshExpiresIn =
       this.configService.get<string>('jwt.refreshExpiresIn') || '7d';
   }

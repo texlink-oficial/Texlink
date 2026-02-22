@@ -9,6 +9,7 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: string;
+  iat?: number;
 }
 
 const JWT_USER_CACHE_TTL = 300; // 5 minutes
@@ -33,11 +34,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload) {
     const cacheKey = `jwt:user:${payload.sub}`;
-    const cached = await this.cache.get<any>(cacheKey);
+    const cached = await this.cache.get<Record<string, unknown>>(cacheKey);
     if (cached) {
       // Ensure cached user is still active
       if (!cached.isActive) {
         throw new UnauthorizedException('Usuário não encontrado ou inativo');
+      }
+      // Invalidate tokens issued before the last password change (cached path)
+      if (cached.passwordChangedAt) {
+        const changedAt = new Date(cached.passwordChangedAt as string);
+        const changedAtTimestamp = Math.floor(changedAt.getTime() / 1000);
+        if (payload.iat && payload.iat < changedAtTimestamp) {
+          await this.cache.del(cacheKey);
+          throw new UnauthorizedException('Token invalidado. Faça login novamente.');
+        }
       }
       return cached;
     }
@@ -50,6 +60,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         name: true,
         role: true,
         isActive: true,
+        passwordChangedAt: true,
         companyUsers: {
           include: {
             company: true,
@@ -61,6 +72,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Usuário não encontrado ou inativo');
+    }
+
+    // Invalidate tokens issued before the last password change
+    if (user.passwordChangedAt) {
+      const changedAtTimestamp = Math.floor(user.passwordChangedAt.getTime() / 1000);
+      if (payload.iat && payload.iat < changedAtTimestamp) {
+        await this.cache.del(cacheKey);
+        throw new UnauthorizedException('Token invalidado. Faça login novamente.');
+      }
     }
 
     // Extract companyId matching user role; fall back to first active association
