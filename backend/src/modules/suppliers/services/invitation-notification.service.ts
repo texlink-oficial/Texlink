@@ -59,8 +59,8 @@ export class InvitationNotificationService {
         private readonly twilioProvider: TwilioWhatsappProvider,
     ) {
         this.baseUrl = this.configService.get<string>(
-            'APP_URL',
-            'https://app.texlink.com.br',
+            'frontendUrl',
+            'http://localhost:5173',
         );
     }
 

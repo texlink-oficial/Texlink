@@ -10,8 +10,13 @@ export interface RegisterDto {
     password: string;
     name: string;
     role: 'ADMIN' | 'BRAND' | 'SUPPLIER';
+    legalName?: string;
+    tradeName?: string;
     document?: string;
     phone?: string;
+    city?: string;
+    state?: string;
+    invitationToken?: string;
 }
 
 export interface AuthResponse {

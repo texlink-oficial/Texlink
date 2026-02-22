@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, Building2, ChevronRight, Loader2 } from 'lucide-react';
+import { X, Building2, ChevronRight, Loader2, Search } from 'lucide-react';
 import { adminService } from '../../services/admin.service';
 import { useToast } from '../../contexts/ToastContext';
 import { PRODUCT_TYPE_OPTIONS, MACHINE_OPTIONS } from '../../constants/supplierOptions';
-import { formatCNPJ, validateCNPJ } from '../../utils/cnpj';
+import { formatCNPJ, validateCNPJ, stripCNPJ } from '../../utils/cnpj';
+import api from '../../services/api';
 
 interface Props {
     type: 'BRAND' | 'SUPPLIER';
@@ -43,6 +44,7 @@ export default function AdminRegisterCompanyModal({ type, onClose, onSuccess }: 
     const toast = useToast();
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
+    const [cnpjLoading, setCnpjLoading] = useState(false);
     const [error, setError] = useState('');
 
     // Step 1 - Owner + Company
@@ -68,6 +70,25 @@ export default function AdminRegisterCompanyModal({ type, onClose, onSuccess }: 
 
     const isSupplier = type === 'SUPPLIER';
     const typeLabel = isSupplier ? 'Facção' : 'Marca';
+
+    const handleCnpjBlur = async () => {
+        const digits = stripCNPJ(document);
+        if (digits.length !== 14 || !validateCNPJ(digits)) return;
+        setCnpjLoading(true);
+        try {
+            const { data } = await api.get(`/auth/cnpj-lookup/${digits}`);
+            if (data.found) {
+                if (!legalName.trim()) setLegalName(data.razaoSocial || '');
+                if (!tradeName.trim() && data.nomeFantasia) setTradeName(data.nomeFantasia);
+                if (!city.trim() && data.cidade) setCity(data.cidade);
+                if (!state && data.estado) setState(data.estado);
+            }
+        } catch {
+            // Silently ignore - admin can type manually
+        } finally {
+            setCnpjLoading(false);
+        }
+    };
 
     const validateStep1 = () => {
         if (!userName.trim() || userName.trim().length < 3) return 'Nome do proprietário deve ter pelo menos 3 caracteres.';
@@ -203,6 +224,15 @@ export default function AdminRegisterCompanyModal({ type, onClose, onSuccess }: 
                             <div className="border-t border-gray-100 dark:border-gray-700 my-2" />
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Dados da Empresa</p>
 
+                            <div>
+                                <label className={labelClass}>CNPJ *</label>
+                                <div className="relative">
+                                    {cnpjLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sky-500 animate-spin" />}
+                                    <input type="text" value={document} onChange={(e) => setDocument(formatCNPJ(e.target.value))} onBlur={handleCnpjBlur} placeholder="00.000.000/0000-00" className={inputClass} />
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">Ao informar o CNPJ os dados serao preenchidos automaticamente.</p>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelClass}>Razão Social *</label>
@@ -212,11 +242,6 @@ export default function AdminRegisterCompanyModal({ type, onClose, onSuccess }: 
                                     <label className={labelClass}>Nome Fantasia</label>
                                     <input type="text" value={tradeName} onChange={(e) => setTradeName(e.target.value)} placeholder="Nome Fantasia" className={inputClass} />
                                 </div>
-                            </div>
-
-                            <div>
-                                <label className={labelClass}>CNPJ *</label>
-                                <input type="text" value={document} onChange={(e) => setDocument(formatCNPJ(e.target.value))} placeholder="00.000.000/0000-00" className={inputClass} />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

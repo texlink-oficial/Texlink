@@ -81,10 +81,16 @@ const AcceptInvitationPage: React.FC = () => {
             setIsAccepting(true);
             await api.post(`/suppliers/accept-invite/${token}`);
             setAcceptSuccess(true);
-            // Redirect to login after 3 seconds
+            // Redirect to register page with pre-filled data
             setTimeout(() => {
-                navigate('/login', { state: { message: 'Convite aceito! Faça login para continuar.' } });
-            }, 3000);
+                const params = new URLSearchParams({ token: token });
+                if (invitation?.supplier.contactEmail) params.set('email', invitation.supplier.contactEmail);
+                if (invitation?.supplier.contactName) params.set('name', invitation.supplier.contactName);
+                if (invitation?.supplier.cnpj) params.set('cnpj', invitation.supplier.cnpj);
+                if (invitation?.supplier.legalName) params.set('legalName', invitation.supplier.legalName);
+                if (invitation?.supplier.tradeName) params.set('tradeName', invitation.supplier.tradeName);
+                navigate(`/register?${params.toString()}`);
+            }, 2000);
         } catch (err: unknown) {
             console.error('Error accepting invitation:', err);
             if (err && typeof err === 'object' && 'response' in err) {
@@ -156,7 +162,7 @@ const AcceptInvitationPage: React.FC = () => {
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mb-6">
                         {acceptSuccess
-                            ? 'Você será redirecionado para fazer login em instantes...'
+                            ? 'Você será redirecionado para criar sua conta em instantes...'
                             : 'Este convite já foi aceito anteriormente.'}
                     </p>
                     {acceptSuccess && (

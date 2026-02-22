@@ -33,10 +33,14 @@ export class RegisterDto {
   })
   role: UserRole;
 
-  // Company fields (required for SUPPLIER)
+  @IsString()
+  @IsNotEmpty({ message: 'Razao social e obrigatoria' })
+  @MinLength(2, { message: 'Razao social deve ter pelo menos 2 caracteres' })
+  legalName: string;
+
   @IsString()
   @IsOptional()
-  companyName?: string;
+  tradeName?: string;
 
   @IsString()
   @IsOptional()
@@ -54,4 +58,8 @@ export class RegisterDto {
   @IsString()
   @IsOptional()
   phone?: string;
+
+  @IsString()
+  @IsOptional()
+  invitationToken?: string;
 }

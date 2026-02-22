@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Param,
   Body,
   UseGuards,
   HttpCode,
@@ -18,11 +19,36 @@ import {
   ThrottleAuth,
   ThrottleRead,
 } from '../../common/decorators/throttle.decorator';
+import { IntegrationService } from '../integrations/services/integration.service';
 
 @ApiTags('Autenticação')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly integrationService: IntegrationService,
+  ) {}
+
+  @Get('cnpj-lookup/:cnpj')
+  @ThrottleAuth() // 5 requests per minute - prevent abuse
+  async cnpjLookup(@Param('cnpj') cnpj: string) {
+    const clean = cnpj.replace(/\D/g, '');
+    if (clean.length !== 14) {
+      throw new BadRequestException('CNPJ deve conter 14 dígitos.');
+    }
+    const result = await this.integrationService.validateCNPJ(clean);
+    if (!result.isValid || !result.data) {
+      return { found: false, error: result.error };
+    }
+    return {
+      found: true,
+      razaoSocial: result.data.razaoSocial,
+      nomeFantasia: result.data.nomeFantasia || null,
+      cidade: result.data.endereco?.municipio || null,
+      estado: result.data.endereco?.uf || null,
+      situacao: result.data.situacao,
+    };
+  }
 
   @Post('register')
   @ThrottleAuth() // 5 requests per minute - prevent mass registration

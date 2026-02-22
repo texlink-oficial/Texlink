@@ -88,8 +88,8 @@ export class AuthService {
       if (dto.role === 'SUPPLIER') {
         company = await tx.company.create({
           data: {
-            legalName: dto.companyName || dto.name,
-            tradeName: dto.companyName || dto.name,
+            legalName: dto.legalName,
+            tradeName: dto.tradeName || dto.legalName,
             document: dto.document || `PENDING_${user.id}`,
             type: 'SUPPLIER',
             city: dto.city || '',
@@ -118,8 +118,8 @@ export class AuthService {
       } else if (dto.role === 'BRAND') {
         company = await tx.company.create({
           data: {
-            legalName: dto.companyName || dto.name,
-            tradeName: dto.companyName || dto.name,
+            legalName: dto.legalName,
+            tradeName: dto.tradeName || dto.legalName,
             document: dto.document || `PENDING_${user.id}`,
             type: 'BRAND',
             city: dto.city || '',
@@ -145,6 +145,41 @@ export class AuthService {
             onboardingComplete: false,
           },
         });
+      }
+
+      // If registering via invitation, link credential to the new company
+      if (dto.invitationToken && company && dto.role === 'SUPPLIER') {
+        const invitation = await tx.credentialInvitation.findFirst({
+          where: { token: dto.invitationToken, response: 'ACCEPTED' },
+          include: { credential: true },
+        });
+
+        if (invitation?.credential) {
+          // Link the credential to the newly created company
+          await tx.supplierCredential.update({
+            where: { id: invitation.credential.id },
+            data: {
+              supplierId: company.id,
+              status: 'ACTIVE',
+            },
+          });
+
+          // Record status change
+          await tx.credentialStatusHistory.create({
+            data: {
+              credentialId: invitation.credential.id,
+              fromStatus: 'ONBOARDING_STARTED',
+              toStatus: 'ACTIVE',
+              reason: 'Fornecedor completou o registro via convite',
+            },
+          });
+
+          // Mark invitation as fully used
+          await tx.credentialInvitation.update({
+            where: { id: invitation.id },
+            data: { response: 'USED' },
+          });
+        }
       }
 
       return { user, company };
