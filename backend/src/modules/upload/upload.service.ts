@@ -2,12 +2,13 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
   Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { StorageProvider } from './storage.provider';
 import { UploadedFile, STORAGE_PROVIDER } from './storage.provider';
-import { AttachmentType } from '@prisma/client';
+import { AttachmentType, UserRole } from '@prisma/client';
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -60,11 +61,78 @@ export class UploadService {
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
 
+  /**
+   * Verifies that the user's company has access to the given order.
+   * An order is accessible if the user's companyId matches the order's brandId or supplierId.
+   * ADMIN users bypass this check.
+   */
+  private async verifyOrderAccess(
+    orderId: string,
+    companyId: string,
+    role: UserRole,
+  ): Promise<void> {
+    if (role === UserRole.ADMIN) {
+      return;
+    }
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { brandId: true, supplierId: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Pedido não encontrado');
+    }
+
+    if (order.brandId !== companyId && order.supplierId !== companyId) {
+      throw new ForbiddenException('Acesso negado a este pedido');
+    }
+  }
+
+  /**
+   * Verifies that the user's company has access to the order associated with an attachment.
+   * ADMIN users bypass this check.
+   */
+  private async verifyAttachmentAccess(
+    attachmentId: string,
+    companyId: string,
+    role: UserRole,
+  ): Promise<void> {
+    if (role === UserRole.ADMIN) {
+      return;
+    }
+
+    const attachment = await this.prisma.orderAttachment.findUnique({
+      where: { id: attachmentId },
+      select: {
+        order: {
+          select: { brandId: true, supplierId: true },
+        },
+      },
+    });
+
+    if (!attachment) {
+      throw new NotFoundException('Anexo não encontrado');
+    }
+
+    if (
+      attachment.order.brandId !== companyId &&
+      attachment.order.supplierId !== companyId
+    ) {
+      throw new ForbiddenException('Acesso negado a este pedido');
+    }
+  }
+
   async uploadOrderAttachment(
     orderId: string,
     file: UploadedFile,
     userId: string,
+    companyId: string,
+    role: UserRole,
   ) {
+    // Verify tenant authorization
+    await this.verifyOrderAccess(orderId, companyId, role);
+
     // Validate MIME type
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       throw new BadRequestException(
@@ -86,10 +154,9 @@ export class UploadService {
       );
     }
 
-    // Check order exists and user has access
+    // Check order exists (already verified in verifyOrderAccess, but need the record)
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { brand: true, supplier: true },
     });
 
     if (!order) {
@@ -128,21 +195,43 @@ export class UploadService {
     orderId: string,
     files: UploadedFile[],
     userId: string,
+    companyId: string,
+    role: UserRole,
   ) {
+    // Verify tenant authorization once for all files
+    await this.verifyOrderAccess(orderId, companyId, role);
+
     const results = await Promise.all(
-      files.map((file) => this.uploadOrderAttachment(orderId, file, userId)),
+      files.map((file) =>
+        this.uploadOrderAttachment(orderId, file, userId, companyId, role),
+      ),
     );
     return results;
   }
 
-  async getOrderAttachments(orderId: string) {
+  async getOrderAttachments(
+    orderId: string,
+    companyId: string,
+    role: UserRole,
+  ) {
+    // Verify tenant authorization
+    await this.verifyOrderAccess(orderId, companyId, role);
+
     return this.prisma.orderAttachment.findMany({
       where: { orderId },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async deleteAttachment(attachmentId: string, userId: string) {
+  async deleteAttachment(
+    attachmentId: string,
+    userId: string,
+    companyId: string,
+    role: UserRole,
+  ) {
+    // Verify tenant authorization
+    await this.verifyAttachmentAccess(attachmentId, companyId, role);
+
     const attachment = await this.prisma.orderAttachment.findUnique({
       where: { id: attachmentId },
       include: { order: true },
@@ -166,14 +255,28 @@ export class UploadService {
     return { success: true };
   }
 
-  async incrementDownloadCount(attachmentId: string) {
+  async incrementDownloadCount(
+    attachmentId: string,
+    companyId: string,
+    role: UserRole,
+  ) {
+    // Verify tenant authorization
+    await this.verifyAttachmentAccess(attachmentId, companyId, role);
+
     await this.prisma.orderAttachment.update({
       where: { id: attachmentId },
       data: { downloadCount: { increment: 1 } },
     });
   }
 
-  async getAttachmentDownloadUrl(attachmentId: string) {
+  async getAttachmentDownloadUrl(
+    attachmentId: string,
+    companyId: string,
+    role: UserRole,
+  ) {
+    // Verify tenant authorization
+    await this.verifyAttachmentAccess(attachmentId, companyId, role);
+
     const attachment = await this.prisma.orderAttachment.findUnique({
       where: { id: attachmentId },
     });

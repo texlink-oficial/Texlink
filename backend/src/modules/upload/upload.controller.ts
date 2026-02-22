@@ -57,12 +57,21 @@ export class UploadController {
       orderId,
       mappedFiles,
       req.user.id,
+      req.user.companyId,
+      req.user.role,
     );
   }
 
   @Get()
-  async getAttachments(@Param('orderId', ParseUUIDPipe) orderId: string) {
-    return this.uploadService.getOrderAttachments(orderId);
+  async getAttachments(
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+    @Req() req: any,
+  ) {
+    return this.uploadService.getOrderAttachments(
+      orderId,
+      req.user.companyId,
+      req.user.role,
+    );
   }
 
   @Delete(':attachmentId')
@@ -70,17 +79,36 @@ export class UploadController {
     @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
     @Req() req: any,
   ) {
-    return this.uploadService.deleteAttachment(attachmentId, req.user.id);
+    return this.uploadService.deleteAttachment(
+      attachmentId,
+      req.user.id,
+      req.user.companyId,
+      req.user.role,
+    );
   }
 
   @Post(':attachmentId/download')
-  async trackDownload(@Param('attachmentId', ParseUUIDPipe) attachmentId: string) {
-    await this.uploadService.incrementDownloadCount(attachmentId);
+  async trackDownload(
+    @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
+    @Req() req: any,
+  ) {
+    await this.uploadService.incrementDownloadCount(
+      attachmentId,
+      req.user.companyId,
+      req.user.role,
+    );
     return { success: true };
   }
 
   @Get(':attachmentId/download-url')
-  async getDownloadUrl(@Param('attachmentId', ParseUUIDPipe) attachmentId: string) {
-    return this.uploadService.getAttachmentDownloadUrl(attachmentId);
+  async getDownloadUrl(
+    @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
+    @Req() req: any,
+  ) {
+    return this.uploadService.getAttachmentDownloadUrl(
+      attachmentId,
+      req.user.companyId,
+      req.user.role,
+    );
   }
 }
