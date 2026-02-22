@@ -1,12 +1,16 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CacheService } from '../../common/services/cache.service';
 import { UserRole } from '@prisma/client';
 import { AdminCreateUserDto, AdminUpdateUserDto } from '../admin/dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cache: CacheService,
+  ) {}
 
   async findAll(role?: UserRole) {
     return this.prisma.user.findMany({
@@ -55,7 +59,7 @@ export class UsersService {
   }
 
   async updateStatus(id: string, isActive: boolean) {
-    return this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id },
       data: { isActive },
       select: {
@@ -65,6 +69,11 @@ export class UsersService {
         isActive: true,
       },
     });
+
+    // Invalidate JWT cache so the status change takes effect immediately
+    await this.invalidateUserCache(id);
+
+    return result;
   }
 
   async createUser(dto: AdminCreateUserDto) {
@@ -129,7 +138,7 @@ export class UsersService {
       }
     }
 
-    return this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
@@ -153,6 +162,11 @@ export class UsersService {
         },
       },
     });
+
+    // Invalidate JWT cache when user data changes (role, isActive, email, name)
+    await this.invalidateUserCache(id);
+
+    return result;
   }
 
   async deleteUser(id: string) {
@@ -161,7 +175,7 @@ export class UsersService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    return this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id },
       data: { isActive: false },
       select: {
@@ -171,6 +185,18 @@ export class UsersService {
         isActive: true,
       },
     });
+
+    // Invalidate JWT cache so deactivated user is blocked immediately
+    await this.invalidateUserCache(id);
+
+    return result;
+  }
+
+  /**
+   * Invalidates the JWT user cache so auth re-fetches from database
+   */
+  private async invalidateUserCache(userId: string): Promise<void> {
+    await this.cache.del(`jwt:user:${userId}`);
   }
 
   async resetPassword(id: string, newPassword: string) {

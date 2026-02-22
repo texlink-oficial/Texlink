@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PermissionsService } from '../permissions/permissions.service';
+import { CacheService } from '../../common/services/cache.service';
 import {
   InviteUserDto,
   CreateUserDto,
@@ -21,6 +22,7 @@ export class TeamService {
   constructor(
     private prisma: PrismaService,
     private permissionsService: PermissionsService,
+    private cache: CacheService,
   ) {}
 
   /**
@@ -404,6 +406,9 @@ export class TeamService {
       data: { isActive: !member.isActive },
     });
 
+    // Invalidate JWT cache so the change takes effect immediately
+    await this.invalidateUserCache(member.userId);
+
     return { isActive: updatedCompanyUser.isActive };
   }
 
@@ -456,7 +461,17 @@ export class TeamService {
       where: { id: memberId },
     });
 
+    // Invalidate JWT cache so removed member loses access immediately
+    await this.invalidateUserCache(member.userId);
+
     return { success: true, message: 'Membro removido com sucesso' };
+  }
+
+  /**
+   * Invalidates the JWT user cache so auth re-fetches from database
+   */
+  private async invalidateUserCache(userId: string): Promise<void> {
+    await this.cache.del(`jwt:user:${userId}`);
   }
 
   /**
