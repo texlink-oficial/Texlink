@@ -3,7 +3,8 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, HelpCircle, Send, Clock, CheckCircle,
     Package, CreditCard, Key, Wrench, MoreHorizontal,
-    RefreshCw, User, Headphones, X, AlertTriangle
+    RefreshCw, User, Headphones, X, AlertTriangle,
+    Truck, FileText, Lightbulb
 } from 'lucide-react';
 import { supportTicketsService } from '../../services/supportTickets.service';
 import type { SupportTicket, SupportTicketMessage, SupportTicketCategory, SupportTicketStatus } from '../../types';
@@ -14,6 +15,9 @@ const CATEGORY_ICONS: Record<SupportTicketCategory, React.ElementType> = {
     PAGAMENTOS: CreditCard,
     ACESSO: Key,
     TECNICO: Wrench,
+    FORNECEDORES: Truck,
+    RELATORIOS: FileText,
+    SUGESTAO: Lightbulb,
     OUTROS: MoreHorizontal,
 };
 

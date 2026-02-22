@@ -85,7 +85,7 @@ export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps)
       const { onboardingService } = await import('../../../services/onboarding.service');
       await onboardingService.saveCapabilities(token, {
         ...formData,
-        monthlyCapacity: monthlyCapacityMinutes,
+        monthlyCapacity: dailyCapacityMinutes,
       });
 
       onComplete();

@@ -26,11 +26,11 @@ const OnboardingCapacityPage: React.FC = () => {
         hoursPerDay: 8,
     });
 
-    const monthlyCapacityMinutes = formData.activeWorkers > 0
-        ? Math.round(formData.activeWorkers * formData.hoursPerDay * 60 * 22)
+    const dailyCapacityMinutes = formData.activeWorkers > 0
+        ? Math.round(formData.activeWorkers * formData.hoursPerDay * 60)
         : 0;
 
-    const monthlyCapacityHours = Math.round(monthlyCapacityMinutes / 60);
+    const dailyCapacityHours = Math.round(dailyCapacityMinutes / 60);
 
     const toggleProductType = (type: string) => {
         setFormData((prev) => ({
@@ -68,7 +68,7 @@ const OnboardingCapacityPage: React.FC = () => {
             await onboardingService.updatePhase3({
                 productTypes: formData.productTypes,
                 specialties: formData.specialties.length > 0 ? formData.specialties : undefined,
-                monthlyCapacity: monthlyCapacityMinutes,
+                monthlyCapacity: dailyCapacityMinutes,
                 activeWorkers: formData.activeWorkers,
                 hoursPerDay: formData.hoursPerDay,
             });
@@ -215,15 +215,15 @@ const OnboardingCapacityPage: React.FC = () => {
                         <div className="mt-4 p-4 bg-brand-500/10 border border-brand-500/20 rounded-lg">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-sm font-medium text-brand-200">
-                                    Capacidade mensal estimada
+                                    Capacidade diária estimada
                                 </span>
                                 <span className="text-sm font-bold text-brand-400">
-                                    {monthlyCapacityHours.toLocaleString('pt-BR')} horas/mês
+                                    {dailyCapacityHours.toLocaleString('pt-BR')} horas/dia
                                 </span>
                             </div>
                             <p className="text-xs text-brand-300">
-                                {formData.activeWorkers} costureiro(s) x {formData.hoursPerDay}h/dia x 22 dias úteis
-                                = {monthlyCapacityMinutes.toLocaleString('pt-BR')} minutos/mês
+                                {formData.activeWorkers} costureiro(s) x {formData.hoursPerDay}h/dia
+                                = {dailyCapacityMinutes.toLocaleString('pt-BR')} minutos/dia
                             </p>
                         </div>
                     )}
