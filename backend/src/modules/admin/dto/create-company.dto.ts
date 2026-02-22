@@ -5,6 +5,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { CompanyType } from '@prisma/client';
+import { IsCNPJ } from '../../../common/validators/cnpj.validator';
 
 export class AdminCreateCompanyDto {
   @IsString({ message: 'Razão social é obrigatória' })
@@ -16,6 +17,7 @@ export class AdminCreateCompanyDto {
   tradeName?: string;
 
   @IsString({ message: 'CNPJ é obrigatório' })
+  @IsCNPJ({ message: 'CNPJ inválido. Verifique o número informado.' })
   document: string;
 
   @IsEnum(CompanyType, { message: 'Tipo deve ser BRAND ou SUPPLIER' })

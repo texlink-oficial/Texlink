@@ -493,7 +493,7 @@ export class NotificationsService {
       title: notificationTitle,
       body,
       data,
-      actionUrl: data.actionUrl || `/suporte/${data.ticketId}`,
+      actionUrl: data.actionUrl || `/portal/suporte/${data.ticketId}`,
       entityType: 'ticket',
       entityId: data.ticketId,
     });

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Building2, Factory, ShieldAlert } from 'lucide-react';
 import { adminService, AdminUser } from '../../services/admin.service';
 import { useToast } from '../../contexts/ToastContext';
+import { formatCNPJ, validateCNPJ } from '../../utils/cnpj';
 
 interface CreateCompanyModalProps {
     onClose: () => void;
@@ -11,15 +12,6 @@ interface CreateCompanyModalProps {
 const BRAZILIAN_STATES = [
     'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
 ];
-
-const formatCNPJ = (value: string) => {
-    const digits = value.replace(/\D/g, '').slice(0, 14);
-    return digits
-        .replace(/^(\d{2})(\d)/, '$1.$2')
-        .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-        .replace(/\.(\d{3})(\d)/, '.$1/$2')
-        .replace(/(\d{4})(\d)/, '$1-$2');
-};
 
 export default function CreateCompanyModal({ onClose, onSuccess }: CreateCompanyModalProps) {
     const toast = useToast();
@@ -55,9 +47,8 @@ export default function CreateCompanyModal({ onClose, onSuccess }: CreateCompany
             setError('Razão Social é obrigatória.');
             return false;
         }
-        const digits = document.replace(/\D/g, '');
-        if (digits.length < 14) {
-            setError('CNPJ deve ter 14 dígitos.');
+        if (!validateCNPJ(document)) {
+            setError('CNPJ inválido. Verifique o número informado.');
             return false;
         }
         if (!city.trim()) {

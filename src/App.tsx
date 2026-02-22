@@ -105,6 +105,7 @@ const PayoutFrequencyPage = React.lazy(() => import('./pages/portal/financial/Pa
 const AdvancePage = React.lazy(() => import('./pages/portal/financial/AdvancePage'));
 const SupplierBrandsPage = React.lazy(() => import('./pages/portal/BrandsPage'));
 const SupplierPartnershipRequestsPage = React.lazy(() => import('./pages/supplier/PartnershipRequestsPage'));
+const SupplierPartnershipRequestDetailPage = React.lazy(() => import('./pages/supplier/PartnershipRequestDetailPage'));
 
 // Onboarding pages
 const OnboardingLayout = React.lazy(() => import('./components/onboarding/OnboardingLayout'));
@@ -183,6 +184,7 @@ const App: React.FC = () => {
                                                 <Route path="marcas" element={<SupplierBrandsPage />} />
                                                 {/* Solicitações de Parceria */}
                                                 <Route path="solicitacoes" element={<SupplierPartnershipRequestsPage />} />
+                                                <Route path="solicitacoes/:id" element={<SupplierPartnershipRequestDetailPage />} />
                                                 {/* Documentos */}
                                                 <Route path="documentos" element={<SupplierDocuments />} />
                                                 {/* Contratos */}

@@ -3,6 +3,7 @@ import { X, Building2, ChevronRight, Loader2 } from 'lucide-react';
 import { adminService } from '../../services/admin.service';
 import { useToast } from '../../contexts/ToastContext';
 import { PRODUCT_TYPE_OPTIONS, MACHINE_OPTIONS } from '../../constants/supplierOptions';
+import { formatCNPJ, validateCNPJ } from '../../utils/cnpj';
 
 interface Props {
     type: 'BRAND' | 'SUPPLIER';
@@ -29,15 +30,6 @@ const VOLUME_OPTIONS = [
     { label: '5.000 a 10.000 peças', value: 10000 },
     { label: 'Mais de 10.000 peças', value: 15000 },
 ];
-
-function formatCNPJ(value: string) {
-    const digits = value.replace(/\D/g, '').slice(0, 14);
-    return digits
-        .replace(/^(\d{2})(\d)/, '$1.$2')
-        .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-        .replace(/\.(\d{3})(\d)/, '.$1/$2')
-        .replace(/(\d{4})(\d)/, '$1-$2');
-}
 
 function formatPhone(value: string) {
     const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -82,8 +74,7 @@ export default function AdminRegisterCompanyModal({ type, onClose, onSuccess }: 
         if (!email.trim() || !email.includes('@')) return 'E-mail inválido.';
         if (!password || password.length < 6) return 'Senha deve ter pelo menos 6 caracteres.';
         if (!legalName.trim() || legalName.trim().length < 3) return 'Razão Social deve ter pelo menos 3 caracteres.';
-        const cnpjDigits = document.replace(/\D/g, '');
-        if (cnpjDigits.length !== 14) return 'CNPJ deve ter 14 dígitos.';
+        if (!validateCNPJ(document)) return 'CNPJ inválido. Verifique o número informado.';
         if (!city.trim()) return 'Cidade é obrigatória.';
         if (!state) return 'Estado é obrigatório.';
         return null;

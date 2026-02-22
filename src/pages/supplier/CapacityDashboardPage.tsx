@@ -324,11 +324,11 @@ const CapacityDashboardPage: React.FC = () => {
                                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                                     <div className="flex items-center gap-2">
                                         <Package className="h-5 w-5 text-gray-400" />
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">Ocupação Mensal</span>
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">Capacidade Diária</span>
                                     </div>
                                     <span className="font-semibold text-gray-900 dark:text-white">
-                                        {config?.monthlyCapacity != null
-                                            ? minutesToHours(config.monthlyCapacity)
+                                        {config?.activeWorkers != null && config?.hoursPerDay != null
+                                            ? minutesToHours(config.activeWorkers * config.hoursPerDay * 60)
                                             : '-'}
                                     </span>
                                 </div>

@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsCNPJ } from '../../../common/validators/cnpj.validator';
 
 /**
  * Canais de envio do convite
@@ -35,6 +36,7 @@ export class InviteSupplierDto {
     @IsNotEmpty({ message: 'CNPJ é obrigatório' })
     @Transform(({ value }) => value?.replace(/\D/g, ''))
     @Matches(/^\d{14}$/, { message: 'CNPJ deve conter 14 dígitos' })
+    @IsCNPJ({ message: 'CNPJ inválido. Verifique o número informado.' })
     cnpj: string;
 
     @ApiProperty({

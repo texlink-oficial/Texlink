@@ -26,8 +26,10 @@ interface ChatInterfaceProps {
 }
 
 const MAX_MESSAGE_LENGTH = 5000;
+const NEGOTIATION_STATUSES = ['LANCADO_PELA_MARCA', 'EM_NEGOCIACAO'];
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ order, onClose, onOrderUpdated }) => {
+  const canNegotiate = NEGOTIATION_STATUSES.includes(order.status);
   const {
     messages,
     isConnected,
@@ -252,7 +254,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ order, onClose, on
               <Coins className="h-10 w-10 text-amber-400 mb-3" />
               <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nenhuma mensagem ainda</p>
               <p className="text-xs mt-1 text-center leading-relaxed">
-                Use o botão <span className="font-semibold text-amber-600 dark:text-amber-400">"Enviar Proposta"</span> abaixo para negociar preço, quantidade e prazo.
+                {canNegotiate
+                  ? <>Use o botão <span className="font-semibold text-amber-600 dark:text-amber-400">"Enviar Proposta"</span> abaixo para negociar preço, quantidade e prazo.</>
+                  : 'Envie uma mensagem para a marca'}
               </p>
             </div>
           ) : (
@@ -540,7 +544,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ order, onClose, on
         )}
 
         {/* Proposal CTA */}
-        {!showProposalForm && (
+        {canNegotiate && !showProposalForm && (
           <div className="px-3 pt-2 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 z-10">
             <button
               onClick={() => setShowProposalForm(true)}

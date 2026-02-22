@@ -45,6 +45,7 @@ export default () => {
     redis: {
       url: process.env.REDIS_URL,
     },
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
     webhooks: {
       sendgridValidation:
         process.env.SENDGRID_WEBHOOK_SIGNATURE_VALIDATION === 'true',

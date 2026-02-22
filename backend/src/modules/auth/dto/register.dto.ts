@@ -9,6 +9,7 @@ import {
   IsOptional,
 } from 'class-validator';
 import { UserRole } from '@prisma/client';
+import { IsCNPJ } from '../../../common/validators/cnpj.validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -39,6 +40,7 @@ export class RegisterDto {
 
   @IsString()
   @IsOptional()
+  @IsCNPJ({ message: 'CNPJ inválido. Verifique o número informado.' })
   document?: string; // CNPJ/CPF
 
   @IsString()

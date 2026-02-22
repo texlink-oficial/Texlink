@@ -135,7 +135,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({
 
             {!isCompanyAdmin && member.isCompanyAdmin && (
               <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-lg p-3 text-red-700 dark:text-red-500 text-[11px] leading-relaxed">
-                <strong>Atenção:</strong> Remover o status de administrador limitará o acesso deste usuário apenas às permissões do role selecionado acima.
+                <strong>Atenção:</strong> Remover o status de administrador limitará o acesso deste usuário apenas às permissões da função selecionada acima.
               </div>
             )}
           </div>

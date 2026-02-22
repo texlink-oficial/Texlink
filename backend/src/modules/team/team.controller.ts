@@ -127,6 +127,24 @@ export class TeamController {
   }
 
   /**
+   * Ativa/desativa um membro da equipe
+   */
+  @Patch('companies/:companyId/team/:memberId/toggle-active')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.TEAM_MANAGE)
+  async toggleMemberActive(
+    @Param('companyId', ParseUUIDPipe) companyId: string,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @CurrentUser('id') currentUserId: string,
+  ) {
+    return this.teamService.toggleMemberActive(
+      companyId,
+      memberId,
+      currentUserId,
+    );
+  }
+
+  /**
    * Remove um membro da equipe
    */
   @Delete('companies/:companyId/team/:memberId')

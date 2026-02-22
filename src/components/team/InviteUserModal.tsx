@@ -134,7 +134,7 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ companyId, onClose, o
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Role</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Função</label>
                   <div className="space-y-3">
                     <select
                       value={companyRole}
@@ -149,7 +149,7 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ companyId, onClose, o
                     </select>
                     <div className="p-3 bg-brand-50/50 dark:bg-brand-900/10 border border-brand-100/50 dark:border-brand-900/20 rounded-xl">
                       <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
-                        <strong className="text-brand-700 dark:text-brand-400 block mb-1">Permissões do Role:</strong>
+                        <strong className="text-brand-700 dark:text-brand-400 block mb-1">Permissões da Função:</strong>
                         {ROLE_DESCRIPTIONS[companyRole]}
                       </p>
                     </div>

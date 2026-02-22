@@ -2,26 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserPlus, Mail, Lock, User, Building2, Factory, Loader2, Eye, EyeOff, Phone } from 'lucide-react';
-
-const formatCNPJ = (value: string): string => {
-    const digits = value.replace(/\D/g, '').slice(0, 14);
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-    if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
-    if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
-    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
-};
+import { formatCNPJ, validateCNPJ, stripCNPJ } from '../../utils/cnpj';
 
 const formatPhone = (value: string): string => {
     const digits = value.replace(/\D/g, '').slice(0, 11);
     if (digits.length <= 2) return digits.length > 0 ? `(${digits}` : '';
     if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-};
-
-const isValidCNPJ = (value: string): boolean => {
-    const digits = value.replace(/\D/g, '');
-    return digits.length === 14;
 };
 
 const isValidPhone = (value: string): boolean => {
@@ -40,6 +27,7 @@ const RegisterPage: React.FC = () => {
     const [role, setRole] = useState<'BRAND' | 'SUPPLIER'>('SUPPLIER');
     const [showPassword, setShowPassword] = useState(false);
     const [termsAccepted, setTermsAccepted] = useState(false);
+    const [cnpjError, setCnpjError] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -51,12 +39,26 @@ const RegisterPage: React.FC = () => {
         return null;
     };
 
+    const handleCnpjBlur = () => {
+        const digits = stripCNPJ(cnpj);
+        if (digits.length === 0) {
+            setCnpjError('');
+            return;
+        }
+        if (digits.length !== 14 || !validateCNPJ(digits)) {
+            setCnpjError('CNPJ inválido. Verifique o número informado.');
+        } else {
+            setCnpjError('');
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (!isValidCNPJ(cnpj)) {
-            setError('CNPJ inválido. Informe os 14 dígitos.');
+        if (!validateCNPJ(cnpj)) {
+            setError('CNPJ inválido. Verifique o número informado.');
+            setCnpjError('CNPJ inválido. Verifique o número informado.');
             return;
         }
 
@@ -191,15 +193,27 @@ const RegisterPage: React.FC = () => {
                                 <input
                                     type="text"
                                     value={cnpj}
-                                    onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
-                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    onChange={(e) => {
+                                        setCnpj(formatCNPJ(e.target.value));
+                                        if (cnpjError) setCnpjError('');
+                                    }}
+                                    onBlur={handleCnpjBlur}
+                                    className={`w-full pl-11 pr-4 py-3 bg-white/5 border rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all ${cnpjError ? 'border-red-500' : 'border-white/10'}`}
                                     placeholder="XX.XXX.XXX/XXXX-XX"
                                     required
+                                    aria-invalid={!!cnpjError}
+                                    aria-describedby={cnpjError ? 'cnpj-error' : undefined}
                                 />
                             </div>
-                            <p className="text-xs text-brand-400 mt-1">
-                                A unicidade do CNPJ será validada no servidor.
-                            </p>
+                            {cnpjError ? (
+                                <p id="cnpj-error" className="text-xs text-red-400 mt-1" role="alert">
+                                    {cnpjError}
+                                </p>
+                            ) : (
+                                <p className="text-xs text-brand-400 mt-1">
+                                    A unicidade do CNPJ será validada no servidor.
+                                </p>
+                            )}
                         </div>
 
                         {/* E-mail */}
@@ -285,7 +299,7 @@ const RegisterPage: React.FC = () => {
 
                         <button
                             type="submit"
-                            disabled={isLoading || !termsAccepted}
+                            disabled={isLoading || !termsAccepted || !!cnpjError}
                             className="w-full py-3 px-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (

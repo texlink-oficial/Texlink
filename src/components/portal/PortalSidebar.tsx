@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -172,6 +172,25 @@ export const PortalSidebar: React.FC = () => {
   const [pendingDocsCount, setPendingDocsCount] = useState(0);
   const { darkMode, toggleDarkMode } = useTheme();
 
+  // Persist sidebar scroll position across re-renders
+  const scrollPositionRef = useRef(0);
+  const desktopNavRef = useRef<HTMLElement>(null);
+  const mobileNavRef = useRef<HTMLElement>(null);
+
+  const handleNavScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
+    scrollPositionRef.current = e.currentTarget.scrollTop;
+  }, []);
+
+  // Restore scroll position after re-renders triggered by location changes
+  useLayoutEffect(() => {
+    if (desktopNavRef.current) {
+      desktopNavRef.current.scrollTop = scrollPositionRef.current;
+    }
+    if (mobileNavRef.current) {
+      mobileNavRef.current.scrollTop = scrollPositionRef.current;
+    }
+  });
+
   // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -239,7 +258,7 @@ export const PortalSidebar: React.FC = () => {
     );
   };
 
-  const NavContent = ({ collapsed = false }: { collapsed?: boolean }) => (
+  const NavContent = ({ collapsed = false, navRef, onNavScroll }: { collapsed?: boolean; navRef?: React.RefObject<HTMLElement | null>; onNavScroll?: (e: React.UIEvent<HTMLElement>) => void }) => (
     <>
       {/* Header Compacto */}
       <div className="px-3 py-2 border-b border-gray-200/50 dark:border-gray-700/50 flex-shrink-0">
@@ -391,7 +410,7 @@ export const PortalSidebar: React.FC = () => {
       )}
 
       {/* Navigation - área scrollável */}
-      <nav className="flex-1 p-3 overflow-y-auto min-h-0" aria-label="Menu principal">
+      <nav ref={navRef} onScroll={onNavScroll} className="flex-1 p-3 overflow-y-auto min-h-0" aria-label="Menu principal">
         {navGroups.map((group, groupIndex) => (
           <div key={group.id}>
             {/* Separador visual entre grupos (exceto primeiro) */}
@@ -548,7 +567,7 @@ export const PortalSidebar: React.FC = () => {
         >
           <X className="h-5 w-5 text-gray-600 dark:text-gray-400" aria-hidden="true" />
         </button>
-        <NavContent collapsed={false} />
+        <NavContent collapsed={false} navRef={mobileNavRef} onNavScroll={handleNavScroll} />
       </aside>
 
       {/* Desktop Sidebar - Glass Morphism */}
@@ -557,7 +576,7 @@ export const PortalSidebar: React.FC = () => {
         className={`hidden lg:flex h-screen bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 flex-col transition-all duration-300 ease-spring ${isCollapsed ? 'w-20' : 'w-72'
           }`}
       >
-        <NavContent collapsed={isCollapsed} />
+        <NavContent collapsed={isCollapsed} navRef={desktopNavRef} onNavScroll={handleNavScroll} />
       </aside>
     </>
   );

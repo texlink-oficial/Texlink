@@ -15,6 +15,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  UserX,
+  UserCheck,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PermissionGate, AdminOnly } from '../../components/auth/PermissionGate';
@@ -125,14 +127,29 @@ const TeamPage: React.FC<TeamPageProps> = ({ embedded = false }) => {
     setOpenMenuId(null);
   };
 
+  const handleToggleActive = async (member: TeamMember) => {
+    const action = member.isActive ? 'desativar' : 'reativar';
+    if (!confirm(`Tem certeza que deseja ${action} ${member.name}?`)) return;
+
+    try {
+      const updatedMember = await teamService.toggleMemberActive(companyId, member.id);
+      setMembers(prev => prev.map(m => (m.id === member.id ? { ...m, isActive: updatedMember.isActive } : m)));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : `Erro ao ${action} membro`;
+      alert(message);
+    }
+    setOpenMenuId(null);
+  };
+
   const handleRemoveMember = async (member: TeamMember) => {
     if (!confirm(`Tem certeza que deseja remover ${member.name} da equipe?`)) return;
 
     try {
       await teamService.removeMember(companyId, member.id);
       setMembers(prev => prev.filter(m => m.id !== member.id));
-    } catch (err: any) {
-      alert(err.message || 'Erro ao remover membro');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao remover membro';
+      alert(message);
     }
     setOpenMenuId(null);
   };
@@ -311,7 +328,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ embedded = false }) => {
                       Membro
                     </th>
                     <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Role
+                      Função
                     </th>
                     <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
@@ -384,7 +401,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ embedded = false }) => {
                                   className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                                 >
                                   <Edit3 className="w-4 h-4" />
-                                  Editar Role
+                                  Editar Função
                                 </button>
                                 <PermissionGate permission="TEAM_MANAGE_PERMISSIONS">
                                   <button
@@ -396,13 +413,35 @@ const TeamPage: React.FC<TeamPageProps> = ({ embedded = false }) => {
                                   </button>
                                 </PermissionGate>
                                 {member.userId !== user?.id && (
-                                  <button
-                                    onClick={() => handleRemoveMember(member)}
-                                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                    Remover
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={() => handleToggleActive(member)}
+                                      className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${
+                                        member.isActive
+                                          ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                                          : 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10'
+                                      }`}
+                                    >
+                                      {member.isActive ? (
+                                        <>
+                                          <UserX className="w-4 h-4" />
+                                          Desativar
+                                        </>
+                                      ) : (
+                                        <>
+                                          <UserCheck className="w-4 h-4" />
+                                          Reativar
+                                        </>
+                                      )}
+                                    </button>
+                                    <button
+                                      onClick={() => handleRemoveMember(member)}
+                                      className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      Remover
+                                    </button>
+                                  </>
                                 )}
                               </div>
                             )}
@@ -463,7 +502,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ embedded = false }) => {
                       Email
                     </th>
                     <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Role
+                      Função
                     </th>
                     <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Convidado por

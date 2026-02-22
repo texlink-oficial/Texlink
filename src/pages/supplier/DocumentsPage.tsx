@@ -253,18 +253,19 @@ const DocumentsPage: React.FC = () => {
                                                 <h3 className="text-gray-900 dark:text-white font-medium truncate">
                                                     {SUPPLIER_DOCUMENT_TYPE_LABELS[item.type]}
                                                 </h3>
-                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm">
-                                                    <span className={`${statusConfig.color}`}>
+                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm">
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.color}`}>
+                                                        <StatusIcon className="w-3 h-3" />
                                                         {statusConfig.label}
                                                     </span>
                                                     {item.isMonthly && (
-                                                        <span className="text-gray-400 dark:text-gray-500">Mensal</span>
+                                                        <span className="text-gray-400 dark:text-gray-500 text-xs">Mensal</span>
                                                     )}
-                                                    {item.requiresExpiry && (
-                                                        <span className="text-gray-400 dark:text-gray-500">Requer validade</span>
+                                                    {item.requiresExpiry && !item.expiresAt && (
+                                                        <span className="text-gray-400 dark:text-gray-500 text-xs">Requer validade</span>
                                                     )}
                                                     {item.expiresAt && (
-                                                        <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                                        <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1 text-xs">
                                                             <Calendar className="w-3 h-3" />
                                                             Validade: {formatDate(item.expiresAt)}
                                                         </span>

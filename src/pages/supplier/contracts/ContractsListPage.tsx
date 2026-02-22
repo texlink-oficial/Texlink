@@ -212,16 +212,48 @@ export const ContractsListPage: React.FC = () => {
           </Button>
         </div>
       ) : filteredContracts.length === 0 ? (
-        <div className="text-center py-12">
-          <FileSignature className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            Nenhum contrato encontrado
-          </h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
+        <div className="text-center py-16">
+          <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
+            <FileSignature className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
             {activeTab === 'all'
-              ? 'Você ainda não possui contratos registrados'
-              : 'Não há contratos nesta categoria'}
-          </p>
+              ? 'Nenhum contrato registrado'
+              : 'Nenhum contrato nesta categoria'}
+          </h3>
+          {activeTab === 'all' ? (
+            <div className="max-w-md mx-auto space-y-3">
+              <p className="text-gray-500 dark:text-gray-400">
+                Os contratos são gerados quando você aceita um pedido de uma marca parceira.
+              </p>
+              <p className="text-gray-500 dark:text-gray-400">
+                Contratos serão enviados pelas marcas e aparecerão aqui para visualização e acompanhamento.
+              </p>
+              <div className="mt-6 p-4 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-xl text-left">
+                <p className="text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
+                  Como funciona?
+                </p>
+                <ul className="text-sm text-brand-600 dark:text-brand-400 space-y-1.5">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-400 dark:bg-brand-500 flex-shrink-0" />
+                    Uma marca parceira envia um pedido para sua facção
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-400 dark:bg-brand-500 flex-shrink-0" />
+                    Ao aceitar o pedido, o contrato é gerado automaticamente
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-400 dark:bg-brand-500 flex-shrink-0" />
+                    O contrato aparece aqui para revisão e assinatura
+                  </li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">
+              Não há contratos com este status no momento.
+            </p>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

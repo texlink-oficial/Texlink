@@ -370,6 +370,47 @@ export class TeamService {
   }
 
   /**
+   * Ativa/desativa um membro da equipe
+   */
+  async toggleMemberActive(
+    companyId: string,
+    memberId: string,
+    currentUserId: string,
+  ) {
+    // Verificar permissão de modificação
+    const canModify = await this.permissionsService.canModifyMember(
+      currentUserId,
+      memberId,
+      companyId,
+    );
+    if (!canModify.allowed) {
+      throw new ForbiddenException(canModify.reason);
+    }
+
+    const member = await this.prisma.companyUser.findFirst({
+      where: { id: memberId, companyId },
+      include: { user: true },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Membro não encontrado');
+    }
+
+    // Não permitir auto-desativação
+    if (member.userId === currentUserId) {
+      throw new BadRequestException('Você não pode desativar a si mesmo');
+    }
+
+    // Toggle isActive no User
+    const updatedUser = await this.prisma.user.update({
+      where: { id: member.userId },
+      data: { isActive: !member.user.isActive },
+    });
+
+    return { isActive: updatedUser.isActive };
+  }
+
+  /**
    * Remove um membro da empresa
    */
   async removeMember(

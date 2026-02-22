@@ -17,11 +17,14 @@ import {
     Wifi,
 } from 'lucide-react';
 
+const NEGOTIATION_STATUSES = ['LANCADO_PELA_MARCA', 'EM_NEGOCIACAO'];
+
 interface ChatPanelProps {
     orderId: string;
     orderDisplayId?: string;
     partnerName: string;
     partnerImage?: string;
+    orderStatus?: string;
     currentOrder?: {
         pricePerUnit: number;
         quantity: number;
@@ -36,10 +39,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     orderDisplayId,
     partnerName,
     partnerImage,
+    orderStatus,
     currentOrder,
     onProposalAccepted,
     className = '',
 }) => {
+    const canNegotiate = !orderStatus || NEGOTIATION_STATUSES.includes(orderStatus);
     const {
         messages,
         isConnected,
@@ -214,11 +219,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 px-6">
                         <Coins className="h-10 w-10 text-amber-400 mb-3" />
                         <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nenhuma mensagem ainda</p>
-                        {currentOrder && (
-                            <p className="text-xs mt-1 text-center leading-relaxed">
-                                Use o botão <span className="font-semibold text-amber-600 dark:text-amber-400">"Enviar Proposta"</span> abaixo para negociar preço, quantidade e prazo.
-                            </p>
-                        )}
+                        <p className="text-xs mt-1 text-center leading-relaxed">
+                            {currentOrder && canNegotiate
+                                ? <>Use o botão <span className="font-semibold text-amber-600 dark:text-amber-400">"Enviar Proposta"</span> abaixo para negociar preço, quantidade e prazo.</>
+                                : 'Envie uma mensagem para a marca'}
+                        </p>
                     </div>
                 ) : (
                     <>
@@ -492,7 +497,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             )}
 
             {/* Proposal CTA */}
-            {currentOrder && !showProposalForm && (
+            {currentOrder && canNegotiate && !showProposalForm && (
                 <div className="px-3 pt-2 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
                     <button
                         onClick={() => setShowProposalForm(true)}
