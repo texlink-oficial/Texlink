@@ -3,6 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Permission } from '@prisma/client';
@@ -11,12 +12,14 @@ import {
   PERMISSIONS_ALL_KEY,
 } from '../../common/decorators/permissions.decorator';
 import { PermissionsService } from './permissions.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private permissionsService: PermissionsService,
+    private prisma: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -48,6 +51,32 @@ export class PermissionsGuard implements CanActivate {
 
     if (!companyId) {
       throw new ForbiddenException('Company ID não fornecido');
+    }
+
+    // Verifica se o usuário está ativo nesta empresa (tenant-scoped)
+    // ADMIN users bypass this check as they may not have CompanyUser records
+    if (user.role !== 'ADMIN') {
+      const companyUser = await this.prisma.companyUser.findUnique({
+        where: {
+          userId_companyId: {
+            userId: user.id,
+            companyId,
+          },
+        },
+        select: { isActive: true },
+      });
+
+      if (!companyUser) {
+        throw new ForbiddenException(
+          'Você não tem acesso a esta empresa.',
+        );
+      }
+
+      if (!companyUser.isActive) {
+        throw new UnauthorizedException(
+          'Sua conta está desativada nesta empresa. Entre em contato com o administrador.',
+        );
+      }
     }
 
     // Verifica se o usuário tem as permissões necessárias

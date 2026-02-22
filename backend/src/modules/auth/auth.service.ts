@@ -225,11 +225,19 @@ export class AuthService {
     const accessToken = this.generateToken(user.id, user.email, user.role);
     const refreshToken = this.generateRefreshToken(user.id, user.email, user.role);
 
-    // Get company matching user role; fall back to first association
+    // Get active company matching user role; fall back to first active association
     const companyUser =
       user.companyUsers?.find(
-        (cu) => cu.company?.type === user.role,
-      ) || user.companyUsers?.[0];
+        (cu) => cu.company?.type === user.role && cu.isActive,
+      ) || user.companyUsers?.find((cu) => cu.isActive);
+
+    // If all company associations are deactivated, deny login for non-ADMIN users
+    if (!companyUser && user.role !== 'ADMIN' && user.companyUsers?.length > 0) {
+      throw new UnauthorizedException(
+        'Sua conta está desativada nesta empresa. Entre em contato com o administrador.',
+      );
+    }
+
     const companyId = companyUser?.company?.id;
     const companyName = companyUser?.company?.tradeName || companyUser?.company?.legalName;
     const companyType = companyUser?.company?.type;
@@ -285,11 +293,11 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado');
     }
 
-    // Extract primary company matching user role; fall back to first association
+    // Extract primary active company matching user role; fall back to first active
     const companyUser =
       user.companyUsers?.find(
-        (cu) => cu.company?.type === user.role,
-      ) || user.companyUsers?.[0];
+        (cu) => cu.company?.type === user.role && cu.isActive,
+      ) || user.companyUsers?.find((cu) => cu.isActive);
     const companyId = companyUser?.company?.id;
     const companyName = companyUser?.company?.tradeName || companyUser?.company?.legalName;
     const companyType = companyUser?.company?.type;

@@ -63,11 +63,24 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Usuário não encontrado ou inativo');
     }
 
-    // Extract companyId matching user role; fall back to first association
+    // Extract companyId matching user role; fall back to first active association
     const matchingCompanyUser =
       user.companyUsers?.find(
-        (cu) => cu.company?.type === user.role,
-      ) || user.companyUsers?.[0];
+        (cu) => cu.company?.type === user.role && cu.isActive,
+      ) || user.companyUsers?.find((cu) => cu.isActive);
+
+    // If user has company associations but none are active, deny access
+    // (ADMIN users without companyUsers are allowed through)
+    if (
+      user.role !== 'ADMIN' &&
+      user.companyUsers?.length > 0 &&
+      !matchingCompanyUser
+    ) {
+      throw new UnauthorizedException(
+        'Sua conta está desativada nesta empresa. Entre em contato com o administrador.',
+      );
+    }
+
     const companyId = matchingCompanyUser?.companyId || null;
     const company = matchingCompanyUser?.company || null;
     const companyType = company?.type;
