@@ -68,7 +68,7 @@ Create a `.env` file in the backend directory:
 
 ```env
 # Database
-DATABASE_URL="postgresql://texlink:texlink123@localhost:5432/texlink"
+DATABASE_URL="postgresql://texlink:YOUR_POSTGRES_PASSWORD@localhost:5432/texlink"
 
 # JWT
 JWT_SECRET="your-secret-key-change-in-production"
