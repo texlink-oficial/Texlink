@@ -16,8 +16,7 @@ import {
     WifiOff,
     Wifi,
 } from 'lucide-react';
-
-const NEGOTIATION_STATUSES = ['LANCADO_PELA_MARCA', 'EM_NEGOCIACAO'];
+import { NEGOTIATION_STATUSES } from '../../constants/orderStatuses';
 
 interface ChatPanelProps {
     orderId: string;

@@ -59,7 +59,7 @@ const PartnershipRequestDetailPage: React.FC = () => {
             setIsRespondModalOpen(false);
             loadRequest();
         } catch (err) {
-            alert('Erro ao responder solicitacao');
+            alert('Erro ao responder solicitação');
         } finally {
             setIsSubmitting(false);
         }
@@ -98,15 +98,15 @@ const PartnershipRequestDetailPage: React.FC = () => {
                     className="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-6"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Voltar para Solicitacoes
+                    Voltar para Solicitações
                 </Link>
                 <div className="text-center py-16">
                     <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
                     <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        Solicitacao nao encontrada
+                        Solicitação não encontrada
                     </h2>
                     <p className="text-gray-500 dark:text-gray-400">
-                        {error || 'Esta solicitacao de parceria nao existe ou foi removida.'}
+                        {error || 'Esta solicitação de parceria não existe ou foi removida.'}
                     </p>
                 </div>
             </div>
@@ -126,7 +126,7 @@ const PartnershipRequestDetailPage: React.FC = () => {
                 className="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-6"
             >
                 <ArrowLeft className="w-4 h-4" />
-                Voltar para Solicitacoes
+                Voltar para Solicitações
             </Link>
 
             {/* Header */}
@@ -264,7 +264,7 @@ const PartnershipRequestDetailPage: React.FC = () => {
                                 variant="primary"
                                 onClick={() => setIsRespondModalOpen(true)}
                             >
-                                Responder Solicitacao
+                                Responder Solicitação
                             </Button>
                         </div>
                     )}

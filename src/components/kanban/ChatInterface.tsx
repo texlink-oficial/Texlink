@@ -18,6 +18,7 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react';
+import { NEGOTIATION_STATUSES } from '../../constants/orderStatuses';
 
 interface ChatInterfaceProps {
   order: Order;
@@ -26,7 +27,6 @@ interface ChatInterfaceProps {
 }
 
 const MAX_MESSAGE_LENGTH = 5000;
-const NEGOTIATION_STATUSES = ['LANCADO_PELA_MARCA', 'EM_NEGOCIACAO'];
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ order, onClose, onOrderUpdated }) => {
   const canNegotiate = NEGOTIATION_STATUSES.includes(order.status);

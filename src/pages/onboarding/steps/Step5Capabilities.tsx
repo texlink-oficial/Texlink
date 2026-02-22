@@ -89,8 +89,14 @@ export function Step5Capabilities({ token, onComplete }: Step5CapabilitiesProps)
       });
 
       onComplete();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Erro ao salvar capacidades produtivas');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Erro ao salvar capacidades produtivas';
+      const axiosMessage =
+        typeof err === 'object' && err !== null && 'response' in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      setError(axiosMessage || message);
     } finally {
       setIsSubmitting(false);
     }
