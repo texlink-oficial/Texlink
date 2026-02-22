@@ -1121,6 +1121,12 @@ const AddSupplierPage: React.FC = () => {
             <BulkImportSuppliersModal
                 isOpen={showBulkImportModal}
                 onClose={() => setShowBulkImportModal(false)}
+                onComplete={(results) => {
+                    if (results.success > 0) {
+                        setShowSuccessToast(true);
+                        setTimeout(() => setShowSuccessToast(false), 4000);
+                    }
+                }}
             />
         </div>
     );

@@ -80,13 +80,20 @@ const isValidPhone = (phone: string): boolean => {
     return cleaned.length >= 10 && cleaned.length <= 11;
 };
 
-const validateRow = (row: ParsedRow, index: number): ValidatedRow => {
+const validateRow = (row: ParsedRow, index: number, seenCnpjs: Set<string>): ValidatedRow => {
     const errors: string[] = [];
 
     if (!row.cnpj?.trim()) {
         errors.push('CNPJ obrigatório');
     } else if (!isValidCnpj(row.cnpj)) {
         errors.push('CNPJ inválido');
+    } else {
+        const cleaned = cleanCnpj(row.cnpj);
+        if (seenCnpjs.has(cleaned)) {
+            errors.push('CNPJ duplicado na planilha');
+        } else {
+            seenCnpjs.add(cleaned);
+        }
     }
 
     if (!row.contato_nome?.trim()) {
@@ -210,8 +217,9 @@ const BulkImportSuppliersModal: React.FC<BulkImportSuppliersModalProps> = ({
                     return;
                 }
 
+                const seenCnpjs = new Set<string>();
                 const validated = results.data.map((row, i) =>
-                    validateRow(row, i + 1)
+                    validateRow(row, i + 1, seenCnpjs)
                 );
                 setRows(validated);
                 setStep('preview');
