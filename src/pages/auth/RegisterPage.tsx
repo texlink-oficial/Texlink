@@ -544,11 +544,11 @@ const RegisterPage: React.FC = () => {
                                 </Link>{' '}
                                 do aplicativo e estou de acordo com a{' '}
                                 <Link to="/politica-de-privacidade" target="_blank" className="text-brand-400 lg:text-brand-600 lg:dark:text-brand-400 hover:underline">
-                                    politica de privacidade
+                                    política de privacidade
                                 </Link>{' '}
                                 e a{' '}
                                 <Link to="/politica-de-cookies" target="_blank" className="text-brand-400 lg:text-brand-600 lg:dark:text-brand-400 hover:underline">
-                                    politica de cookies
+                                    política de cookies
                                 </Link>.
                             </label>
                         </div>

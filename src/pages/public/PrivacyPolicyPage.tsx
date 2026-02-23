@@ -24,26 +24,26 @@ const PrivacyPolicyPage: React.FC = () => {
             {/* Content */}
             <main className="max-w-4xl mx-auto px-6 py-8">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                    Politica de Privacidade
+                    Política de Privacidade
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
-                    Versao 1.0 — Fevereiro de 2026
+                    Versão 1.0 — Fevereiro de 2026
                 </p>
 
-                {/* 1. Introducao */}
+                {/* 1. Introdução */}
                 <section className="mb-8">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                        1. Introducao
+                        1. Introdução
                     </h2>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
-                        A Texlink Tecnologia Ltda. ("Texlink", "nos") opera a plataforma B2B que conecta marcas
-                        de vestuario a faccoes de costura. Esta Politica de Privacidade descreve como coletamos,
-                        usamos, armazenamos e compartilhamos seus dados pessoais quando voce utiliza nossos
-                        servicos, em conformidade com a Lei Geral de Protecao de Dados (LGPD — Lei n. 13.709/2018).
+                        A Texlink Tecnologia Ltda. ("Texlink", "nós") opera a plataforma B2B que conecta marcas
+                        de vestuário a facções de costura. Esta Política de Privacidade descreve como coletamos,
+                        usamos, armazenamos e compartilhamos seus dados pessoais quando você utiliza nossos
+                        serviços, em conformidade com a Lei Geral de Proteção de Dados (LGPD — Lei n. 13.709/2018).
                     </p>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Ao acessar ou utilizar a plataforma Texlink, voce concorda com as praticas descritas nesta
-                        Politica. Caso nao concorde, por favor nao utilize nossos servicos.
+                        Ao acessar ou utilizar a plataforma Texlink, você concorda com as práticas descritas nesta
+                        Política. Caso não concorde, por favor não utilize nossos serviços.
                     </p>
                 </section>
 
@@ -53,7 +53,7 @@ const PrivacyPolicyPage: React.FC = () => {
                         2. Dados que Coletamos
                     </h2>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-                        Coletamos diferentes categorias de dados para fornecer e melhorar nossos servicos:
+                        Coletamos diferentes categorias de dados para fornecer e melhorar nossos serviços:
                     </p>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm border-collapse border border-gray-200 dark:border-gray-700 mb-4">
@@ -73,33 +73,33 @@ const PrivacyPolicyPage: React.FC = () => {
                             <tbody className="text-gray-700 dark:text-gray-300">
                                 <tr>
                                     <td className="border border-gray-200 dark:border-gray-700 px-4 py-3 font-medium">Cadastro</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Nome, e-mail, telefone, CNPJ, razao social, nome fantasia, cidade, UF</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Criacao e gestao da conta; verificacao de identidade empresarial</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Nome, e-mail, telefone, CNPJ, razão social, nome fantasia, cidade, UF</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Criação e gestão da conta; verificação de identidade empresarial</td>
                                 </tr>
                                 <tr className="bg-gray-50 dark:bg-gray-800/50">
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3 font-medium">Autenticacao</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3 font-medium">Autenticação</td>
                                     <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Senha (hash bcrypt), tokens JWT, tokens de reset de senha</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Seguranca de acesso a conta</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Segurança de acesso à conta</td>
                                 </tr>
                                 <tr>
                                     <td className="border border-gray-200 dark:border-gray-700 px-4 py-3 font-medium">Perfil da empresa</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Capacidade produtiva, tipos de produto, maquinario, certificacoes, logo</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Matchmaking entre marcas e faccoes; exibicao de perfil</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Capacidade produtiva, tipos de produto, maquinário, certificações, logo</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Matchmaking entre marcas e facções; exibição de perfil</td>
                                 </tr>
                                 <tr className="bg-gray-50 dark:bg-gray-800/50">
                                     <td className="border border-gray-200 dark:border-gray-700 px-4 py-3 font-medium">Transacional</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Pedidos, contratos, valores, prazos, avaliacoes, historico de pagamentos</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Execucao de contratos; gestao financeira; relatorios</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Pedidos, contratos, valores, prazos, avaliações, histórico de pagamentos</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Execução de contratos; gestão financeira; relatórios</td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3 font-medium">Comunicacao</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Mensagens de chat, anexos, notificacoes</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Comunicacao entre parceiros; suporte ao cliente</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3 font-medium">Comunicação</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Mensagens de chat, anexos, notificações</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Comunicação entre parceiros; suporte ao cliente</td>
                                 </tr>
                                 <tr className="bg-gray-50 dark:bg-gray-800/50">
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3 font-medium">Tecnico/Uso</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Endereco IP, user-agent, paginas visitadas, cliques, timestamps</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Seguranca; melhoria da plataforma; analytics</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3 font-medium">Técnico/Uso</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Endereço IP, user-agent, páginas visitadas, cliques, timestamps</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Segurança; melhoria da plataforma; analytics</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -112,13 +112,13 @@ const PrivacyPolicyPage: React.FC = () => {
                         3. Base Legal para o Tratamento
                     </h2>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
-                        Tratamos seus dados com base nas seguintes hipoteses legais previstas na LGPD:
+                        Tratamos seus dados com base nas seguintes hipóteses legais previstas na LGPD:
                     </p>
                     <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                        <li><strong>Execucao de contrato</strong> (Art. 7, V) — para fornecer os servicos contratados na plataforma.</li>
-                        <li><strong>Consentimento</strong> (Art. 7, I) — para envio de comunicacoes de marketing e uso de cookies nao essenciais.</li>
-                        <li><strong>Interesse legitimo</strong> (Art. 7, IX) — para melhoria dos servicos, prevencao de fraudes e seguranca.</li>
-                        <li><strong>Cumprimento de obrigacao legal</strong> (Art. 7, II) — para atendimento de exigencias fiscais e regulatorias.</li>
+                        <li><strong>Execução de contrato</strong> (Art. 7, V) — para fornecer os serviços contratados na plataforma.</li>
+                        <li><strong>Consentimento</strong> (Art. 7, I) — para envio de comunicações de marketing e uso de cookies não essenciais.</li>
+                        <li><strong>Interesse legítimo</strong> (Art. 7, IX) — para melhoria dos serviços, prevenção de fraudes e segurança.</li>
+                        <li><strong>Cumprimento de obrigação legal</strong> (Art. 7, II) — para atendimento de exigências fiscais e regulatórias.</li>
                     </ul>
                 </section>
 
@@ -132,13 +132,13 @@ const PrivacyPolicyPage: React.FC = () => {
                     </p>
                     <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
                         <li>Criar e manter sua conta na plataforma;</li>
-                        <li>Conectar marcas a faccoes com base em perfil e capacidade;</li>
+                        <li>Conectar marcas a facções com base em perfil e capacidade;</li>
                         <li>Processar pedidos, contratos e pagamentos;</li>
-                        <li>Enviar notificacoes sobre pedidos, mensagens e atualizacoes;</li>
-                        <li>Gerar relatorios e dashboards de desempenho;</li>
-                        <li>Melhorar a experiencia do usuario e a funcionalidade da plataforma;</li>
-                        <li>Prevenir fraudes e garantir a seguranca do sistema;</li>
-                        <li>Cumprir obrigacoes legais e regulatorias.</li>
+                        <li>Enviar notificações sobre pedidos, mensagens e atualizações;</li>
+                        <li>Gerar relatórios e dashboards de desempenho;</li>
+                        <li>Melhorar a experiência do usuário e a funcionalidade da plataforma;</li>
+                        <li>Prevenir fraudes e garantir a segurança do sistema;</li>
+                        <li>Cumprir obrigações legais e regulatórias.</li>
                     </ul>
                 </section>
 
@@ -151,42 +151,42 @@ const PrivacyPolicyPage: React.FC = () => {
                         Podemos compartilhar seus dados com:
                     </p>
                     <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                        <li><strong>Parceiros comerciais</strong> — marcas e faccoes conectadas a voce na plataforma, limitado aos dados necessarios para a relacao comercial;</li>
-                        <li><strong>Prestadores de servico</strong> — provedores de infraestrutura (AWS), processamento de pagamentos, envio de e-mails, e analytics;</li>
-                        <li><strong>Autoridades publicas</strong> — quando exigido por lei, regulamento ou ordem judicial;</li>
-                        <li><strong>Auditores e consultores</strong> — para fins de auditoria, consultoria juridica ou compliance.</li>
+                        <li><strong>Parceiros comerciais</strong> — marcas e facções conectadas a você na plataforma, limitado aos dados necessários para a relação comercial;</li>
+                        <li><strong>Prestadores de serviço</strong> — provedores de infraestrutura (AWS), processamento de pagamentos, envio de e-mails, e analytics;</li>
+                        <li><strong>Autoridades públicas</strong> — quando exigido por lei, regulamento ou ordem judicial;</li>
+                        <li><strong>Auditores e consultores</strong> — para fins de auditoria, consultoria jurídica ou compliance.</li>
                     </ul>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">
-                        Nao vendemos seus dados pessoais a terceiros.
+                        Não vendemos seus dados pessoais a terceiros.
                     </p>
                 </section>
 
-                {/* 6. Armazenamento e Seguranca */}
+                {/* 6. Armazenamento e Segurança */}
                 <section className="mb-8">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                        6. Armazenamento e Seguranca
+                        6. Armazenamento e Segurança
                     </h2>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
-                        Seus dados sao armazenados em servidores seguros na infraestrutura da Amazon Web Services (AWS).
-                        Adotamos medidas tecnicas e organizacionais para proteger seus dados, incluindo:
+                        Seus dados são armazenados em servidores seguros na infraestrutura da Amazon Web Services (AWS).
+                        Adotamos medidas técnicas e organizacionais para proteger seus dados, incluindo:
                     </p>
                     <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
                         <li>Criptografia de senhas com bcrypt;</li>
-                        <li>Comunicacao via HTTPS/TLS;</li>
-                        <li>Autenticacao via tokens JWT com expiracao;</li>
+                        <li>Comunicação via HTTPS/TLS;</li>
+                        <li>Autenticação via tokens JWT com expiração;</li>
                         <li>Controle de acesso multi-tenant por empresa (companyId);</li>
                         <li>URLs pré-assinadas para acesso a arquivos no S3;</li>
                         <li>Monitoramento e logs de acesso.</li>
                     </ul>
                 </section>
 
-                {/* 7. Retencao de Dados */}
+                {/* 7. Retenção de Dados */}
                 <section className="mb-8">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                        7. Retencao de Dados
+                        7. Retenção de Dados
                     </h2>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-                        Retemos seus dados pelo tempo necessario para as finalidades descritas nesta Politica:
+                        Retemos seus dados pelo tempo necessário para as finalidades descritas nesta Política:
                     </p>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm border-collapse border border-gray-200 dark:border-gray-700 mb-4">
@@ -196,22 +196,22 @@ const PrivacyPolicyPage: React.FC = () => {
                                         Tipo de Dado
                                     </th>
                                     <th className="border border-gray-200 dark:border-gray-700 px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
-                                        Periodo de Retencao
+                                        Período de Retenção
                                     </th>
                                 </tr>
                             </thead>
                             <tbody className="text-gray-700 dark:text-gray-300">
                                 <tr>
                                     <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Dados de conta</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Enquanto a conta estiver ativa + 6 meses apos exclusao</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Enquanto a conta estiver ativa + 6 meses após exclusão</td>
                                 </tr>
                                 <tr className="bg-gray-50 dark:bg-gray-800/50">
                                     <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Dados transacionais</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">5 anos (exigencia fiscal/contabil)</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">5 anos (exigência fiscal/contábil)</td>
                                 </tr>
                                 <tr>
                                     <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Mensagens de chat</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">2 anos apos o encerramento da relacao comercial</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">2 anos após o encerramento da relação comercial</td>
                                 </tr>
                                 <tr className="bg-gray-50 dark:bg-gray-800/50">
                                     <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Logs de acesso</td>
@@ -232,32 +232,32 @@ const PrivacyPolicyPage: React.FC = () => {
                         8. Seus Direitos (LGPD)
                     </h2>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
-                        De acordo com a LGPD, voce tem os seguintes direitos:
+                        De acordo com a LGPD, você tem os seguintes direitos:
                     </p>
                     <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                        <li><strong>Confirmacao e acesso</strong> — saber se tratamos seus dados e obter copia;</li>
-                        <li><strong>Correcao</strong> — solicitar a correcao de dados incompletos ou desatualizados;</li>
-                        <li><strong>Anonimizacao, bloqueio ou eliminacao</strong> — de dados desnecessarios ou excessivos;</li>
+                        <li><strong>Confirmação e acesso</strong> — saber se tratamos seus dados e obter cópia;</li>
+                        <li><strong>Correção</strong> — solicitar a correção de dados incompletos ou desatualizados;</li>
+                        <li><strong>Anonimização, bloqueio ou eliminação</strong> — de dados desnecessários ou excessivos;</li>
                         <li><strong>Portabilidade</strong> — obter seus dados em formato estruturado;</li>
-                        <li><strong>Eliminacao</strong> — solicitar a exclusao de dados tratados com base em consentimento;</li>
-                        <li><strong>Revogacao do consentimento</strong> — a qualquer tempo, sem afetar o tratamento anterior;</li>
-                        <li><strong>Oposicao</strong> — ao tratamento realizado com base em interesse legitimo;</li>
-                        <li><strong>Informacao sobre compartilhamento</strong> — saber com quem seus dados foram compartilhados.</li>
+                        <li><strong>Eliminação</strong> — solicitar a exclusão de dados tratados com base em consentimento;</li>
+                        <li><strong>Revogação do consentimento</strong> — a qualquer tempo, sem afetar o tratamento anterior;</li>
+                        <li><strong>Oposição</strong> — ao tratamento realizado com base em interesse legítimo;</li>
+                        <li><strong>Informação sobre compartilhamento</strong> — saber com quem seus dados foram compartilhados.</li>
                     </ul>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">
                         Para exercer qualquer desses direitos, entre em contato com nosso Encarregado de Dados (DPO)
-                        atraves dos canais listados na secao 11.
+                        através dos canais listados na seção 11.
                     </p>
                 </section>
 
-                {/* 9. Transferencia Internacional */}
+                {/* 9. Transferência Internacional */}
                 <section className="mb-8">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                        9. Transferencia Internacional de Dados
+                        9. Transferência Internacional de Dados
                     </h2>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-                        Alguns dos nossos prestadores de servico podem processar dados fora do Brasil.
-                        Nestes casos, garantimos que a transferencia e feita com salvaguardas adequadas:
+                        Alguns dos nossos prestadores de serviço podem processar dados fora do Brasil.
+                        Nestes casos, garantimos que a transferência é feita com salvaguardas adequadas:
                     </p>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm border-collapse border border-gray-200 dark:border-gray-700 mb-4">
@@ -270,7 +270,7 @@ const PrivacyPolicyPage: React.FC = () => {
                                         Finalidade
                                     </th>
                                     <th className="border border-gray-200 dark:border-gray-700 px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
-                                        Localizacao
+                                        Localização
                                     </th>
                                 </tr>
                             </thead>
@@ -278,7 +278,7 @@ const PrivacyPolicyPage: React.FC = () => {
                                 <tr>
                                     <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Amazon Web Services (AWS)</td>
                                     <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Hospedagem, banco de dados, armazenamento S3</td>
-                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">EUA / Sao Paulo</td>
+                                    <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">EUA / São Paulo</td>
                                 </tr>
                                 <tr className="bg-gray-50 dark:bg-gray-800/50">
                                     <td className="border border-gray-200 dark:border-gray-700 px-4 py-3">Google Analytics</td>
@@ -295,16 +295,16 @@ const PrivacyPolicyPage: React.FC = () => {
                     </div>
                 </section>
 
-                {/* 10. Alteracoes nesta Politica */}
+                {/* 10. Alterações nesta Política */}
                 <section className="mb-8">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                        10. Alteracoes nesta Politica
+                        10. Alterações nesta Política
                     </h2>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Podemos atualizar esta Politica de Privacidade periodicamente. Quando fizermos alteracoes
-                        significativas, notificaremos voce por e-mail ou atraves de aviso na plataforma. A data da
-                        ultima atualizacao sera sempre indicada no topo deste documento. Recomendamos que voce
-                        revise esta Politica regularmente.
+                        Podemos atualizar esta Política de Privacidade periodicamente. Quando fizermos alterações
+                        significativas, notificaremos você por e-mail ou através de aviso na plataforma. A data da
+                        última atualização será sempre indicada no topo deste documento. Recomendamos que você
+                        revise esta Política regularmente.
                     </p>
                 </section>
 
@@ -314,7 +314,7 @@ const PrivacyPolicyPage: React.FC = () => {
                         11. Contato e Encarregado de Dados (DPO)
                     </h2>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-                        Para duvidas, solicitacoes ou exercicio de direitos relacionados a esta Politica,
+                        Para dúvidas, solicitações ou exercício de direitos relacionados a esta Política,
                         entre em contato:
                     </p>
                     <div className="overflow-x-auto">
@@ -345,33 +345,33 @@ const PrivacyPolicyPage: React.FC = () => {
                     </div>
                 </section>
 
-                {/* 12. Links de Politicas de Terceiros */}
+                {/* 12. Links de Políticas de Terceiros */}
                 <section className="mb-8">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                        12. Politicas de Privacidade de Terceiros
+                        12. Políticas de Privacidade de Terceiros
                     </h2>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
-                        Para mais informacoes sobre como nossos parceiros de tecnologia tratam dados pessoais:
+                        Para mais informações sobre como nossos parceiros de tecnologia tratam dados pessoais:
                     </p>
                     <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
                         <li>
                             <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-brand-600 dark:text-brand-400 hover:underline">
-                                Google — Politica de Privacidade
+                                Google — Política de Privacidade
                             </a>
                         </li>
                         <li>
                             <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener noreferrer" className="text-brand-600 dark:text-brand-400 hover:underline">
-                                Meta (Facebook/Instagram) — Politica de Privacidade
+                                Meta (Facebook/Instagram) — Política de Privacidade
                             </a>
                         </li>
                         <li>
                             <a href="https://www.tiktok.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-brand-600 dark:text-brand-400 hover:underline">
-                                TikTok — Politica de Privacidade
+                                TikTok — Política de Privacidade
                             </a>
                         </li>
                         <li>
                             <a href="https://www.linkedin.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-brand-600 dark:text-brand-400 hover:underline">
-                                LinkedIn — Politica de Privacidade
+                                LinkedIn — Política de Privacidade
                             </a>
                         </li>
                     </ul>
@@ -383,7 +383,7 @@ const PrivacyPolicyPage: React.FC = () => {
                         <p>Texlink Tecnologia Ltda. — Todos os direitos reservados.</p>
                         <div className="flex gap-4">
                             <Link to="/politica-de-cookies" className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
-                                Politica de Cookies
+                                Política de Cookies
                             </Link>
                         </div>
                     </div>
