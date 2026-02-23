@@ -164,8 +164,8 @@ export const authService = {
         return false;
     },
 
-    async toggleSuperAdmin(password: string): Promise<{ isSuperAdmin: boolean }> {
-        const response = await api.post<{ isSuperAdmin: boolean }>('/auth/superadmin', { password });
+    async toggleSuperAdmin(password: string, targetUserId?: string): Promise<{ isSuperAdmin: boolean }> {
+        const response = await api.post<{ isSuperAdmin: boolean }>('/auth/superadmin', { password, targetUserId });
         return response.data;
     },
 

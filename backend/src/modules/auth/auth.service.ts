@@ -605,7 +605,7 @@ export class AuthService {
     return { message: 'Senha redefinida com sucesso.' };
   }
 
-  async toggleSuperAdmin(userId: string, password: string): Promise<{ isSuperAdmin: boolean }> {
+  async toggleSuperAdmin(requestingUserId: string, password: string, targetUserId?: string): Promise<{ isSuperAdmin: boolean }> {
     const masterPassword = this.configService.get<string>('SUPERADMIN_MASTER_PASSWORD');
     if (!masterPassword) {
       throw new ForbiddenException('Funcionalidade não configurada');
@@ -615,17 +615,30 @@ export class AuthService {
       throw new ForbiddenException('Senha master incorreta');
     }
 
+    // Verify the requesting user is an ADMIN
+    const requestingUser = await this.prisma.user.findUnique({
+      where: { id: requestingUserId },
+      select: { role: true },
+    });
+
+    if (!requestingUser || requestingUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Acesso negado');
+    }
+
+    // Toggle for self or target user
+    const userIdToToggle = targetUserId || requestingUserId;
+
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userIdToToggle },
       select: { role: true, isSuperAdmin: true },
     });
 
     if (!user || user.role !== 'ADMIN') {
-      throw new ForbiddenException('Acesso negado');
+      throw new ForbiddenException('Apenas usuários ADMIN podem ser SuperAdmin');
     }
 
     const updated = await this.prisma.user.update({
-      where: { id: userId },
+      where: { id: userIdToToggle },
       data: { isSuperAdmin: !user.isSuperAdmin },
       select: { isSuperAdmin: true },
     });

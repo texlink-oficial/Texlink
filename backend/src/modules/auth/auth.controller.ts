@@ -122,7 +122,7 @@ export class AuthController {
     @CurrentUser('id') userId: string,
     @Body() dto: ToggleSuperAdminDto,
   ) {
-    return this.authService.toggleSuperAdmin(userId, dto.password);
+    return this.authService.toggleSuperAdmin(userId, dto.password, dto.targetUserId);
   }
 
   @Post('logout')

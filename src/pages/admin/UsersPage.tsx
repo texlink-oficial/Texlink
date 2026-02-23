@@ -3,9 +3,10 @@ import {
     Users, Shield, Building2, Factory,
     Search, Plus, MoreVertical, Loader2,
     ChevronRight, Filter, RefreshCw,
-    Edit3, KeyRound, UserX, UserCheck
+    Edit3, KeyRound, UserX, UserCheck, X
 } from 'lucide-react';
 import { adminService, AdminUser } from '../../services/admin.service';
+import { authService } from '../../services/auth.service';
 import { useToast } from '../../contexts/ToastContext';
 import CreateUserModal from '../../components/admin/CreateUserModal';
 import EditUserModal from '../../components/admin/EditUserModal';
@@ -22,6 +23,11 @@ const UsersPage: React.FC = () => {
     const [showCreateUser, setShowCreateUser] = useState(false);
     const [showEditUser, setShowEditUser] = useState(false);
     const [showResetPassword, setShowResetPassword] = useState(false);
+    const [showSuperAdminModal, setShowSuperAdminModal] = useState(false);
+    const [superAdminTarget, setSuperAdminTarget] = useState<AdminUser | null>(null);
+    const [masterPassword, setMasterPassword] = useState('');
+    const [superAdminLoading, setSuperAdminLoading] = useState(false);
+    const [superAdminError, setSuperAdminError] = useState('');
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
     const actionBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -66,13 +72,28 @@ const UsersPage: React.FC = () => {
         }
     };
 
-    const handleToggleSuperAdmin = async (user: AdminUser) => {
+    const handleOpenSuperAdminModal = (user: AdminUser) => {
+        setSuperAdminTarget(user);
+        setMasterPassword('');
+        setSuperAdminError('');
+        setShowSuperAdminModal(true);
+    };
+
+    const handleToggleSuperAdmin = async () => {
+        if (!superAdminTarget) return;
+        setSuperAdminLoading(true);
+        setSuperAdminError('');
         try {
-            await adminService.updateUser(user.id, { isSuperAdmin: !user.isSuperAdmin });
-            toast.success('SuperAdmin atualizado', `SuperAdmin ${!user.isSuperAdmin ? 'ativado' : 'desativado'} para ${user.name}`);
+            await authService.toggleSuperAdmin(masterPassword, superAdminTarget.id);
+            toast.success('SuperAdmin atualizado', `SuperAdmin ${!superAdminTarget.isSuperAdmin ? 'ativado' : 'desativado'} para ${superAdminTarget.name}`);
+            setShowSuperAdminModal(false);
+            setSuperAdminTarget(null);
+            setMasterPassword('');
             loadUsers();
-        } catch (error) {
-            toast.error('Erro', 'Não foi possível atualizar o SuperAdmin');
+        } catch (err: any) {
+            setSuperAdminError(err?.response?.data?.message || err?.message || 'Senha incorreta');
+        } finally {
+            setSuperAdminLoading(false);
         }
     };
 
@@ -364,7 +385,7 @@ const UsersPage: React.FC = () => {
                     {activeUser.role === 'ADMIN' && (
                         <button
                             onClick={() => {
-                                handleToggleSuperAdmin(activeUser);
+                                handleOpenSuperAdminModal(activeUser);
                                 setOpenActionId(null);
                             }}
                             className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
@@ -423,6 +444,76 @@ const UsersPage: React.FC = () => {
                     onClose={() => { setShowResetPassword(false); setSelectedUser(null); }}
                     onSuccess={() => { setShowResetPassword(false); setSelectedUser(null); }}
                 />
+            )}
+
+            {/* SuperAdmin Toggle Modal */}
+            {showSuperAdminModal && superAdminTarget && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-white/10">
+                            <div className="flex items-center gap-2.5">
+                                <Shield className="w-5 h-5 text-amber-500" />
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    {superAdminTarget.isSuperAdmin ? 'Remover' : 'Tornar'} SuperAdmin
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setShowSuperAdminModal(false)}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form
+                            onSubmit={(e) => { e.preventDefault(); handleToggleSuperAdmin(); }}
+                            className="p-5 space-y-4"
+                        >
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {superAdminTarget.isSuperAdmin
+                                    ? `Remover SuperAdmin de "${superAdminTarget.name}"?`
+                                    : `Tornar "${superAdminTarget.name}" SuperAdmin?`
+                                }
+                            </p>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                    Senha Master
+                                </label>
+                                <input
+                                    type="password"
+                                    value={masterPassword}
+                                    onChange={(e) => setMasterPassword(e.target.value)}
+                                    placeholder="Digite a senha master..."
+                                    className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-gray-900 dark:text-white placeholder-gray-400"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {superAdminError && (
+                                <p className="text-sm text-red-500">{superAdminError}</p>
+                            )}
+
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSuperAdminModal(false)}
+                                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!masterPassword || superAdminLoading}
+                                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {superAdminLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    Confirmar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     );
