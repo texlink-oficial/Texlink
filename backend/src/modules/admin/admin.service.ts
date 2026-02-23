@@ -480,17 +480,17 @@ export class AdminService {
         FROM "orders"
         WHERE "status" = 'FINALIZADO'
           AND "updatedAt" >= ${startDate}
-        GROUP BY DATE_TRUNC('month', "updatedAt")
+        GROUP BY 1
       ),
       previous_period AS (
         SELECT
-          DATE_TRUNC('month', "updatedAt" + make_interval(days => ${offsetDays})) as month,
+          DATE_TRUNC('month', "updatedAt" + (${offsetDays} * INTERVAL '1 day')) as month,
           COALESCE(SUM("totalValue"), 0)::float as previous_revenue
         FROM "orders"
         WHERE "status" = 'FINALIZADO'
           AND "updatedAt" >= ${previousStartDate}
           AND "updatedAt" < ${startDate}
-        GROUP BY DATE_TRUNC('month', "updatedAt" + make_interval(days => ${offsetDays}))
+        GROUP BY 1
       )
       SELECT
         c.month,
