@@ -8,6 +8,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastContainer } from './components/ui/ToastContainer';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ViewAsBanner } from './components/ViewAsBanner';
 import ErrorBoundary from './components/error/ErrorBoundary';
 
 // Error pages
@@ -137,6 +138,7 @@ const App: React.FC = () => {
                         <NotificationProvider>
                             <PermissionProvider>
                                 <BrowserRouter>
+                                    <ViewAsBanner />
                                     <React.Suspense
                                         fallback={
                                             <div className="min-h-screen bg-brand-950 flex items-center justify-center">
@@ -317,9 +319,19 @@ const App: React.FC = () => {
 };
 
 const DashboardRouter: React.FC = () => {
-    const { user } = useAuth();
+    const { user, viewAs } = useAuth();
 
     if (!user) return <Navigate to="/login" replace />;
+
+    // If admin is in viewAs mode, redirect to the simulated role's dashboard
+    if (viewAs) {
+        switch (viewAs.role) {
+            case 'SUPPLIER':
+                return <Navigate to="/portal/inicio" replace />;
+            case 'BRAND':
+                return <Navigate to="/brand" replace />;
+        }
+    }
 
     switch (user.role) {
         case 'SUPPLIER':

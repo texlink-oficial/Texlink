@@ -10,11 +10,21 @@ const api = axios.create({
     },
 });
 
+// View As state — set by AuthContext when admin is simulating another role
+let _viewAsCompanyId: string | null = null;
+export const setViewAsCompanyId = (companyId: string | null) => {
+    _viewAsCompanyId = companyId;
+};
+
 // SEC-F001: Read access token from in-memory store instead of sessionStorage
 api.interceptors.request.use((config) => {
     const token = authService.getToken();
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Inject View As company header for superadmin simulation
+    if (_viewAsCompanyId) {
+        config.headers['X-View-As-Company'] = _viewAsCompanyId;
     }
     return config;
 });

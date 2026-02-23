@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { adminService, AdminDashboard as DashboardData, RevenueHistoryItem } from '../../services';
 import { NotificationBell } from '../../components/notifications';
@@ -19,14 +19,55 @@ import {
     Package, DollarSign, Factory, Building2, Users,
     Clock, CheckCircle, AlertCircle, ChevronRight,
     Settings, LogOut, Shield, Gift, GraduationCap,
-    HelpCircle, FolderOpen, Loader2
+    HelpCircle, FolderOpen, Loader2, Eye
 } from 'lucide-react';
 
+interface CompanyItem {
+    id: string;
+    tradeName: string;
+    legalName: string;
+    status: string;
+}
+
 const AdminDashboard: React.FC = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, enterViewAs } = useAuth();
+    const navigate = useNavigate();
     const [dashboard, setDashboard] = useState<DashboardData | null>(null);
     const [revenueHistory, setRevenueHistory] = useState<RevenueHistoryItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [showCompanyModal, setShowCompanyModal] = useState<'BRAND' | 'SUPPLIER' | null>(null);
+    const [companies, setCompanies] = useState<CompanyItem[]>([]);
+    const [loadingCompanies, setLoadingCompanies] = useState(false);
+    const [companySearch, setCompanySearch] = useState('');
+
+    const handleViewAs = async (role: 'BRAND' | 'SUPPLIER') => {
+        setShowCompanyModal(role);
+        setLoadingCompanies(true);
+        setCompanySearch('');
+        try {
+            const data = role === 'SUPPLIER'
+                ? await adminService.getSuppliers('ACTIVE')
+                : await adminService.getBrands('ACTIVE');
+            setCompanies(Array.isArray(data) ? data : []);
+        } catch {
+            setCompanies([]);
+        } finally {
+            setLoadingCompanies(false);
+        }
+    };
+
+    const handleSelectCompany = (company: CompanyItem) => {
+        const role = showCompanyModal!;
+        setShowCompanyModal(null);
+        enterViewAs(role, company.id, company.tradeName || company.legalName);
+        navigate(role === 'SUPPLIER' ? '/portal/inicio' : '/brand/inicio');
+    };
+
+    const filteredCompanies = companies.filter(c => {
+        const search = companySearch.toLowerCase();
+        return (c.tradeName?.toLowerCase().includes(search) || c.legalName?.toLowerCase().includes(search));
+    });
+
     useEffect(() => {
         loadDashboard();
     }, []);
@@ -244,6 +285,48 @@ const AdminDashboard: React.FC = () => {
                     />
                 </HeroMetrics>
 
+                {/* SuperAdmin: Experience Simulation */}
+                {user?.isSuperAdmin && (
+                    <div className="animate-fade-up">
+                        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <Eye className="w-4 h-4" />
+                            Simulação de Experiência
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button
+                                onClick={() => handleViewAs('BRAND')}
+                                className="group relative overflow-hidden bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.06] rounded-2xl p-6 text-left hover:border-blue-300 dark:hover:border-blue-500/30 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] transition-all"
+                            >
+                                <div className="absolute -top-6 -right-6 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="relative flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                                        <Building2 className="w-6 h-6 text-blue-500" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900 dark:text-white">Ver como Marca</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Navegar no portal da marca</p>
+                                    </div>
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => handleViewAs('SUPPLIER')}
+                                className="group relative overflow-hidden bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.06] rounded-2xl p-6 text-left hover:border-purple-300 dark:hover:border-purple-500/30 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(168,85,247,0.1)] transition-all"
+                            >
+                                <div className="absolute -top-6 -right-6 w-20 h-20 bg-purple-500/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="relative flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                                        <Factory className="w-6 h-6 text-purple-500" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900 dark:text-white">Ver como Facção</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Navegar no portal do parceiro</p>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Quick Actions - Platform Management */}
                 <div className="animate-fade-up">
                     <QuickActionsGrid
@@ -351,6 +434,79 @@ const AdminDashboard: React.FC = () => {
                     </div>
                 )}
             </main>
+
+            {/* Company Selection Modal */}
+            {showCompanyModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-white/10">
+                            <div className="flex items-center gap-2.5">
+                                {showCompanyModal === 'SUPPLIER' ? (
+                                    <Factory className="w-5 h-5 text-purple-500" />
+                                ) : (
+                                    <Building2 className="w-5 h-5 text-blue-500" />
+                                )}
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    Selecionar {showCompanyModal === 'SUPPLIER' ? 'Facção' : 'Marca'}
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setShowCompanyModal(null)}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                            >
+                                <AlertCircle className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 border-b border-gray-200 dark:border-white/10">
+                            <input
+                                type="text"
+                                placeholder="Buscar empresa..."
+                                value={companySearch}
+                                onChange={(e) => setCompanySearch(e.target.value)}
+                                className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-gray-900 dark:text-white placeholder-gray-400"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-2">
+                            {loadingCompanies ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
+                                </div>
+                            ) : filteredCompanies.length === 0 ? (
+                                <p className="text-center text-gray-400 py-12 text-sm">
+                                    Nenhuma empresa encontrada
+                                </p>
+                            ) : (
+                                filteredCompanies.map((company) => (
+                                    <button
+                                        key={company.id}
+                                        onClick={() => handleSelectCompany(company)}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                                    >
+                                        <div className="w-8 h-8 bg-gray-100 dark:bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            {showCompanyModal === 'SUPPLIER' ? (
+                                                <Factory className="w-4 h-4 text-purple-500" />
+                                            ) : (
+                                                <Building2 className="w-4 h-4 text-blue-500" />
+                                            )}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                                {company.tradeName || company.legalName}
+                                            </p>
+                                            {company.tradeName && company.legalName && company.tradeName !== company.legalName && (
+                                                <p className="text-xs text-gray-400 truncate">{company.legalName}</p>
+                                            )}
+                                        </div>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

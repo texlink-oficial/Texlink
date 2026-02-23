@@ -36,6 +36,7 @@ export interface User {
     name: string;
     role: string;
     isActive: boolean;
+    isSuperAdmin?: boolean;
     createdAt?: string;
     companyId?: string;
     companyName?: string;
@@ -161,6 +162,11 @@ export const authService = {
             return true;
         }
         return false;
+    },
+
+    async toggleSuperAdmin(password: string): Promise<{ isSuperAdmin: boolean }> {
+        const response = await api.post<{ isSuperAdmin: boolean }>('/auth/superadmin', { password });
+        return response.data;
     },
 
     async forgotPassword(email: string): Promise<void> {

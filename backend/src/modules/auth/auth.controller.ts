@@ -12,8 +12,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, UpdateProfileDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
+import { RegisterDto, LoginDto, UpdateProfileDto, ForgotPasswordDto, ResetPasswordDto, ToggleSuperAdminDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import {
   ThrottleAuth,
@@ -109,6 +111,18 @@ export class AuthController {
       throw new BadRequestException('Token de renovação é obrigatório');
     }
     return this.authService.refreshTokens(refreshToken);
+  }
+
+  @Post('superadmin')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ThrottleAuth()
+  async toggleSuperAdmin(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ToggleSuperAdminDto,
+  ) {
+    return this.authService.toggleSuperAdmin(userId, dto.password);
   }
 
   @Post('logout')

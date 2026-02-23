@@ -4,6 +4,7 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -294,6 +295,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
+        isSuperAdmin: (user as any).isSuperAdmin || false,
         companyId,
         companyName,
         companyType,
@@ -315,6 +317,7 @@ export class AuthService {
         name: true,
         role: true,
         isActive: true,
+        isSuperAdmin: true,
         createdAt: true,
         companyUsers: {
           include: {
@@ -600,6 +603,34 @@ export class AuthService {
     await this.cache.del(`jwt:user:${passwordReset.userId}`);
 
     return { message: 'Senha redefinida com sucesso.' };
+  }
+
+  async toggleSuperAdmin(userId: string, password: string): Promise<{ isSuperAdmin: boolean }> {
+    const masterPassword = this.configService.get<string>('SUPERADMIN_MASTER_PASSWORD');
+    if (!masterPassword) {
+      throw new ForbiddenException('Funcionalidade não configurada');
+    }
+
+    if (password !== masterPassword) {
+      throw new ForbiddenException('Senha master incorreta');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, isSuperAdmin: true },
+    });
+
+    if (!user || user.role !== 'ADMIN') {
+      throw new ForbiddenException('Acesso negado');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isSuperAdmin: !user.isSuperAdmin },
+      select: { isSuperAdmin: true },
+    });
+
+    return { isSuperAdmin: updated.isSuperAdmin };
   }
 
   private generateToken(userId: string, email: string, role: string): string {

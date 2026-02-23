@@ -1,15 +1,25 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { authService, User } from '../services/auth.service';
+import { setViewAsCompanyId } from '../services/api';
+
+export interface ViewAsState {
+    role: 'BRAND' | 'SUPPLIER';
+    companyId: string;
+    companyName: string;
+}
 
 interface AuthContextType {
     user: User | null;
     token: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
+    viewAs: ViewAsState | null;
     login: (email: string, password: string) => Promise<void>;
     register: (email: string, password: string, name: string, role: 'BRAND' | 'SUPPLIER', extra?: { legalName?: string; tradeName?: string; document?: string; phone?: string; city?: string; state?: string; invitationToken?: string }) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
+    enterViewAs: (role: 'BRAND' | 'SUPPLIER', companyId: string, companyName: string) => void;
+    exitViewAs: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,6 +28,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(authService.getToken());
     const [isLoading, setIsLoading] = useState(true);
+    const [viewAs, setViewAs] = useState<ViewAsState | null>(null);
 
     useEffect(() => {
         /**
@@ -98,6 +109,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const logout = useCallback(() => {
+        setViewAs(null);
         authService.logout();
         setUser(null);
         setToken(null);
@@ -112,6 +124,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, [logout]);
 
+    const enterViewAs = useCallback((role: 'BRAND' | 'SUPPLIER', companyId: string, companyName: string) => {
+        if (user?.role !== 'ADMIN' || !user?.isSuperAdmin) return;
+        setViewAs({ role, companyId, companyName });
+        setViewAsCompanyId(companyId);
+    }, [user]);
+
+    const exitViewAs = useCallback(() => {
+        setViewAs(null);
+        setViewAsCompanyId(null);
+    }, []);
+
     return (
         <AuthContext.Provider
             value={{
@@ -119,10 +142,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 token,
                 isLoading,
                 isAuthenticated: !!user,
+                viewAs,
                 login,
                 register,
                 logout,
                 refreshUser,
+                enterViewAs,
+                exitViewAs,
             }}
         >
             {children}
