@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { NotificationBell } from '../notifications';
 import { adminService } from '../../services';
+import { authService } from '../../services/auth.service';
 import {
     Shield,
     Settings,
@@ -20,6 +21,8 @@ import {
     X,
     Loader2,
     ChevronDown,
+    Lock,
+    Unlock,
 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 
@@ -31,7 +34,7 @@ interface CompanyItem {
 }
 
 export const AdminHeader: React.FC = () => {
-    const { user, logout, viewAs, enterViewAs, exitViewAs } = useAuth();
+    const { user, logout, viewAs, enterViewAs, exitViewAs, refreshUser } = useAuth();
     const navigate = useNavigate();
     const { darkMode, toggleDarkMode } = useTheme();
     const [showViewAsMenu, setShowViewAsMenu] = useState(false);
@@ -39,6 +42,10 @@ export const AdminHeader: React.FC = () => {
     const [companies, setCompanies] = useState<CompanyItem[]>([]);
     const [loadingCompanies, setLoadingCompanies] = useState(false);
     const [companySearch, setCompanySearch] = useState('');
+    const [showSuperAdminModal, setShowSuperAdminModal] = useState(false);
+    const [masterPassword, setMasterPassword] = useState('');
+    const [superAdminLoading, setSuperAdminLoading] = useState(false);
+    const [superAdminError, setSuperAdminError] = useState('');
     const menuRef = useRef<HTMLDivElement>(null);
 
     const handleLogout = () => {
@@ -84,6 +91,21 @@ export const AdminHeader: React.FC = () => {
     const handleExitViewAs = () => {
         exitViewAs();
         navigate('/admin');
+    };
+
+    const handleToggleSuperAdmin = async () => {
+        setSuperAdminLoading(true);
+        setSuperAdminError('');
+        try {
+            await authService.toggleSuperAdmin(masterPassword);
+            await refreshUser();
+            setShowSuperAdminModal(false);
+            setMasterPassword('');
+        } catch (err: any) {
+            setSuperAdminError(err?.response?.data?.message || err?.message || 'Senha incorreta');
+        } finally {
+            setSuperAdminLoading(false);
+        }
     };
 
     const filteredCompanies = companies.filter(c => {
@@ -211,6 +233,19 @@ export const AdminHeader: React.FC = () => {
 
                                 <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-1 hidden sm:block" />
 
+                                <Tooltip content={user?.isSuperAdmin ? 'Desativar SuperAdmin' : 'Ativar SuperAdmin'}>
+                                    <button
+                                        onClick={() => { setShowSuperAdminModal(true); setSuperAdminError(''); setMasterPassword(''); }}
+                                        className={`p-2 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.05] ${
+                                            user?.isSuperAdmin
+                                                ? 'text-amber-500 hover:text-amber-600'
+                                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                        }`}
+                                    >
+                                        {user?.isSuperAdmin ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+                                    </button>
+                                </Tooltip>
+
                                 <Tooltip content="Configurações">
                                     <button className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.05]">
                                         <Settings className="w-5 h-5" />
@@ -300,6 +335,69 @@ export const AdminHeader: React.FC = () => {
                                 ))
                             )}
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* SuperAdmin Password Modal */}
+            {showSuperAdminModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-white/10">
+                            <div className="flex items-center gap-2.5">
+                                <Shield className="w-5 h-5 text-amber-500" />
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    {user?.isSuperAdmin ? 'Desativar' : 'Ativar'} SuperAdmin
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setShowSuperAdminModal(false)}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form
+                            onSubmit={(e) => { e.preventDefault(); handleToggleSuperAdmin(); }}
+                            className="p-5 space-y-4"
+                        >
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                    Senha Master
+                                </label>
+                                <input
+                                    type="password"
+                                    value={masterPassword}
+                                    onChange={(e) => setMasterPassword(e.target.value)}
+                                    placeholder="Digite a senha master..."
+                                    className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-gray-900 dark:text-white placeholder-gray-400"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {superAdminError && (
+                                <p className="text-sm text-red-500">{superAdminError}</p>
+                            )}
+
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSuperAdminModal(false)}
+                                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!masterPassword || superAdminLoading}
+                                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {superAdminLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    {user?.isSuperAdmin ? 'Desativar' : 'Ativar'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
