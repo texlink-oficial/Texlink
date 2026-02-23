@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
     Users, Shield, Building2, Factory,
     Search, Plus, MoreVertical, Loader2,
@@ -18,19 +18,26 @@ const UsersPage: React.FC = () => {
     const [selectedRole, setSelectedRole] = useState<string>('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [openActionId, setOpenActionId] = useState<string | null>(null);
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
     const [showCreateUser, setShowCreateUser] = useState(false);
     const [showEditUser, setShowEditUser] = useState(false);
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
+    const actionBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const toast = useToast();
 
     // Close dropdown on click outside
     useEffect(() => {
         if (!openActionId) return;
-        const handleClickOutside = () => setOpenActionId(null);
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setOpenActionId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [openActionId]);
 
     useEffect(() => {
@@ -59,6 +66,47 @@ const UsersPage: React.FC = () => {
         }
     };
 
+    const handleToggleSuperAdmin = async (user: AdminUser) => {
+        try {
+            await adminService.updateUser(user.id, { isSuperAdmin: !user.isSuperAdmin });
+            toast.success('SuperAdmin atualizado', `SuperAdmin ${!user.isSuperAdmin ? 'ativado' : 'desativado'} para ${user.name}`);
+            loadUsers();
+        } catch (error) {
+            toast.error('Erro', 'Não foi possível atualizar o SuperAdmin');
+        }
+    };
+
+    const handleOpenDropdown = useCallback((userId: string) => {
+        if (openActionId === userId) {
+            setOpenActionId(null);
+            return;
+        }
+
+        const btn = actionBtnRefs.current[userId];
+        if (!btn) return;
+
+        const rect = btn.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const dropdownHeight = 200; // approximate
+
+        const style: React.CSSProperties = {
+            position: 'fixed',
+            right: window.innerWidth - rect.right,
+            zIndex: 9999,
+        };
+
+        if (spaceBelow < dropdownHeight) {
+            // Open upward
+            style.bottom = window.innerHeight - rect.top + 4;
+        } else {
+            // Open downward
+            style.top = rect.bottom + 4;
+        }
+
+        setDropdownStyle(style);
+        setOpenActionId(userId);
+    }, [openActionId]);
+
     const filteredUsers = users.filter(user => {
         const query = searchQuery.toLowerCase();
         const matchesSearch = user.name?.toLowerCase().includes(query) || user.email?.toLowerCase().includes(query);
@@ -76,11 +124,7 @@ const UsersPage: React.FC = () => {
         suppliers: users.filter(u => u.role === 'SUPPLIER').length,
     };
 
-    const roleLabels: Record<string, string> = {
-        ADMIN: 'Admin',
-        BRAND: 'Marca',
-        SUPPLIER: 'Facção',
-    };
+    const activeUser = openActionId ? filteredUsers.find(u => u.id === openActionId) : null;
 
     return (
         <div className="animate-fade-in">
@@ -238,7 +282,12 @@ const UsersPage: React.FC = () => {
                                             className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors"
                                         >
                                             <td className="px-6 py-4">
-                                                <span className="text-sm font-bold text-gray-900 dark:text-white">{user.name}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-gray-900 dark:text-white">{user.name}</span>
+                                                    {user.isSuperAdmin && (
+                                                        <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded text-[9px] font-bold uppercase">SA</span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{user.email}</span>
@@ -270,63 +319,13 @@ const UsersPage: React.FC = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="relative inline-block">
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setOpenActionId(openActionId === user.id ? null : user.id); }}
-                                                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition-colors"
-                                                    >
-                                                        <MoreVertical className="w-4 h-4" />
-                                                    </button>
-                                                    {openActionId === user.id && (
-                                                        <div className="absolute right-0 bottom-full mb-1 w-48 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl shadow-xl z-50 overflow-hidden">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedUser(user);
-                                                                    setShowEditUser(true);
-                                                                    setOpenActionId(null);
-                                                                }}
-                                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
-                                                            >
-                                                                <Edit3 className="w-4 h-4" />
-                                                                Editar
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedUser(user);
-                                                                    setShowResetPassword(true);
-                                                                    setOpenActionId(null);
-                                                                }}
-                                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
-                                                            >
-                                                                <KeyRound className="w-4 h-4" />
-                                                                Redefinir Senha
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    handleToggleStatus(user);
-                                                                    setOpenActionId(null);
-                                                                }}
-                                                                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
-                                                                    user.isActive
-                                                                        ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
-                                                                        : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
-                                                                }`}
-                                                            >
-                                                                {user.isActive ? (
-                                                                    <>
-                                                                        <UserX className="w-4 h-4" />
-                                                                        Desativar
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <UserCheck className="w-4 h-4" />
-                                                                        Ativar
-                                                                    </>
-                                                                )}
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                <button
+                                                    ref={(el) => { actionBtnRefs.current[user.id] = el; }}
+                                                    onClick={(e) => { e.stopPropagation(); handleOpenDropdown(user.id); }}
+                                                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition-colors"
+                                                >
+                                                    <MoreVertical className="w-4 h-4" />
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
@@ -336,6 +335,73 @@ const UsersPage: React.FC = () => {
                     </div>
                 )}
             </main>
+
+            {/* Floating dropdown menu - rendered via portal-like fixed positioning */}
+            {openActionId && activeUser && (
+                <div ref={dropdownRef} style={dropdownStyle} className="w-48 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl shadow-xl overflow-hidden">
+                    <button
+                        onClick={() => {
+                            setSelectedUser(activeUser);
+                            setShowEditUser(true);
+                            setOpenActionId(null);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
+                    >
+                        <Edit3 className="w-4 h-4" />
+                        Editar
+                    </button>
+                    <button
+                        onClick={() => {
+                            setSelectedUser(activeUser);
+                            setShowResetPassword(true);
+                            setOpenActionId(null);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
+                    >
+                        <KeyRound className="w-4 h-4" />
+                        Redefinir Senha
+                    </button>
+                    {activeUser.role === 'ADMIN' && (
+                        <button
+                            onClick={() => {
+                                handleToggleSuperAdmin(activeUser);
+                                setOpenActionId(null);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                                activeUser.isSuperAdmin
+                                    ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                                    : 'text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10'
+                            }`}
+                        >
+                            <Shield className="w-4 h-4" />
+                            {activeUser.isSuperAdmin ? 'Remover SuperAdmin' : 'Tornar SuperAdmin'}
+                        </button>
+                    )}
+                    <button
+                        onClick={() => {
+                            handleToggleStatus(activeUser);
+                            setOpenActionId(null);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                            activeUser.isActive
+                                ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
+                                : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
+                        }`}
+                    >
+                        {activeUser.isActive ? (
+                            <>
+                                <UserX className="w-4 h-4" />
+                                Desativar
+                            </>
+                        ) : (
+                            <>
+                                <UserCheck className="w-4 h-4" />
+                                Ativar
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
 
             {/* Modals */}
             {showCreateUser && (

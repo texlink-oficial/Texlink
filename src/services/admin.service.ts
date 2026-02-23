@@ -70,6 +70,7 @@ export interface AdminUser {
     name: string;
     role: 'ADMIN' | 'BRAND' | 'SUPPLIER';
     isActive: boolean;
+    isSuperAdmin?: boolean;
     createdAt: string;
     companyUsers: {
         id: string;
@@ -97,6 +98,7 @@ export interface UpdateUserData {
     email?: string;
     role?: 'ADMIN' | 'BRAND' | 'SUPPLIER';
     isActive?: boolean;
+    isSuperAdmin?: boolean;
 }
 
 export interface AdminRegisterCompanyData {

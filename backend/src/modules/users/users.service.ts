@@ -21,6 +21,7 @@ export class UsersService {
         name: true,
         role: true,
         isActive: true,
+        isSuperAdmin: true,
         createdAt: true,
         companyUsers: {
           include: {
@@ -147,6 +148,7 @@ export class UsersService {
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.role !== undefined && { role: dto.role }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.isSuperAdmin !== undefined && { isSuperAdmin: dto.isSuperAdmin }),
       },
       select: {
         id: true,
@@ -154,6 +156,7 @@ export class UsersService {
         name: true,
         role: true,
         isActive: true,
+        isSuperAdmin: true,
         createdAt: true,
         companyUsers: {
           include: {
