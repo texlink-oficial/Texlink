@@ -3,10 +3,11 @@ import {
     Users, Shield, Building2, Factory,
     Search, Plus, MoreVertical, Loader2,
     ChevronRight, Filter, RefreshCw,
-    Edit3, KeyRound, UserX, UserCheck, X
+    Edit3, KeyRound, UserX, UserCheck, X, Trash2
 } from 'lucide-react';
 import { adminService, AdminUser } from '../../services/admin.service';
 import { authService } from '../../services/auth.service';
+import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import CreateUserModal from '../../components/admin/CreateUserModal';
 import EditUserModal from '../../components/admin/EditUserModal';
@@ -29,9 +30,13 @@ const UsersPage: React.FC = () => {
     const [superAdminLoading, setSuperAdminLoading] = useState(false);
     const [superAdminError, setSuperAdminError] = useState('');
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     const actionBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const { user: currentUser } = useAuth();
     const toast = useToast();
 
     // Close dropdown on click outside
@@ -96,6 +101,30 @@ const UsersPage: React.FC = () => {
         } finally {
             setSuperAdminLoading(false);
         }
+    };
+
+    const handleDeleteUser = async () => {
+        if (!deleteTarget) return;
+        setDeleteLoading(true);
+        try {
+            await adminService.deleteUser(deleteTarget.id);
+            toast.success('Usuário excluído', `"${deleteTarget.name}" foi removido permanentemente`);
+            setShowDeleteConfirm(false);
+            setDeleteTarget(null);
+            loadUsers();
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { message?: string } }; message?: string };
+            toast.error('Erro ao excluir', error?.response?.data?.message || 'Não foi possível excluir o usuário');
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+
+    // Only SA can delete ADMIN users; any admin can delete BRAND/SUPPLIER users
+    const canDeleteUser = (user: AdminUser) => {
+        if (user.id === currentUser?.id) return false; // Can't delete yourself
+        if (user.role === 'ADMIN') return !!currentUser?.isSuperAdmin;
+        return true;
     };
 
     const handleOpenDropdown = useCallback((userId: string) => {
@@ -422,6 +451,22 @@ const UsersPage: React.FC = () => {
                             </>
                         )}
                     </button>
+                    {canDeleteUser(activeUser) && (
+                        <>
+                            <div className="border-t border-gray-100 dark:border-white/[0.06]" />
+                            <button
+                                onClick={() => {
+                                    setDeleteTarget(activeUser);
+                                    setShowDeleteConfirm(true);
+                                    setOpenActionId(null);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Excluir Permanente
+                            </button>
+                        </>
+                    )}
                 </div>
             )}
 
@@ -445,6 +490,53 @@ const UsersPage: React.FC = () => {
                     onClose={() => { setShowResetPassword(false); setSelectedUser(null); }}
                     onSuccess={() => { setShowResetPassword(false); setSelectedUser(null); }}
                 />
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && deleteTarget && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-white/10">
+                            <div className="flex items-center gap-2.5">
+                                <Trash2 className="w-5 h-5 text-rose-500" />
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    Excluir Usuário
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => { setShowDeleteConfirm(false); setDeleteTarget(null); }}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Tem certeza que deseja excluir permanentemente o usuário <strong className="text-gray-900 dark:text-white">{deleteTarget.name}</strong> ({deleteTarget.email})?
+                            </p>
+                            <p className="text-xs text-rose-500 font-medium">
+                                Esta ação não pode ser desfeita. Todos os dados do usuário serão removidos.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowDeleteConfirm(false); setDeleteTarget(null); }}
+                                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleDeleteUser}
+                                    disabled={deleteLoading}
+                                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-rose-500 rounded-lg hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {deleteLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* SuperAdmin Toggle Modal */}

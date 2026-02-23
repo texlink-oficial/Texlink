@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
 import { UserRole } from '@prisma/client';
@@ -179,21 +179,32 @@ export class UsersService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    const result = await this.prisma.user.update({
-      where: { id },
-      data: { isActive: false },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        isActive: true,
-      },
-    });
+    try {
+      // Hard delete: remove non-cascading related records then the user
+      await this.prisma.$transaction(async (tx) => {
+        // Nullify optional user references on other tables
+        await tx.order.updateMany({ where: { acceptedById: id }, data: { acceptedById: null } });
+        await tx.supplierOnboarding.updateMany({ where: { userId: id }, data: { userId: null } });
+        // Remove records that reference the user without cascade
+        await tx.companyUser.deleteMany({ where: { userId: id } });
+        await tx.passwordReset.deleteMany({ where: { userId: id } });
+        // Delete the user (cascading relations like notifications are auto-deleted)
+        await tx.user.delete({ where: { id } });
+      });
 
-    // Invalidate JWT cache so deactivated user is blocked immediately
-    await this.invalidateUserCache(id);
+      // Invalidate JWT cache so any active session is rejected
+      await this.invalidateUserCache(id);
 
-    return result;
+      return { deleted: true };
+    } catch (error: unknown) {
+      const prismaError = error as { code?: string };
+      if (prismaError.code === 'P2003') {
+        throw new BadRequestException(
+          'Não é possível excluir este usuário porque ele possui dados vinculados (pedidos, mensagens, etc). Desative-o em vez de excluir.',
+        );
+      }
+      throw error;
+    }
   }
 
   /**
