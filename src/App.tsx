@@ -21,6 +21,8 @@ const ForgotPasswordPage = React.lazy(() => import('./pages/auth/ForgotPasswordP
 const ResetPasswordPage = React.lazy(() => import('./pages/auth/ResetPasswordPage'));
 const AcceptInvitePage = React.lazy(() => import('./pages/auth/AcceptInvitePage'));
 const AcceptInvitationPage = React.lazy(() => import('./pages/public/AcceptInvitationPage'));
+const PrivacyPolicyPage = React.lazy(() => import('./pages/public/PrivacyPolicyPage'));
+const CookiePolicyPage = React.lazy(() => import('./pages/public/CookiePolicyPage'));
 
 // Settings pages
 const TeamPage = React.lazy(() => import('./pages/settings/TeamPage'));
@@ -150,6 +152,8 @@ const App: React.FC = () => {
                                             <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
                                             <Route path="/convite/:token" element={<AcceptInvitePage />} />
                                             <Route path="/aceitar-convite/:token" element={<AcceptInvitationPage />} />
+                                            <Route path="/politica-de-privacidade" element={<PrivacyPolicyPage />} />
+                                            <Route path="/politica-de-cookies" element={<CookiePolicyPage />} />
 
                                             {/* Onboarding routes (protected, supplier only) */}
                                             <Route path="/onboarding" element={<ProtectedRoute allowedRoles={['SUPPLIER']}><OnboardingLayout /></ProtectedRoute>}>

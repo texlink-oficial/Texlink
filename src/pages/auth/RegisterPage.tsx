@@ -538,7 +538,18 @@ const RegisterPage: React.FC = () => {
                                 className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-brand-500 focus:ring-brand-500 focus:ring-offset-0"
                             />
                             <label htmlFor="termsAccepted" className="text-sm text-brand-300 lg:text-gray-500 lg:dark:text-gray-400 leading-relaxed cursor-pointer">
-                                Eu aceito os termos de uso do aplicativo e estou de acordo com a política de privacidade.
+                                Eu aceito os{' '}
+                                <Link to="/termos-de-uso" target="_blank" className="text-brand-400 lg:text-brand-600 lg:dark:text-brand-400 hover:underline">
+                                    termos de uso
+                                </Link>{' '}
+                                do aplicativo e estou de acordo com a{' '}
+                                <Link to="/politica-de-privacidade" target="_blank" className="text-brand-400 lg:text-brand-600 lg:dark:text-brand-400 hover:underline">
+                                    politica de privacidade
+                                </Link>{' '}
+                                e a{' '}
+                                <Link to="/politica-de-cookies" target="_blank" className="text-brand-400 lg:text-brand-600 lg:dark:text-brand-400 hover:underline">
+                                    politica de cookies
+                                </Link>.
                             </label>
                         </div>
 

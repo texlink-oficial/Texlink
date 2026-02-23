@@ -42,6 +42,12 @@ export const DashboardFooter: React.FC<DashboardFooterProps> = ({ variant = 'por
                         Política de Privacidade
                     </Link>
                     <Link
+                        to="/politica-de-cookies"
+                        className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    >
+                        Política de Cookies
+                    </Link>
+                    <Link
                         to={getSupportLink()}
                         className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                     >

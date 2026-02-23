@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
     Loader2,
     Building2,
@@ -354,14 +354,17 @@ const AcceptInvitationPage: React.FC = () => {
                     {/* Terms */}
                     <p className="text-xs text-center text-gray-500 dark:text-gray-400">
                         Ao aceitar, você concorda com os{' '}
-                        <a href="/terms" className="text-brand-500 hover:underline">
+                        <Link to="/termos-de-uso" target="_blank" className="text-brand-500 hover:underline">
                             Termos de Uso
-                        </a>{' '}
-                        e{' '}
-                        <a href="/privacy" className="text-brand-500 hover:underline">
+                        </Link>,{' '}
+                        <Link to="/politica-de-privacidade" target="_blank" className="text-brand-500 hover:underline">
                             Política de Privacidade
-                        </a>{' '}
-                        da TexLink.
+                        </Link>{' '}
+                        e{' '}
+                        <Link to="/politica-de-cookies" target="_blank" className="text-brand-500 hover:underline">
+                            Política de Cookies
+                        </Link>{' '}
+                        da Texlink.
                     </p>
                 </div>
             </div>
