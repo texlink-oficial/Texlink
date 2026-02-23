@@ -87,7 +87,7 @@ const RegisterPage: React.FC = () => {
             return;
         }
         if (digits.length !== 14 || !validateCNPJ(digits)) {
-            setCnpjError('CNPJ invalido. Verifique o numero informado.');
+            setCnpjError('CNPJ inválido. Verifique o número informado.');
             return;
         }
         setCnpjError('');
@@ -100,7 +100,7 @@ const RegisterPage: React.FC = () => {
                 if (data.cidade) setCidade(data.cidade);
                 if (data.estado) setEstado(data.estado);
                 if (data.situacao !== 'ATIVA') {
-                    setCnpjError(`CNPJ com situacao "${data.situacao}". Verifique.`);
+                    setCnpjError(`CNPJ com situação "${data.situacao}". Verifique.`);
                 }
             }
         } catch {
@@ -114,24 +114,24 @@ const RegisterPage: React.FC = () => {
         setStep1Error('');
 
         if (!name.trim()) {
-            setStep1Error('Nome completo e obrigatorio.');
+            setStep1Error('Nome completo é obrigatório.');
             return;
         }
 
         if (!email.trim()) {
-            setStep1Error('E-mail e obrigatorio.');
+            setStep1Error('E-mail é obrigatório.');
             return;
         }
 
         // Basic email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            setStep1Error('Informe um e-mail valido.');
+            setStep1Error('Informe um e-mail válido.');
             return;
         }
 
         if (!password) {
-            setStep1Error('Senha e obrigatoria.');
+            setStep1Error('Senha é obrigatória.');
             return;
         }
 
@@ -149,23 +149,23 @@ const RegisterPage: React.FC = () => {
         setError('');
 
         if (!legalName.trim()) {
-            setError('Razao social e obrigatoria.');
+            setError('Razão social é obrigatória.');
             return;
         }
 
         if (!validateCNPJ(cnpj)) {
-            setError('CNPJ invalido. Verifique o numero informado.');
-            setCnpjError('CNPJ invalido. Verifique o numero informado.');
+            setError('CNPJ inválido. Verifique o número informado.');
+            setCnpjError('CNPJ inválido. Verifique o número informado.');
             return;
         }
 
         if (!isValidPhone(phone)) {
-            setError('Celular invalido. Informe o numero com DDD.');
+            setError('Celular inválido. Informe o número com DDD.');
             return;
         }
 
         if (!termsAccepted) {
-            setError('Voce precisa aceitar os termos de uso e a politica de privacidade para continuar.');
+            setError('Você precisa aceitar os termos de uso e a política de privacidade para continuar.');
             return;
         }
 
@@ -326,7 +326,7 @@ const RegisterPage: React.FC = () => {
                                             {passwordChecks.uppercase && <Check className="w-2.5 h-2.5 text-white" />}
                                         </div>
                                         <span className={`text-xs ${passwordChecks.uppercase ? 'text-green-400' : 'text-brand-400 lg:text-gray-400'}`}>
-                                            Uma letra maiuscula
+                                            Uma letra maiúscula
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -334,7 +334,7 @@ const RegisterPage: React.FC = () => {
                                             {passwordChecks.lowercase && <Check className="w-2.5 h-2.5 text-white" />}
                                         </div>
                                         <span className={`text-xs ${passwordChecks.lowercase ? 'text-green-400' : 'text-brand-400 lg:text-gray-400'}`}>
-                                            Uma letra minuscula
+                                            Uma letra minúscula
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -342,7 +342,7 @@ const RegisterPage: React.FC = () => {
                                             {passwordChecks.number && <Check className="w-2.5 h-2.5 text-white" />}
                                         </div>
                                         <span className={`text-xs ${passwordChecks.number ? 'text-green-400' : 'text-brand-400 lg:text-gray-400'}`}>
-                                            Um numero
+                                            Um número
                                         </span>
                                     </div>
                                 </div>
@@ -354,7 +354,7 @@ const RegisterPage: React.FC = () => {
                             onClick={handleNextStep}
                             className="w-full py-3 px-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2"
                         >
-                            Proximo
+                            Próximo
                             <ArrowRight className="w-5 h-5" />
                         </button>
                     </div>
@@ -389,7 +389,7 @@ const RegisterPage: React.FC = () => {
                                         }`}
                                 >
                                     <Factory className="w-6 h-6 mx-auto mb-2" />
-                                    <span className="text-sm font-medium">Faccao</span>
+                                    <span className="text-sm font-medium">Facção</span>
                                 </button>
                                 <button
                                     type="button"
@@ -440,7 +440,7 @@ const RegisterPage: React.FC = () => {
                                 </p>
                             ) : (
                                 <p className="text-xs text-brand-400 lg:text-gray-400 mt-1">
-                                    {cnpjLoading ? 'Buscando dados da empresa...' : 'Ao informar o CNPJ os dados da empresa serao preenchidos automaticamente.'}
+                                    {cnpjLoading ? 'Buscando dados da empresa...' : 'Ao informar o CNPJ os dados da empresa serão preenchidos automaticamente.'}
                                 </p>
                             )}
                         </div>
@@ -448,7 +448,7 @@ const RegisterPage: React.FC = () => {
                         {/* Razao Social */}
                         <div>
                             <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
-                                Razao Social
+                                Razão Social
                             </label>
                             <div className="relative">
                                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 lg:text-gray-400" />
@@ -538,7 +538,7 @@ const RegisterPage: React.FC = () => {
                                 className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-brand-500 focus:ring-brand-500 focus:ring-offset-0"
                             />
                             <label htmlFor="termsAccepted" className="text-sm text-brand-300 lg:text-gray-500 lg:dark:text-gray-400 leading-relaxed cursor-pointer">
-                                Eu aceito os termos de uso do aplicativo e estou de acordo com a politica de privacidade.
+                                Eu aceito os termos de uso do aplicativo e estou de acordo com a política de privacidade.
                             </label>
                         </div>
 
@@ -573,7 +573,7 @@ const RegisterPage: React.FC = () => {
 
             <div className="mt-6 text-center">
                 <p className="text-brand-300 lg:text-gray-500 lg:dark:text-gray-400 text-sm">
-                    Ja tem conta?{' '}
+                    Já tem conta?{' '}
                     <Link to="/login" className="text-brand-400 lg:text-brand-600 lg:dark:text-brand-400 hover:text-brand-300 font-medium transition-colors">
                         Entrar
                     </Link>

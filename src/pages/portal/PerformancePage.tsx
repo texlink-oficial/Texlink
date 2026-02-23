@@ -208,22 +208,22 @@ const TrendChart: React.FC<TrendChartProps> = ({
     if (platformAvgValue !== undefined) {
         const diff = currentValue - platformAvgValue;
         if (Math.abs(diff) < 0.5) {
-            comparisonText = 'Na media';
+            comparisonText = 'Na média';
         } else if (invertColor ? diff < 0 : diff > 0) {
             comparisonIcon = <ArrowUp className="h-3.5 w-3.5" />;
             comparisonColor = 'text-green-600 dark:text-green-400';
-            comparisonText = `${Math.abs(diff).toFixed(1)}${unit} acima da media`;
+            comparisonText = `${Math.abs(diff).toFixed(1)}${unit} acima da média`;
         } else {
             comparisonIcon = <ArrowDown className="h-3.5 w-3.5" />;
             comparisonColor = 'text-red-600 dark:text-red-400';
-            comparisonText = `${Math.abs(diff).toFixed(1)}${unit} abaixo da media`;
+            comparisonText = `${Math.abs(diff).toFixed(1)}${unit} abaixo da média`;
         }
     }
 
     const TooltipContent = createTrendTooltip({
         unit,
         platformValue: platformAvgValue,
-        platformLabel: 'Media plataforma',
+        platformLabel: 'Média plataforma',
     });
 
     // Compute y-axis domain
@@ -272,7 +272,7 @@ const TrendChart: React.FC<TrendChartProps> = ({
                                 strokeDasharray="6 4"
                                 strokeWidth={1.5}
                                 label={{
-                                    value: `Media: ${platformAvgValue}${unit}`,
+                                    value: `Média: ${platformAvgValue}${unit}`,
                                     position: 'insideTopRight',
                                     fill: '#9ca3af',
                                     fontSize: 10,
@@ -308,7 +308,7 @@ const TrendChart: React.FC<TrendChartProps> = ({
                     </div>
                     <div className="flex items-center gap-1.5">
                         <div className="w-4 h-0.5 rounded border-t-2 border-dashed border-gray-400" />
-                        <span>Media da plataforma</span>
+                        <span>Média da plataforma</span>
                     </div>
                 </div>
             )}
@@ -440,7 +440,7 @@ const PerformancePage: React.FC = () => {
                                 onChange={(e) => setStartDate(e.target.value)}
                                 className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                             />
-                            <span className="text-gray-500">ate</span>
+                            <span className="text-gray-500">até</span>
                             <input
                                 type="date"
                                 value={endDate}
@@ -518,7 +518,7 @@ const PerformancePage: React.FC = () => {
                         <BarChart3 className="h-5 w-5" />
                     </div>
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Evolucao do Faturamento
+                        Evolução do Faturamento
                     </h2>
                 </div>
                 <div className="h-64 flex items-end justify-between gap-2">
@@ -610,7 +610,7 @@ const PerformancePage: React.FC = () => {
                         </div>
                         <div>
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                Avaliacoes Recebidas
+                                Avaliações Recebidas
                             </h2>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Veja o que as marcas dizem sobre seu trabalho
