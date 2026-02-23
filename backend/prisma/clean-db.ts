@@ -10,33 +10,63 @@ import { Pool } from 'pg';
 function validateEnvironment(): void {
     const nodeEnv = process.env.NODE_ENV;
     const databaseUrl = process.env.DATABASE_URL || '';
+    const hasProductionOverride = process.argv.includes('--production-override');
+    const hasForce = process.argv.includes('--force');
 
-    // Block if NODE_ENV is explicitly production
-    if (nodeEnv === 'production') {
-        console.error('\n  BLOCKED: NODE_ENV is "production".');
-        console.error('  This cleanup script cannot run in production.\n');
+    // --production-override requires --force as well
+    if (hasProductionOverride && !hasForce) {
+        console.error('\n  BLOCKED: --production-override requires --force flag as well.');
+        console.error('  Usage: npx tsx prisma/clean-db.ts --force --production-override\n');
         process.exit(1);
     }
 
-    // Block if DATABASE_URL contains known production patterns
-    const productionPatterns = [
-        'production',
-        'prod-db',
-        'prod.database',
-        '.rds.amazonaws.com', // AWS RDS production
-        'main-db',
-    ];
+    // Show prominent warning when production override is active
+    if (hasProductionOverride && hasForce) {
+        const sanitizedUrl = databaseUrl.replace(
+            /\/\/([^:]+):([^@]+)@/,
+            '//$1:****@',
+        );
+        console.warn('\n  ╔══════════════════════════════════════════════════════════════╗');
+        console.warn('  ║         ⚠  PRODUCTION OVERRIDE ACTIVE  ⚠                    ║');
+        console.warn('  ║                                                              ║');
+        console.warn('  ║  Production safety checks are BYPASSED.                      ║');
+        console.warn('  ║  ALL transactional data will be PERMANENTLY DELETED.         ║');
+        console.warn('  ║                                                              ║');
+        console.warn(`  ║  Target: ${sanitizedUrl.substring(0, 52).padEnd(52)} ║`);
+        console.warn('  ║                                                              ║');
+        console.warn('  ╚══════════════════════════════════════════════════════════════╝\n');
+    }
 
-    for (const pattern of productionPatterns) {
-        if (databaseUrl.toLowerCase().includes(pattern)) {
-            console.error(`\n  BLOCKED: DATABASE_URL contains "${pattern}".`);
-            console.error('  This looks like a production database. Aborting.\n');
-            process.exit(1);
+    // Block if NODE_ENV is explicitly production (unless overridden)
+    if (nodeEnv === 'production' && !hasProductionOverride) {
+        console.error('\n  BLOCKED: NODE_ENV is "production".');
+        console.error('  This cleanup script cannot run in production.');
+        console.error('  To override, use: --force --production-override\n');
+        process.exit(1);
+    }
+
+    // Block if DATABASE_URL contains known production patterns (unless overridden)
+    if (!hasProductionOverride) {
+        const productionPatterns = [
+            'production',
+            'prod-db',
+            'prod.database',
+            '.rds.amazonaws.com', // AWS RDS production
+            'main-db',
+        ];
+
+        for (const pattern of productionPatterns) {
+            if (databaseUrl.toLowerCase().includes(pattern)) {
+                console.error(`\n  BLOCKED: DATABASE_URL contains "${pattern}".`);
+                console.error('  This looks like a production database. Aborting.');
+                console.error('  To override, use: --force --production-override\n');
+                process.exit(1);
+            }
         }
     }
 
     // Require explicit --force flag to prevent accidental runs
-    if (!process.argv.includes('--force')) {
+    if (!hasForce) {
         console.error('\n  SAFETY: This script deletes ALL transactional data.');
         console.error('  To confirm, re-run with the --force flag:');
         console.error('    npm run prisma:clean -- --force');

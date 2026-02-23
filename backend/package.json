@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:clean": "tsx prisma/clean-db.ts --force",
     "prisma:clean:dry": "tsx prisma/clean-db.ts",
+    "prisma:clean:production": "tsx prisma/clean-db.ts --force --production-override",
     "prisma:reset-staging": "tsx prisma/clean-db.ts --force && npx prisma db seed"
   },
   "dependencies": {
