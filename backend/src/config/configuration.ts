@@ -9,6 +9,16 @@ export default () => {
       );
     }
 
+    // Validate SUPERADMIN_MASTER_PASSWORD strength
+    if (
+      process.env.SUPERADMIN_MASTER_PASSWORD &&
+      process.env.SUPERADMIN_MASTER_PASSWORD.length < 16
+    ) {
+      throw new Error(
+        'SUPERADMIN_MASTER_PASSWORD must be at least 16 characters in production',
+      );
+    }
+
     // Validate JWT_SECRET is not using default/weak values
     const weakSecrets = [
       'default-secret',

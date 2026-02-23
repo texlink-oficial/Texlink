@@ -111,7 +111,7 @@ const RegisterPage: React.FC = () => {
         }
     };
 
-    const [step1Loading, setStep1Loading] = useState(false);
+    const step1Loading = false; // Step 1 validation is synchronous
 
     const handleNextStep = async () => {
         setStep1Error('');
@@ -142,20 +142,6 @@ const RegisterPage: React.FC = () => {
         if (passwordError) {
             setStep1Error(passwordError);
             return;
-        }
-
-        // Check email availability before advancing
-        setStep1Loading(true);
-        try {
-            const { data } = await api.get(`/auth/check-email/${encodeURIComponent(email.trim())}`);
-            if (!data.available) {
-                setStep1Error('Este e-mail já está cadastrado. Tente fazer login ou use outro e-mail.');
-                return;
-            }
-        } catch {
-            // If check fails, allow advancing — backend register will validate again
-        } finally {
-            setStep1Loading(false);
         }
 
         setStep(2);

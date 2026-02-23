@@ -211,14 +211,22 @@ export class UsersService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    return this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id },
-      data: { passwordHash: hashedPassword },
+      data: {
+        passwordHash: hashedPassword,
+        passwordChangedAt: new Date(),
+      },
       select: {
         id: true,
         email: true,
         name: true,
       },
     });
+
+    // Invalidate JWT cache so old tokens are rejected immediately
+    await this.invalidateUserCache(id);
+
+    return result;
   }
 }

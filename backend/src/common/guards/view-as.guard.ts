@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -13,8 +13,10 @@ interface AuthenticatedUser {
   [key: string]: unknown;
 }
 
-interface AuthenticatedRequest extends Request {
+interface ViewAsRequest extends Request {
   user?: AuthenticatedUser;
+  isViewAs?: boolean;
+  viewAsCompanyId?: string;
 }
 
 /**
@@ -25,10 +27,12 @@ interface AuthenticatedRequest extends Request {
  */
 @Injectable()
 export class ViewAsGuard implements CanActivate {
+  private readonly logger = new Logger(ViewAsGuard.name);
+
   constructor(private prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const request = context.switchToHttp().getRequest<ViewAsRequest>();
     const user = request.user;
 
     if (!user) return true;
@@ -37,7 +41,13 @@ export class ViewAsGuard implements CanActivate {
     if (!viewAsCompanyId) return true;
 
     // Only SuperAdmins can use View As
-    if (user.role !== 'ADMIN' || !user.isSuperAdmin) return true;
+    if (user.role !== 'ADMIN' || !user.isSuperAdmin) {
+      this.logger.warn(
+        `Non-SuperAdmin user ${user.id} (role=${user.role}, isSuperAdmin=${user.isSuperAdmin}) attempted ViewAs with company ${viewAsCompanyId}`,
+      );
+      delete request.headers['x-view-as-company'];
+      return true;
+    }
 
     // Verify the target company exists
     const company = await this.prisma.company.findUnique({
@@ -45,7 +55,12 @@ export class ViewAsGuard implements CanActivate {
       select: { id: true, type: true, tradeName: true },
     });
 
-    if (!company) return true;
+    if (!company) {
+      this.logger.warn(
+        `SuperAdmin ${user.id} attempted ViewAs with non-existent company ${viewAsCompanyId}`,
+      );
+      return true;
+    }
 
     // Override the user context with the target company
     user.companyId = company.id;
@@ -60,8 +75,12 @@ export class ViewAsGuard implements CanActivate {
     }
 
     // Mark the request as a ViewAs session for audit/logging
-    (request as any).isViewAs = true;
-    (request as any).viewAsCompanyId = company.id;
+    request.isViewAs = true;
+    request.viewAsCompanyId = company.id;
+
+    this.logger.log(
+      `SuperAdmin ${user.id} viewing as ${company.type} "${company.tradeName}" (${company.id})`,
+    );
 
     return true;
   }
