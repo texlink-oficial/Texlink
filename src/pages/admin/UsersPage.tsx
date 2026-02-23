@@ -25,6 +25,14 @@ const UsersPage: React.FC = () => {
 
     const toast = useToast();
 
+    // Close dropdown on click outside
+    useEffect(() => {
+        if (!openActionId) return;
+        const handleClickOutside = () => setOpenActionId(null);
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [openActionId]);
+
     useEffect(() => {
         loadUsers();
     }, []);
@@ -209,7 +217,7 @@ const UsersPage: React.FC = () => {
                         <p className="text-gray-500 max-w-sm mx-auto font-medium">Não encontramos resultados para os filtros aplicados.</p>
                     </div>
                 ) : (
-                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-3xl shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-3xl shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
@@ -264,13 +272,13 @@ const UsersPage: React.FC = () => {
                                             <td className="px-6 py-4 text-right">
                                                 <div className="relative inline-block">
                                                     <button
-                                                        onClick={() => setOpenActionId(openActionId === user.id ? null : user.id)}
+                                                        onClick={(e) => { e.stopPropagation(); setOpenActionId(openActionId === user.id ? null : user.id); }}
                                                         className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition-colors"
                                                     >
                                                         <MoreVertical className="w-4 h-4" />
                                                     </button>
                                                     {openActionId === user.id && (
-                                                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl shadow-xl z-20 overflow-hidden">
+                                                        <div className="absolute right-0 bottom-full mb-1 w-48 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl shadow-xl z-50 overflow-hidden">
                                                             <button
                                                                 onClick={() => {
                                                                     setSelectedUser(user);
