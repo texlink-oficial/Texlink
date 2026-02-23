@@ -571,8 +571,10 @@ export class OnboardingService {
       throw new BadRequestException('Email de contato não configurado');
     }
 
+    const contactEmail = credential.contactEmail.toLowerCase().trim();
+
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: credential.contactEmail },
+      where: { email: contactEmail },
     });
 
     if (existingUser) {
@@ -587,7 +589,7 @@ export class OnboardingService {
     // Create the user
     const user = await this.prisma.user.create({
       data: {
-        email: credential.contactEmail,
+        email: contactEmail,
         name: credential.contactName || 'Usuário',
         passwordHash,
         role: 'SUPPLIER',

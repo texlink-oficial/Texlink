@@ -77,8 +77,10 @@ export class UsersService {
   }
 
   async createUser(dto: AdminCreateUserDto) {
+    const email = dto.email.toLowerCase().trim();
+
     const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email },
     });
 
     if (existing) {
@@ -89,7 +91,7 @@ export class UsersService {
 
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
+        email,
         name: dto.name,
         passwordHash: hashedPassword,
         role: dto.role,

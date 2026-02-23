@@ -85,10 +85,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const register = useCallback(async (email: string, password: string, name: string, role: 'BRAND' | 'SUPPLIER', extra?: { legalName?: string; tradeName?: string; document?: string; phone?: string; city?: string; state?: string; invitationToken?: string }) => {
-        await authService.register({ email, password, name, role, ...extra });
+        const response = await authService.register({ email, password, name, role, ...extra });
         setToken(authService.getToken());
-        const profile = await authService.getProfile();
-        setUser(profile);
+        try {
+            const profile = await authService.getProfile();
+            setUser(profile);
+        } catch {
+            // Registration succeeded but profile fetch failed — set basic user data
+            // from the register response so navigation can still proceed
+            setUser(response.user as User);
+        }
     }, []);
 
     const logout = useCallback(() => {

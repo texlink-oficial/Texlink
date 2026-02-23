@@ -42,14 +42,25 @@ export class AuthService {
       this.configService.get<string>('jwt.refreshExpiresIn') || '7d';
   }
 
+  async isEmailAvailable(email: string): Promise<boolean> {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+      select: { id: true },
+    });
+    return !existing;
+  }
+
   async register(dto: RegisterDto) {
+    // Normalize email to lowercase to prevent case-sensitive duplicates
+    const email = dto.email.toLowerCase().trim();
+
     // Hash password before transaction (CPU-intensive, don't hold tx open)
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
     const result = await this.prisma.$transaction(async (tx) => {
       // Check if email already exists
       const existingUser = await tx.user.findUnique({
-        where: { email: dto.email },
+        where: { email },
       });
 
       if (existingUser) {
@@ -69,7 +80,7 @@ export class AuthService {
       // Create user
       const user = await tx.user.create({
         data: {
-          email: dto.email,
+          email,
           passwordHash,
           name: dto.name,
           role: dto.role,
@@ -95,7 +106,7 @@ export class AuthService {
             city: dto.city || '',
             state: dto.state || '',
             phone: dto.phone,
-            email: dto.email,
+            email,
             status: 'PENDING',
           },
         });
@@ -125,7 +136,7 @@ export class AuthService {
             city: dto.city || '',
             state: dto.state || '',
             phone: dto.phone,
-            email: dto.email,
+            email,
             status: 'PENDING',
           },
         });
@@ -199,8 +210,9 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const lockoutKey = `auth:lockout:${dto.email}`;
-    const attemptsKey = `auth:attempts:${dto.email}`;
+    const loginEmail = dto.email.toLowerCase().trim();
+    const lockoutKey = `auth:lockout:${loginEmail}`;
+    const attemptsKey = `auth:attempts:${loginEmail}`;
 
     // Check if account is locked
     const lockout = await this.cache.get<string>(lockoutKey);
@@ -212,7 +224,7 @@ export class AuthService {
 
     // Find user with company information
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email: loginEmail },
       include: {
         companyUsers: {
           include: {
@@ -362,11 +374,13 @@ export class AuthService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const normalizedEmail = dto.email?.toLowerCase().trim();
+
     // If email is changing, check uniqueness
-    if (dto.email) {
+    if (normalizedEmail) {
       const existing = await this.prisma.user.findFirst({
         where: {
-          email: dto.email,
+          email: normalizedEmail,
           id: { not: userId },
         },
       });
@@ -380,7 +394,7 @@ export class AuthService {
       where: { id: userId },
       data: {
         ...(dto.name && { name: dto.name }),
-        ...(dto.email && { email: dto.email }),
+        ...(normalizedEmail && { email: normalizedEmail }),
       },
     });
 
@@ -470,7 +484,7 @@ export class AuthService {
       'Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.';
 
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email: dto.email.toLowerCase().trim() },
       select: { id: true, name: true, email: true, isActive: true },
     });
 

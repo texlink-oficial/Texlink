@@ -849,13 +849,15 @@ export class AdminService {
   // ========== Register Company (full flow) ==========
 
   async registerCompany(dto: AdminRegisterCompanyDto, adminId: string) {
+    const email = dto.email.toLowerCase().trim();
+
     // Hash password outside transaction (CPU-intensive)
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
     const result = await this.prisma.$transaction(async (tx) => {
       // Validate unique email
       const existingUser = await tx.user.findUnique({
-        where: { email: dto.email },
+        where: { email },
       });
       if (existingUser) {
         throw new ConflictException('Já existe um usuário com este e-mail');
@@ -873,7 +875,7 @@ export class AdminService {
       const userRole = dto.type === CompanyType.SUPPLIER ? 'SUPPLIER' : 'BRAND';
       const user = await tx.user.create({
         data: {
-          email: dto.email,
+          email,
           passwordHash,
           name: dto.userName,
           role: userRole,
@@ -891,7 +893,7 @@ export class AdminService {
           city: dto.city,
           state: dto.state,
           phone: dto.companyPhone || dto.userPhone,
-          email: dto.companyEmail || dto.email,
+          email: (dto.companyEmail || email).toLowerCase().trim(),
           status: CompanyStatus.ACTIVE,
           statusChangedAt: new Date(),
           statusChangedById: adminId,

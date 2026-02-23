@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AuthLayout from '../../components/auth/AuthLayout';
@@ -54,6 +54,7 @@ const RegisterPage: React.FC = () => {
     const [error, setError] = useState('');
     const [step1Error, setStep1Error] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const submittingRef = useRef(false);
 
     // Auto-fetch CNPJ data on mount when pre-filled from invitation
     useEffect(() => {
@@ -110,7 +111,9 @@ const RegisterPage: React.FC = () => {
         }
     };
 
-    const handleNextStep = () => {
+    const [step1Loading, setStep1Loading] = useState(false);
+
+    const handleNextStep = async () => {
         setStep1Error('');
 
         if (!name.trim()) {
@@ -141,11 +144,26 @@ const RegisterPage: React.FC = () => {
             return;
         }
 
+        // Check email availability before advancing
+        setStep1Loading(true);
+        try {
+            const { data } = await api.get(`/auth/check-email/${encodeURIComponent(email.trim())}`);
+            if (!data.available) {
+                setStep1Error('Este e-mail já está cadastrado. Tente fazer login ou use outro e-mail.');
+                return;
+            }
+        } catch {
+            // If check fails, allow advancing — backend register will validate again
+        } finally {
+            setStep1Loading(false);
+        }
+
         setStep(2);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (submittingRef.current) return;
         setError('');
 
         if (!legalName.trim()) {
@@ -170,6 +188,7 @@ const RegisterPage: React.FC = () => {
         }
 
         setIsLoading(true);
+        submittingRef.current = true;
 
         try {
             await register(email, password, name, role, {
@@ -188,6 +207,7 @@ const RegisterPage: React.FC = () => {
             setError(Array.isArray(msg) ? msg.join('. ') : msg || 'Erro ao criar conta');
         } finally {
             setIsLoading(false);
+            submittingRef.current = false;
         }
     };
 
@@ -352,10 +372,17 @@ const RegisterPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={handleNextStep}
-                            className="w-full py-3 px-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2"
+                            disabled={step1Loading}
+                            className="w-full py-3 px-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Próximo
-                            <ArrowRight className="w-5 h-5" />
+                            {step1Loading ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    Próximo
+                                    <ArrowRight className="w-5 h-5" />
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>

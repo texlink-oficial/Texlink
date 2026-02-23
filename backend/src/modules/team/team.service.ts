@@ -108,11 +108,13 @@ export class TeamService {
    * Convida um usuário por email
    */
   async inviteUser(companyId: string, invitedById: string, dto: InviteUserDto) {
+    const email = dto.email.toLowerCase().trim();
+
     // Verificar se já existe um usuário com esse email na empresa
     const existingMember = await this.prisma.companyUser.findFirst({
       where: {
         companyId,
-        user: { email: dto.email },
+        user: { email },
       },
     });
 
@@ -124,7 +126,7 @@ export class TeamService {
     const existingInvite = await this.prisma.invitation.findFirst({
       where: {
         companyId,
-        email: dto.email,
+        email,
         status: InvitationStatus.PENDING,
       },
     });
@@ -142,7 +144,7 @@ export class TeamService {
     const invitation = await this.prisma.invitation.create({
       data: {
         companyId,
-        email: dto.email,
+        email,
         companyRole: dto.companyRole || CompanyRole.VIEWER,
         invitedById,
         expiresAt,
@@ -169,9 +171,11 @@ export class TeamService {
    * Cria um usuário diretamente (sem convite)
    */
   async createUser(companyId: string, dto: CreateUserDto) {
+    const email = dto.email.toLowerCase().trim();
+
     // Verificar se email já existe
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email },
     });
 
     if (existingUser) {
@@ -228,7 +232,7 @@ export class TeamService {
 
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
+        email,
         name: dto.name,
         passwordHash: hashedPassword,
         role: userRole,
@@ -625,15 +629,16 @@ export class TeamService {
     }
 
     // Verificar se o usuário já existe
+    const invitationEmail = invitation.email.toLowerCase().trim();
     let user = await this.prisma.user.findUnique({
-      where: { email: invitation.email },
+      where: { email: invitationEmail },
     });
 
     if (!user && !newUserData) {
       // Usuário não existe e não foram fornecidos dados para criar
       return {
         requiresRegistration: true,
-        email: invitation.email,
+        email: invitationEmail,
         company: invitation.company.tradeName,
       };
     }
@@ -648,7 +653,7 @@ export class TeamService {
 
       user = await this.prisma.user.create({
         data: {
-          email: invitation.email,
+          email: invitationEmail,
           name: newUserData.name,
           passwordHash: hashedPassword,
           role: userRole,

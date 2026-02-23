@@ -50,6 +50,13 @@ export class AuthController {
     };
   }
 
+  @Get('check-email/:email')
+  @ThrottleAuth() // 5 requests per minute - prevent enumeration abuse
+  async checkEmail(@Param('email') email: string) {
+    const available = await this.authService.isEmailAvailable(email);
+    return { available };
+  }
+
   @Post('register')
   @ThrottleAuth() // 5 requests per minute - prevent mass registration
   async register(@Body() dto: RegisterDto) {
