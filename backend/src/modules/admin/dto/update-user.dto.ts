@@ -25,8 +25,4 @@ export class AdminUpdateUserDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
-
-  @IsBoolean()
-  @IsOptional()
-  isSuperAdmin?: boolean;
 }

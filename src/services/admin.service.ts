@@ -98,7 +98,6 @@ export interface UpdateUserData {
     email?: string;
     role?: 'ADMIN' | 'BRAND' | 'SUPPLIER';
     isActive?: boolean;
-    isSuperAdmin?: boolean;
 }
 
 export interface AdminRegisterCompanyData {

@@ -101,8 +101,9 @@ export const AdminHeader: React.FC = () => {
             await refreshUser();
             setShowSuperAdminModal(false);
             setMasterPassword('');
-        } catch (err: any) {
-            setSuperAdminError(err?.response?.data?.message || err?.message || 'Senha incorreta');
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { message?: string } }; message?: string };
+            setSuperAdminError(error?.response?.data?.message || error?.message || 'Senha incorreta');
         } finally {
             setSuperAdminLoading(false);
         }

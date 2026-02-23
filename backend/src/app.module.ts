@@ -5,6 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CustomThrottlerGuard } from './common/guards/throttler.guard';
+import { ViewAsGuard } from './common/guards/view-as.guard';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
 import { join } from 'path';
@@ -148,6 +149,11 @@ if (process.env.REDIS_URL) {
     {
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
+    },
+    // Global ViewAs guard – processes X-View-As-Company header for SuperAdmins
+    {
+      provide: APP_GUARD,
+      useClass: ViewAsGuard,
     },
   ],
 })

@@ -295,7 +295,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
-        isSuperAdmin: (user as any).isSuperAdmin || false,
+        isSuperAdmin: user.isSuperAdmin,
         companyId,
         companyName,
         companyType,
@@ -611,7 +611,9 @@ export class AuthService {
       throw new ForbiddenException('Funcionalidade não configurada');
     }
 
-    if (password !== masterPassword) {
+    const passwordBuffer = Buffer.from(password);
+    const masterBuffer = Buffer.from(masterPassword);
+    if (passwordBuffer.length !== masterBuffer.length || !crypto.timingSafeEqual(passwordBuffer, masterBuffer)) {
       throw new ForbiddenException('Senha master incorreta');
     }
 

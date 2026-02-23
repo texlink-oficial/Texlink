@@ -148,7 +148,6 @@ export class UsersService {
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.role !== undefined && { role: dto.role }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
-        // isSuperAdmin is only toggled via POST /auth/superadmin with master password
       },
       select: {
         id: true,
