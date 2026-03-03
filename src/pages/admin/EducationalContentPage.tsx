@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     GraduationCap, Plus, Pencil, Trash2, Eye, EyeOff,
     Save, X, Loader2, GripVertical, ExternalLink, Video, FileText,
-    Image, BookOpen, Clock
+    Image, BookOpen, Clock, Upload, CheckCircle, AlertCircle, Link
 } from 'lucide-react';
 import { educationalContentService, CreateEducationalContentDto, UpdateEducationalContentDto } from '../../services/educationalContent.service';
 import type { EducationalContent, EducationalContentType, EducationalContentCategory } from '../../types';
@@ -27,6 +27,20 @@ const EMPTY_FORM: CreateEducationalContentDto = {
     displayOrder: 0,
 };
 
+const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB
+const MAX_THUMBNAIL_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_VIDEO_TYPES = '.mp4,.webm,.mov';
+const ACCEPTED_IMAGE_TYPES = '.jpg,.jpeg,.png,.webp';
+
+const isExternalUrl = (url: string): boolean => {
+    return /youtube\.com|youtu\.be|vimeo\.com/.test(url);
+};
+
+const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
 const EducationalContentPage: React.FC = () => {
     const [contents, setContents] = useState<EducationalContent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +51,17 @@ const EducationalContentPage: React.FC = () => {
     const [filterActive, setFilterActive] = useState<boolean | undefined>(undefined);
     const [filterType, setFilterType] = useState<EducationalContentType | ''>('');
     const [filterCategory, setFilterCategory] = useState<EducationalContentCategory | ''>('');
+
+    // Upload state
+    const [videoSource, setVideoSource] = useState<'link' | 'upload'>('link');
+    const [videoFile, setVideoFile] = useState<File | null>(null);
+    const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+    const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const videoInputRef = useRef<HTMLInputElement>(null);
+    const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         loadContents();
@@ -61,6 +86,12 @@ const EducationalContentPage: React.FC = () => {
     const openCreateModal = () => {
         setEditingContent(null);
         setFormData({ ...EMPTY_FORM, displayOrder: contents.length });
+        setVideoSource('link');
+        setVideoFile(null);
+        setThumbnailFile(null);
+        setThumbnailPreview(null);
+        setUploadProgress(0);
+        setUploadError(null);
         setIsModalOpen(true);
     };
 
@@ -77,6 +108,14 @@ const EducationalContentPage: React.FC = () => {
             isActive: content.isActive,
             displayOrder: content.displayOrder,
         });
+        // Detect if existing content uses uploaded file vs external link
+        const isUpload = content.contentType === 'VIDEO' && !isExternalUrl(content.contentUrl);
+        setVideoSource(isUpload ? 'upload' : 'link');
+        setVideoFile(null);
+        setThumbnailFile(null);
+        setThumbnailPreview(null);
+        setUploadProgress(0);
+        setUploadError(null);
         setIsModalOpen(true);
     };
 
@@ -84,6 +123,11 @@ const EducationalContentPage: React.FC = () => {
         setIsModalOpen(false);
         setEditingContent(null);
         setFormData(EMPTY_FORM);
+        setVideoFile(null);
+        setThumbnailFile(null);
+        setThumbnailPreview(null);
+        setUploadProgress(0);
+        setUploadError(null);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -94,14 +138,66 @@ const EducationalContentPage: React.FC = () => {
         }));
     };
 
+    const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > MAX_VIDEO_SIZE) {
+            setUploadError(`O vídeo excede o tamanho máximo de ${formatFileSize(MAX_VIDEO_SIZE)}.`);
+            setVideoFile(null);
+            return;
+        }
+
+        setUploadError(null);
+        setVideoFile(file);
+    };
+
+    const handleThumbnailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > MAX_THUMBNAIL_SIZE) {
+            setUploadError(`A thumbnail excede o tamanho máximo de ${formatFileSize(MAX_THUMBNAIL_SIZE)}.`);
+            setThumbnailFile(null);
+            return;
+        }
+
+        setUploadError(null);
+        setThumbnailFile(file);
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (ev) => setThumbnailPreview(ev.target?.result as string);
+        reader.readAsDataURL(file);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
+        setUploadError(null);
 
         try {
+            let contentUrl = formData.contentUrl;
+            let thumbnailUrl = formData.thumbnailUrl;
+
+            // Upload video file if source is 'upload' and file selected
+            if (formData.contentType === 'VIDEO' && videoSource === 'upload' && videoFile) {
+                setIsUploading(true);
+                setUploadProgress(0);
+                const result = await educationalContentService.uploadVideo(videoFile, setUploadProgress);
+                contentUrl = result.url;
+            }
+
+            // Upload thumbnail file if selected
+            if (thumbnailFile) {
+                const result = await educationalContentService.uploadThumbnail(thumbnailFile);
+                thumbnailUrl = result.url;
+            }
+
             const dto: CreateEducationalContentDto | UpdateEducationalContentDto = {
                 ...formData,
-                thumbnailUrl: formData.thumbnailUrl || undefined,
+                contentUrl,
+                thumbnailUrl: thumbnailUrl || undefined,
                 duration: formData.duration || undefined,
             };
 
@@ -113,10 +209,13 @@ const EducationalContentPage: React.FC = () => {
 
             closeModal();
             loadContents();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving content:', error);
+            setUploadError(error?.response?.data?.message || 'Erro ao salvar conteúdo. Tente novamente.');
         } finally {
             setIsSaving(false);
+            setIsUploading(false);
+            setUploadProgress(0);
         }
     };
 
@@ -142,6 +241,17 @@ const EducationalContentPage: React.FC = () => {
 
     const handlePreview = (content: EducationalContent) => {
         window.open(content.contentUrl, '_blank');
+    };
+
+    // Check if form is valid for submission
+    const isFormValid = () => {
+        if (!formData.title || !formData.description) return false;
+        if (formData.contentType === 'VIDEO' && videoSource === 'upload') {
+            // Need either existing uploaded URL or new file
+            const hasExistingUpload = editingContent && !isExternalUrl(formData.contentUrl) && formData.contentUrl;
+            return !!(videoFile || hasExistingUpload);
+        }
+        return !!formData.contentUrl;
     };
 
     return (
@@ -382,6 +492,14 @@ const EducationalContentPage: React.FC = () => {
 
                         <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-140px)]">
                             <div className="p-6 space-y-6">
+                                {/* Error message */}
+                                {uploadError && (
+                                    <div className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl text-red-700 dark:text-red-400 text-sm font-medium">
+                                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                        {uploadError}
+                                    </div>
+                                )}
+
                                 {/* Basic Info */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="col-span-2">
@@ -415,7 +533,14 @@ const EducationalContentPage: React.FC = () => {
                                             <select
                                                 name="contentType"
                                                 value={formData.contentType}
-                                                onChange={handleInputChange}
+                                                onChange={(e) => {
+                                                    handleInputChange(e);
+                                                    // Reset video source when changing type
+                                                    if (e.target.value !== 'VIDEO') {
+                                                        setVideoSource('link');
+                                                        setVideoFile(null);
+                                                    }
+                                                }}
                                                 required
                                                 className="w-full pl-10 pr-8 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-white/[0.06] rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 appearance-none cursor-pointer font-medium"
                                             >
@@ -444,34 +569,180 @@ const EducationalContentPage: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="col-span-2">
-                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Link de Acesso (URL) *</label>
-                                        <div className="relative">
-                                            <ExternalLink className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                            <input
-                                                type="url"
-                                                name="contentUrl"
-                                                value={formData.contentUrl}
-                                                onChange={handleInputChange}
-                                                required
-                                                placeholder="https://..."
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-white/[0.06] rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 shadow-sm transition-all"
-                                            />
+                                    {/* Video Source Toggle - only for VIDEO type */}
+                                    {formData.contentType === 'VIDEO' && (
+                                        <div className="col-span-2">
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Origem do Vídeo *</label>
+                                            <div className="flex rounded-xl border border-gray-200 dark:border-white/[0.06] overflow-hidden">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setVideoSource('link')}
+                                                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold transition-all ${
+                                                        videoSource === 'link'
+                                                            ? 'bg-sky-500 text-white'
+                                                            : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+                                                    }`}
+                                                >
+                                                    <Link className="w-4 h-4" />
+                                                    Link Externo
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setVideoSource('upload')}
+                                                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold transition-all ${
+                                                        videoSource === 'upload'
+                                                            ? 'bg-sky-500 text-white'
+                                                            : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+                                                    }`}
+                                                >
+                                                    <Upload className="w-4 h-4" />
+                                                    Upload de Arquivo
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    <div className="col-span-2">
-                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Link da Thumbnail (URL)</label>
-                                        <div className="relative">
-                                            <Image className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    {/* Content URL / Upload */}
+                                    {formData.contentType === 'VIDEO' && videoSource === 'upload' ? (
+                                        <div className="col-span-2">
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Arquivo de Vídeo *</label>
                                             <input
-                                                type="url"
-                                                name="thumbnailUrl"
-                                                value={formData.thumbnailUrl}
-                                                onChange={handleInputChange}
-                                                placeholder="https://..."
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-white/[0.06] rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 shadow-sm transition-all"
+                                                ref={videoInputRef}
+                                                type="file"
+                                                accept={ACCEPTED_VIDEO_TYPES}
+                                                onChange={handleVideoFileChange}
+                                                className="hidden"
                                             />
+
+                                            {videoFile ? (
+                                                <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl">
+                                                    <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 truncate">{videoFile.name}</p>
+                                                        <p className="text-xs text-emerald-600 dark:text-emerald-500">{formatFileSize(videoFile.size)}</p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setVideoFile(null); if (videoInputRef.current) videoInputRef.current.value = ''; }}
+                                                        className="p-1 text-emerald-500 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ) : editingContent && !isExternalUrl(formData.contentUrl) && formData.contentUrl ? (
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-3 p-3 bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 rounded-xl">
+                                                        <Video className="w-5 h-5 text-sky-500 flex-shrink-0" />
+                                                        <p className="text-sm font-medium text-sky-700 dark:text-sky-400 flex-1">Vídeo já enviado</p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => videoInputRef.current?.click()}
+                                                        className="w-full px-4 py-2 text-sm font-bold text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 rounded-xl transition-all"
+                                                    >
+                                                        Substituir vídeo
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => videoInputRef.current?.click()}
+                                                    className="w-full flex flex-col items-center gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-white/[0.1] rounded-xl hover:border-sky-400 dark:hover:border-sky-500/50 hover:bg-sky-50/50 dark:hover:bg-sky-500/5 transition-all cursor-pointer group"
+                                                >
+                                                    <div className="w-12 h-12 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center group-hover:bg-sky-100 dark:group-hover:bg-sky-500/20 transition-colors">
+                                                        <Upload className="w-6 h-6 text-gray-400 group-hover:text-sky-500 transition-colors" />
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-sm font-bold text-gray-600 dark:text-gray-300 group-hover:text-sky-600 dark:group-hover:text-sky-400">Clique para selecionar o vídeo</p>
+                                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">MP4, WebM ou MOV - até {formatFileSize(MAX_VIDEO_SIZE)}</p>
+                                                    </div>
+                                                </button>
+                                            )}
+
+                                            {/* Upload Progress */}
+                                            {isUploading && (
+                                                <div className="mt-3 space-y-2">
+                                                    <div className="flex items-center justify-between text-xs font-bold">
+                                                        <span className="text-sky-600 dark:text-sky-400">Enviando vídeo...</span>
+                                                        <span className="text-sky-600 dark:text-sky-400">{uploadProgress}%</span>
+                                                    </div>
+                                                    <div className="w-full h-2 bg-gray-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-sky-500 rounded-full transition-all duration-300"
+                                                            style={{ width: `${uploadProgress}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="col-span-2">
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                                                {formData.contentType === 'VIDEO' ? 'Link do Vídeo (YouTube/Vimeo) *' : 'Link de Acesso (URL) *'}
+                                            </label>
+                                            <div className="relative">
+                                                <ExternalLink className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <input
+                                                    type="url"
+                                                    name="contentUrl"
+                                                    value={formData.contentUrl}
+                                                    onChange={handleInputChange}
+                                                    required
+                                                    placeholder="https://..."
+                                                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-white/[0.06] rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 shadow-sm transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Thumbnail */}
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Thumbnail</label>
+                                        <input
+                                            ref={thumbnailInputRef}
+                                            type="file"
+                                            accept={ACCEPTED_IMAGE_TYPES}
+                                            onChange={handleThumbnailFileChange}
+                                            className="hidden"
+                                        />
+
+                                        <div className="flex items-start gap-4">
+                                            {/* Preview */}
+                                            <div className="flex-shrink-0 w-24 h-16 bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden border border-gray-200 dark:border-white/[0.08]">
+                                                {thumbnailPreview ? (
+                                                    <img src={thumbnailPreview} alt="Preview" className="w-full h-full object-cover" />
+                                                ) : formData.thumbnailUrl ? (
+                                                    <img src={formData.thumbnailUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                        <Image className="w-5 h-5" />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="flex-1 space-y-2">
+                                                {thumbnailFile ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                                                        <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400 truncate">{thumbnailFile.name}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); if (thumbnailInputRef.current) thumbnailInputRef.current.value = ''; }}
+                                                            className="p-0.5 text-gray-400 hover:text-red-500 transition-colors"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ) : null}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => thumbnailInputRef.current?.click()}
+                                                    className="px-3 py-1.5 text-xs font-bold text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 rounded-lg transition-all"
+                                                >
+                                                    {thumbnailFile || formData.thumbnailUrl ? 'Trocar imagem' : 'Selecionar imagem'}
+                                                </button>
+                                                <p className="text-[10px] text-gray-400">JPEG, PNG ou WebP - até {formatFileSize(MAX_THUMBNAIL_SIZE)}</p>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -531,21 +802,22 @@ const EducationalContentPage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={closeModal}
-                                    className="px-6 py-2.5 text-gray-500 dark:text-gray-400 font-bold hover:text-gray-900 dark:hover:text-white transition-colors"
+                                    disabled={isUploading}
+                                    className="px-6 py-2.5 text-gray-500 dark:text-gray-400 font-bold hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-50"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={isSaving}
+                                    disabled={isSaving || isUploading || !isFormValid()}
                                     className="flex items-center gap-2 px-8 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-sky-500/20 disabled:opacity-50 active:scale-[0.98]"
                                 >
-                                    {isSaving ? (
+                                    {isSaving || isUploading ? (
                                         <Loader2 className="w-4 h-4 animate-spin text-white" />
                                     ) : (
                                         <Save className="w-4 h-4 text-white" />
                                     )}
-                                    {editingContent ? 'Salvar Alterações' : 'Publicar Conteúdo'}
+                                    {isUploading ? 'Enviando...' : editingContent ? 'Salvar Alterações' : 'Publicar Conteúdo'}
                                 </button>
                             </div>
                         </form>

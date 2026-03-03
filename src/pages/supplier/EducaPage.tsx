@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     ArrowLeft, GraduationCap, RefreshCw, Play, FileText, Image,
-    BookOpen, ExternalLink, Clock, Search, X, Video, File
+    BookOpen, ExternalLink, Clock, Search, X, Video, File, Loader2
 } from 'lucide-react';
 import { educationalContentService } from '../../services/educationalContent.service';
 import type { EducationalContent, EducationalContentCategory, EducationalContentCategoryCount, EducationalContentType } from '../../types';
@@ -32,6 +32,9 @@ const EducaPage: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState<EducationalContentCategory | ''>('');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedVideo, setSelectedVideo] = useState<EducationalContent | null>(null);
+    const [videoUrl, setVideoUrl] = useState<string>('');
+    const [isVideoExternal, setIsVideoExternal] = useState(true);
+    const [isLoadingVideo, setIsLoadingVideo] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -53,22 +56,42 @@ const EducaPage: React.FC = () => {
         }
     };
 
-    const handleContentClick = (content: EducationalContent) => {
+    const isExternalVideo = (url: string): boolean => {
+        return /youtube\.com|youtu\.be|vimeo\.com/.test(url);
+    };
+
+    const handleContentClick = async (content: EducationalContent) => {
         if (content.contentType === 'VIDEO') {
-            setSelectedVideo(content);
+            if (isExternalVideo(content.contentUrl)) {
+                setVideoUrl(content.contentUrl);
+                setIsVideoExternal(true);
+                setSelectedVideo(content);
+            } else {
+                // Fetch presigned URL for uploaded video
+                setIsLoadingVideo(true);
+                setSelectedVideo(content);
+                try {
+                    const { url } = await educationalContentService.getVideoUrl(content.id);
+                    setVideoUrl(url);
+                    setIsVideoExternal(false);
+                } catch (error) {
+                    console.error('Error fetching video URL:', error);
+                    setVideoUrl(content.contentUrl);
+                    setIsVideoExternal(false);
+                } finally {
+                    setIsLoadingVideo(false);
+                }
+            }
         } else {
-            // Open documents, images, and articles in a new tab
             window.open(content.contentUrl, '_blank');
         }
     };
 
     const getVideoEmbedUrl = (url: string): string => {
-        // Convert YouTube watch URL to embed URL
         const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
         if (youtubeMatch) {
             return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
         }
-        // Convert Vimeo URL to embed URL
         const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
         if (vimeoMatch) {
             return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
@@ -281,7 +304,7 @@ const EducaPage: React.FC = () => {
             {selectedVideo && (
                 <div
                     className="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50 p-4"
-                    onClick={() => setSelectedVideo(null)}
+                    onClick={() => { setSelectedVideo(null); setVideoUrl(''); }}
                 >
                     <div
                         className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 w-full max-w-4xl overflow-hidden shadow-xl"
@@ -298,20 +321,33 @@ const EducaPage: React.FC = () => {
                                 </p>
                             </div>
                             <button
-                                onClick={() => setSelectedVideo(null)}
+                                onClick={() => { setSelectedVideo(null); setVideoUrl(''); }}
                                 className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="aspect-video">
-                            <iframe
-                                src={getVideoEmbedUrl(selectedVideo.contentUrl)}
-                                className="w-full h-full"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                            />
+                        <div className="aspect-video bg-black">
+                            {isLoadingVideo ? (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <Loader2 className="w-10 h-10 text-white animate-spin" />
+                                </div>
+                            ) : isVideoExternal ? (
+                                <iframe
+                                    src={getVideoEmbedUrl(videoUrl)}
+                                    className="w-full h-full"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                />
+                            ) : (
+                                <video
+                                    src={videoUrl}
+                                    className="w-full h-full"
+                                    controls
+                                    autoPlay
+                                />
+                            )}
                         </div>
 
                         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
