@@ -21,7 +21,7 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 const MAX_IMAGE_PDF_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB
 
 const getMaxFileSize = (mimetype: string): number => {
   return mimetype.startsWith('video/') ? MAX_VIDEO_SIZE : MAX_IMAGE_PDF_SIZE;
