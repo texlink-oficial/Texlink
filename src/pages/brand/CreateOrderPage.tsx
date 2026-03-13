@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { ordersService, suppliersService, uploadService, favoritesService, settingsService } from '../../services';
 import { ProductTemplate } from '../../services/favorites.service';
 import {
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react';
 import { ProductTemplateSelector, PaymentTermsSelector, FavoriteSupplierBadge, SaveAsTemplateModal } from '../../components/favorites';
 import { PRODUCT_TYPE_OPTIONS } from '../../constants/supplierOptions';
+import { relationshipsService } from '../../services/relationships.service';
 
 interface SupplierOption {
     id: string;
@@ -44,6 +46,7 @@ const CreateOrderPage: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDuplicate, setIsDuplicate] = useState(false);
     const [favoriteSupplierIds, setFavoriteSupplierIds] = useState<string[]>([]);
+    const [linkedSupplierIds, setLinkedSupplierIds] = useState<string[]>([]);
     const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
     const [orderCreated, setOrderCreated] = useState(false);
 
@@ -89,9 +92,12 @@ const CreateOrderPage: React.FC = () => {
         }
     }, [duplicateFrom]);
 
+    const { user: authUser } = useAuth();
+
     useEffect(() => {
         loadSuppliers();
         loadFavoriteSuppliers();
+        loadLinkedSuppliers();
         loadOrderDefaults();
     }, []);
 
@@ -110,6 +116,19 @@ const CreateOrderPage: React.FC = () => {
             setFavoriteSupplierIds(ids);
         } catch (error) {
             console.error('Error loading favorite suppliers:', error);
+        }
+    };
+
+    const loadLinkedSuppliers = async () => {
+        try {
+            if (!authUser?.companyId) return;
+            const relationships = await relationshipsService.getByBrand(authUser.companyId);
+            const activeIds = relationships
+                .filter((r: any) => r.status === 'ACTIVE')
+                .map((r: any) => r.supplierId);
+            setLinkedSupplierIds(activeIds);
+        } catch (error) {
+            console.error('Error loading linked suppliers:', error);
         }
     };
 
@@ -133,12 +152,21 @@ const CreateOrderPage: React.FC = () => {
     };
 
     const handleSupplierToggle = (supplierId: string) => {
-        setFormData(prev => ({
-            ...prev,
-            targetSupplierIds: prev.targetSupplierIds.includes(supplierId)
-                ? prev.targetSupplierIds.filter(id => id !== supplierId)
-                : [...prev.targetSupplierIds, supplierId],
-        }));
+        if (formData.assignmentType === 'BIDDING') {
+            // Fechado: single select — toggle on/off
+            setFormData(prev => ({
+                ...prev,
+                targetSupplierIds: prev.targetSupplierIds.includes(supplierId) ? [] : [supplierId],
+            }));
+        } else {
+            // Híbrido: multi select
+            setFormData(prev => ({
+                ...prev,
+                targetSupplierIds: prev.targetSupplierIds.includes(supplierId)
+                    ? prev.targetSupplierIds.filter(id => id !== supplierId)
+                    : [...prev.targetSupplierIds, supplierId],
+            }));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -233,11 +261,21 @@ const CreateOrderPage: React.FC = () => {
     const netValue = totalValue - platformFee;
 
     // Sort suppliers: favorites first, then by rating
+    // Filter suppliers based on assignment type:
+    // DIRECT → only linked (vinculadas) suppliers
+    // BIDDING/HYBRID → all suppliers
+    const filteredSuppliers = useMemo(() => {
+        if (formData.assignmentType === 'DIRECT') {
+            return suppliers.filter(s => linkedSupplierIds.includes(s.id));
+        }
+        return suppliers;
+    }, [suppliers, linkedSupplierIds, formData.assignmentType]);
+
     const sortedSuppliers = useMemo(() => {
-        const favorites = suppliers.filter(s => favoriteSupplierIds.includes(s.id));
-        const others = suppliers.filter(s => !favoriteSupplierIds.includes(s.id));
+        const favorites = filteredSuppliers.filter(s => favoriteSupplierIds.includes(s.id));
+        const others = filteredSuppliers.filter(s => !favoriteSupplierIds.includes(s.id));
         return [...favorites, ...others];
-    }, [suppliers, favoriteSupplierIds]);
+    }, [filteredSuppliers, favoriteSupplierIds]);
 
     const handleTemplateSelect = (template: ProductTemplate) => {
         setFormData(prev => ({
@@ -538,11 +576,11 @@ const CreateOrderPage: React.FC = () => {
                                 <span className={`font-semibold ${formData.assignmentType === 'DIRECT' ? 'text-brand-600 dark:text-brand-400' : 'text-gray-700 dark:text-gray-300'}`}>Direto</span>
                                 {formData.assignmentType === 'DIRECT' && <CheckCircle className="w-5 h-5 text-brand-600 dark:text-brand-500" />}
                             </div>
-                            <p className="text-sm text-gray-500">Uma facção específica</p>
+                            <p className="text-sm text-gray-500">Facções vinculadas</p>
                         </button>
                         <button
                             type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, assignmentType: 'BIDDING', supplierId: '' }))}
+                            onClick={() => setFormData(prev => ({ ...prev, assignmentType: 'BIDDING', supplierId: '', targetSupplierIds: [] }))}
                             className={`p-4 rounded-xl border text-left transition-all ${formData.assignmentType === 'BIDDING'
                                 ? 'bg-brand-50 dark:bg-brand-500/10 border-brand-500/50 ring-1 ring-brand-500/50'
                                 : 'bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
@@ -552,11 +590,11 @@ const CreateOrderPage: React.FC = () => {
                                 <span className={`font-semibold ${formData.assignmentType === 'BIDDING' ? 'text-brand-600 dark:text-brand-400' : 'text-gray-700 dark:text-gray-300'}`}>Fechado</span>
                                 {formData.assignmentType === 'BIDDING' && <CheckCircle className="w-5 h-5 text-brand-600 dark:text-brand-500" />}
                             </div>
-                            <p className="text-sm text-gray-500">Apenas facções convidadas</p>
+                            <p className="text-sm text-gray-500">Selecione uma facção</p>
                         </button>
                         <button
                             type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, assignmentType: 'HYBRID', supplierId: '' }))}
+                            onClick={() => setFormData(prev => ({ ...prev, assignmentType: 'HYBRID', supplierId: '', targetSupplierIds: [] }))}
                             className={`p-4 rounded-xl border text-left transition-all ${formData.assignmentType === 'HYBRID'
                                 ? 'bg-brand-50 dark:bg-brand-500/10 border-brand-500/50 ring-1 ring-brand-500/50'
                                 : 'bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
@@ -566,7 +604,7 @@ const CreateOrderPage: React.FC = () => {
                                 <span className={`font-semibold ${formData.assignmentType === 'HYBRID' ? 'text-brand-600 dark:text-brand-400' : 'text-gray-700 dark:text-gray-300'}`}>Híbrido</span>
                                 {formData.assignmentType === 'HYBRID' && <CheckCircle className="w-5 h-5 text-brand-600 dark:text-brand-500" />}
                             </div>
-                            <p className="text-sm text-gray-500">Convidados + Aberto a todos</p>
+                            <p className="text-sm text-gray-500">Convide múltiplas facções</p>
                         </button>
                     </div>
 
@@ -576,6 +614,18 @@ const CreateOrderPage: React.FC = () => {
                         </div>
                     ) : (
                         <div>
+                            {formData.assignmentType === 'DIRECT' && (
+                                <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-xl flex gap-3 text-sm text-blue-800 dark:text-blue-300">
+                                    <Info className="w-5 h-5 flex-shrink-0" />
+                                    <p>Selecione uma das facções vinculadas à sua marca. Para vincular novas facções, acesse <strong>Facções &gt; Adicionar</strong>.</p>
+                                </div>
+                            )}
+                            {formData.assignmentType === 'BIDDING' && (
+                                <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-xl flex gap-3 text-sm text-blue-800 dark:text-blue-300">
+                                    <Info className="w-5 h-5 flex-shrink-0" />
+                                    <p>Selecione <strong>uma facção</strong> para receber este pedido de forma exclusiva.</p>
+                                </div>
+                            )}
                             {formData.assignmentType === 'HYBRID' && (
                                 <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-xl flex gap-3 text-sm text-blue-800 dark:text-blue-300">
                                     <Info className="w-5 h-5 flex-shrink-0" />
@@ -586,9 +636,11 @@ const CreateOrderPage: React.FC = () => {
                                 </div>
                             )}
 
-                            {suppliers.length === 0 ? (
+                            {sortedSuppliers.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500 bg-gray-50 dark:bg-gray-900/30 rounded-xl border border-gray-200 dark:border-gray-800 border-dashed">
-                                    Nenhuma facção encontrada
+                                    {formData.assignmentType === 'DIRECT'
+                                        ? 'Nenhuma facção vinculada. Vincule facções em "Facções > Adicionar".'
+                                        : 'Nenhuma facção encontrada'}
                                 </div>
                             ) : (
                                 <div className="max-h-96 overflow-y-auto pr-2 space-y-2 custom-scrollbar">

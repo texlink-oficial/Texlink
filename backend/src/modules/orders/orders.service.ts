@@ -502,6 +502,11 @@ export class OrdersService {
           'targetSupplierIds is required for BIDDING orders',
         );
       }
+      if (dto.targetSupplierIds.length !== 1) {
+        throw new BadRequestException(
+          'Pedidos do tipo Fechado devem ter exatamente uma facção selecionada',
+        );
+      }
       orderData.targetSuppliers = {
         createMany: {
           data: dto.targetSupplierIds.map((supplierId) => ({
