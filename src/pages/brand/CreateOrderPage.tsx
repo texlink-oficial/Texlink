@@ -480,6 +480,7 @@ const CreateOrderPage: React.FC = () => {
                             type="date"
                             value={formData.deliveryDeadline}
                             onChange={handleChange}
+                            min={new Date().toISOString().split('T')[0]}
                             required
                         />
                         <PaymentTermsSelector
