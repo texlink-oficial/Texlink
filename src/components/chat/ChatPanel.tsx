@@ -45,7 +45,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     onProposalAccepted,
     className = '',
 }) => {
-    const canNegotiate = !orderStatus || NEGOTIATION_STATUSES.includes(orderStatus);
+    const canNegotiate = !!orderStatus && NEGOTIATION_STATUSES.includes(orderStatus);
     const {
         messages,
         isConnected,
