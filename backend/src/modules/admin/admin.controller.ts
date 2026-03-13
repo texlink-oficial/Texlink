@@ -145,6 +145,11 @@ export class AdminController {
     return this.adminService.registerCompany(dto, user.id);
   }
 
+  @Get('companies/:id')
+  async getCompanyDetails(@Param('id', ParseUUIDPipe) id: string) {
+    return this.adminService.getCompanyDetails(id);
+  }
+
   // ========== Company CRUD ==========
 
   @Post('companies')
