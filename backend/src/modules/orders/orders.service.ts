@@ -532,9 +532,12 @@ export class OrdersService {
               },
               {
                 assignmentType: 'HYBRID',
-                status: 'LANCADO_PELA_MARCA', // Only show open hybrid orders if they are in initial status
-                // Don't show if already assigned (checked by supplierId clause)
+                status: 'LANCADO_PELA_MARCA',
                 supplierId: null,
+              },
+              // Orders available to all suppliers (after original supplier rejected)
+              {
+                status: 'DISPONIVEL_PARA_OUTRAS',
               },
             ],
           };

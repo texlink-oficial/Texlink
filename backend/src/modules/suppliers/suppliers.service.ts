@@ -391,6 +391,53 @@ export class SuppliersService {
     };
   }
 
+  /**
+   * Build the WHERE clause for opportunities (reused by getOpportunities and countOpportunities)
+   */
+  private buildOpportunitiesWhere(companyId: string): Prisma.OrderWhereInput {
+    return {
+      OR: [
+        // Direct orders to this supplier
+        {
+          supplierId: companyId,
+          status: OrderStatus.LANCADO_PELA_MARCA,
+        },
+        // Bidding orders where this supplier is targeted
+        {
+          targetSuppliers: {
+            some: {
+              supplierId: companyId,
+              status: 'PENDING',
+            },
+          },
+          status: OrderStatus.LANCADO_PELA_MARCA,
+        },
+        // Orders available to all (after rejection), excluding those this supplier already rejected
+        {
+          status: OrderStatus.DISPONIVEL_PARA_OUTRAS,
+          NOT: {
+            targetSuppliers: {
+              some: {
+                supplierId: companyId,
+                status: OrderTargetStatus.REJECTED,
+              },
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  /**
+   * Count available opportunities for a supplier (same logic as getOpportunities)
+   */
+  async countOpportunities(userId: string): Promise<number> {
+    const company = await this.getMyProfile(userId);
+    return this.prisma.order.count({
+      where: this.buildOpportunitiesWhere(company.id),
+    });
+  }
+
   // Get available opportunities (orders waiting for acceptance)
   async getOpportunities(
     userId: string,
@@ -456,37 +503,7 @@ export class SuppliersService {
     return this.prisma.order.findMany({
       where: {
         AND: [
-          {
-            OR: [
-              // Direct orders to this supplier
-              {
-                supplierId: company.id,
-                status: OrderStatus.LANCADO_PELA_MARCA,
-              },
-              // Bidding orders where this supplier is targeted
-              {
-                targetSuppliers: {
-                  some: {
-                    supplierId: company.id,
-                    status: 'PENDING',
-                  },
-                },
-                status: OrderStatus.LANCADO_PELA_MARCA,
-              },
-              // Orders available to all (after rejection), excluding those this supplier already rejected
-              {
-                status: OrderStatus.DISPONIVEL_PARA_OUTRAS,
-                NOT: {
-                  targetSuppliers: {
-                    some: {
-                      supplierId: company.id,
-                      status: OrderTargetStatus.REJECTED,
-                    },
-                  },
-                },
-              },
-            ],
-          },
+          this.buildOpportunitiesWhere(company.id),
           additionalWhere,
         ],
       },

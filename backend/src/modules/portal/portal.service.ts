@@ -5,6 +5,7 @@ import {
   OrderStatus,
   SupplierDocumentStatus,
 } from '@prisma/client';
+import { SuppliersService } from '../suppliers/suppliers.service';
 
 export interface PortalAlert {
   id: string;
@@ -54,7 +55,10 @@ export interface PerformanceData {
 
 @Injectable()
 export class PortalService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private suppliersService: SuppliersService,
+  ) {}
 
   /**
    * Get supplier company for current user
@@ -115,13 +119,8 @@ export class PortalService {
           },
         },
       }),
-      // Pending acceptance
-      this.prisma.order.count({
-        where: {
-          supplierId: company.id,
-          status: OrderStatus.LANCADO_PELA_MARCA,
-        },
-      }),
+      // Available opportunities (same logic as OpportunitiesPage)
+      this.suppliersService.countOpportunities(userId),
       // Upcoming deliveries (next 7 days)
       this.prisma.order.count({
         where: {
