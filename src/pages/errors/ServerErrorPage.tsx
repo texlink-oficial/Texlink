@@ -28,7 +28,7 @@ const ServerErrorPage: React.FC = () => {
             Tentar novamente
           </button>
           <Link
-            to="/"
+            to="/dashboard"
             className="px-6 py-3 bg-brand-800 hover:bg-brand-700 text-white rounded-lg transition-colors font-medium"
           >
             Ir para o início

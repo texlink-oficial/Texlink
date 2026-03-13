@@ -299,8 +299,8 @@ const App: React.FC = () => {
                                             {/* Error pages */}
                                             <Route path="/500" element={<ServerErrorPage />} />
 
-                                            {/* Default redirect */}
-                                            <Route path="/" element={<Navigate to="/login" replace />} />
+                                            {/* Default redirect — sends authenticated users to their dashboard */}
+                                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
                                             {/* 404 - must be last */}
                                             <Route path="*" element={<NotFoundPage />} />
