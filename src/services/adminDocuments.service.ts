@@ -36,10 +36,10 @@ class AdminDocumentsService {
         if (type) params.append('type', type);
         if (status) params.append('status', status);
 
-        const response = await api.get<AdminDocument[]>(
+        const response = await api.get<{ data: AdminDocument[]; total: number; page: number; totalPages: number }>(
             `${this.basePath}/documents?${params.toString()}`
         );
-        return response.data;
+        return response.data.data;
     }
 
     // Get document stats across all suppliers
