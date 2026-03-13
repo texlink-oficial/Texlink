@@ -296,6 +296,57 @@ export class OrdersService {
         requiresReview: false,
       },
     ],
+    [OrderStatus.AGUARDANDO_RETRABALHO]: [
+      {
+        nextStatus: OrderStatus.ACEITO_PELA_FACCAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Aceitar Retrabalho',
+        description: 'Aceitar o retrabalho e iniciar o fluxo de produção',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.CANCELADO,
+        allowedRoles: ['BRAND', 'SUPPLIER'],
+        label: 'Cancelar Retrabalho',
+        description: 'Cancelar este pedido de retrabalho',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.PARCIALMENTE_APROVADO]: [
+      {
+        nextStatus: OrderStatus.EM_PROCESSO_PAGAMENTO,
+        allowedRoles: ['BRAND'],
+        label: 'Iniciar Pagamento',
+        description: 'Iniciar o processo de pagamento da parte aprovada',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.FINALIZADO,
+        allowedRoles: ['BRAND'],
+        label: 'Finalizar Pedido',
+        description: 'Finalizar o pedido com aprovação parcial',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.REPROVADO]: [
+      {
+        nextStatus: OrderStatus.CANCELADO,
+        allowedRoles: ['BRAND'],
+        label: 'Cancelar Pedido',
+        description: 'Cancelar o pedido reprovado',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
+    ],
   };
 
   // Mapa de "quem estamos aguardando" por status
@@ -312,6 +363,9 @@ export class OrdersService {
     [OrderStatus.EM_REVISAO]: { waitingFor: 'BRAND', label: 'Marca revisando qualidade' },
     [OrderStatus.FILA_DE_PRODUCAO]: { waitingFor: 'SUPPLIER', label: 'Aguardando início da produção' },
     [OrderStatus.EM_PROCESSO_PAGAMENTO]: { waitingFor: 'BRAND', label: 'Aguardando confirmação de pagamento' },
+    [OrderStatus.AGUARDANDO_RETRABALHO]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção aceitar o retrabalho' },
+    [OrderStatus.PARCIALMENTE_APROVADO]: { waitingFor: 'BRAND', label: 'Aprovação parcial — aguardando decisão da Marca' },
+    [OrderStatus.REPROVADO]: { waitingFor: 'BRAND', label: 'Pedido reprovado — aguardando decisão da Marca' },
   };
 
   constructor(
