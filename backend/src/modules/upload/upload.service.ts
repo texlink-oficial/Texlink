@@ -18,6 +18,10 @@ const ALLOWED_MIME_TYPES = [
   'video/mp4',
   'video/webm',
   'video/quicktime', // .mov
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',       // .xlsx
+  'application/vnd.ms-excel',                                                 // .xls
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  // .docx
+  'application/msword',                                                       // .doc
 ];
 
 const MAX_IMAGE_PDF_SIZE = 10 * 1024 * 1024; // 10MB
@@ -44,6 +48,12 @@ const MAGIC_BYTES: Record<string, number[][]> = {
     [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70],
     [0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70],
   ],
+  // Office Open XML (.xlsx, .docx) are ZIP archives starting with PK
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [[0x50, 0x4b, 0x03, 0x04]],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [[0x50, 0x4b, 0x03, 0x04]],
+  // Legacy Office (.xls, .doc) are OLE2 Compound Documents
+  'application/vnd.ms-excel': [[0xd0, 0xcf, 0x11, 0xe0]],
+  'application/msword': [[0xd0, 0xcf, 0x11, 0xe0]],
 };
 
 const validateMagicBytes = (buffer: Buffer, mimetype: string): boolean => {
@@ -164,11 +174,19 @@ export class UploadService {
     }
 
     // Determine attachment type
+    const OFFICE_MIME_TYPES = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+    ];
     let type: AttachmentType;
     if (file.mimetype === 'application/pdf') {
       type = AttachmentType.TECH_SHEET;
     } else if (file.mimetype.startsWith('video/')) {
       type = AttachmentType.VIDEO;
+    } else if (OFFICE_MIME_TYPES.includes(file.mimetype)) {
+      type = AttachmentType.DOC;
     } else {
       type = AttachmentType.IMAGE;
     }

@@ -209,7 +209,11 @@ const CreateOrderPage: React.FC = () => {
     const handleFiles = (files: File[]) => {
         const validTypes = [
             'image/jpeg', 'image/png', 'image/webp', 'application/pdf',
-            'video/mp4', 'video/webm', 'video/quicktime'
+            'video/mp4', 'video/webm', 'video/quicktime',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',       // .xlsx
+            'application/vnd.ms-excel',                                                 // .xls
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  // .docx
+            'application/msword',                                                       // .doc
         ];
         const getMaxSize = (type: string) => {
             return type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
@@ -375,7 +379,7 @@ const CreateOrderPage: React.FC = () => {
                                 ref={fileInputRef}
                                 type="file"
                                 multiple
-                                accept=".pdf,.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov,.xlsx,.xls,.docx,.doc"
                                 onChange={handleFileChange}
                                 className="hidden"
                             />
@@ -385,7 +389,7 @@ const CreateOrderPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <p className="text-gray-700 dark:text-gray-200 font-medium">Clique para fazer upload ou arraste arquivos</p>
-                                    <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">PDF, JPG, PNG (máx. 10MB) | Vídeos MP4, WebM, MOV (máx. 50MB)</p>
+                                    <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">PDF, JPG, PNG, Excel, Word (máx. 10MB) | Vídeos MP4, WebM, MOV (máx. 50MB)</p>
                                 </div>
                             </div>
                         </div>
