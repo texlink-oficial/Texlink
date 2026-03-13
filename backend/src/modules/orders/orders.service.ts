@@ -581,7 +581,10 @@ export class OrdersService {
               { supplierId: companyUser.companyId },
               {
                 targetSuppliers: {
-                  some: { supplierId: companyUser.companyId },
+                  some: {
+                    supplierId: companyUser.companyId,
+                    status: { not: OrderTargetStatus.REJECTED },
+                  },
                 },
               },
               {
@@ -779,69 +782,100 @@ export class OrdersService {
     }
 
     // Check if this supplier can accept
+    const isTargetSupplier = order.targetSuppliers.some(
+      (t) =>
+        t.supplierId === companyUser.companyId &&
+        (t.status === OrderTargetStatus.PENDING || t.status === OrderTargetStatus.INTERESTED),
+    );
+    const isDirectSupplier = order.supplierId === companyUser.companyId;
+    const isHybridOpen =
+      order.assignmentType === OrderAssignmentType.HYBRID &&
+      !order.supplierId &&
+      order.status === OrderStatus.LANCADO_PELA_MARCA;
+
     const canAccept =
       ((order.status === OrderStatus.LANCADO_PELA_MARCA ||
         order.status === OrderStatus.EM_NEGOCIACAO) &&
-        (order.supplierId === companyUser.companyId ||
-          order.targetSuppliers.some(
-            (t) =>
-              t.supplierId === companyUser.companyId &&
-              (t.status === OrderTargetStatus.PENDING || t.status === OrderTargetStatus.INTERESTED),
-          ))) ||
+        (isDirectSupplier || isTargetSupplier || isHybridOpen)) ||
       order.status === OrderStatus.DISPONIVEL_PARA_OUTRAS;
 
     if (!canAccept) {
       throw new ForbiddenException('Você não pode aceitar este pedido');
     }
 
-    // Update order
-    const updated = await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: OrderStatus.ACEITO_PELA_FACCAO,
-        supplierId: companyUser.companyId,
-        acceptedAt: new Date(),
-        acceptedById: userId,
-        statusHistory: {
-          create: {
-            previousStatus: order.status,
-            newStatus: OrderStatus.ACEITO_PELA_FACCAO,
-            changedById: userId,
-            notes: 'Order accepted by supplier',
+    // Use transaction to prevent race condition where two suppliers accept simultaneously
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Re-check status inside transaction to prevent race condition
+      const freshOrder = await tx.order.findUnique({
+        where: { id: orderId },
+        select: { status: true, supplierId: true },
+      });
+
+      if (
+        !freshOrder ||
+        (freshOrder.status !== OrderStatus.LANCADO_PELA_MARCA &&
+          freshOrder.status !== OrderStatus.EM_NEGOCIACAO &&
+          freshOrder.status !== OrderStatus.DISPONIVEL_PARA_OUTRAS)
+      ) {
+        throw new ForbiddenException('Este pedido já foi aceito por outra facção');
+      }
+
+      // Update order
+      const result = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: OrderStatus.ACEITO_PELA_FACCAO,
+          supplierId: companyUser.companyId,
+          acceptedAt: new Date(),
+          acceptedById: userId,
+          statusHistory: {
+            create: {
+              previousStatus: order.status,
+              newStatus: OrderStatus.ACEITO_PELA_FACCAO,
+              changedById: userId,
+              notes: 'Order accepted by supplier',
+            },
           },
         },
-      },
-      include: {
-        brand: { select: { id: true, tradeName: true, logoUrl: true } },
-        supplier: { select: { id: true, tradeName: true, logoUrl: true } },
-      },
+        include: {
+          brand: { select: { id: true, tradeName: true, logoUrl: true } },
+          supplier: { select: { id: true, tradeName: true, logoUrl: true } },
+        },
+      });
+
+      // For BIDDING and HYBRID: update target suppliers
+      if (
+        order.assignmentType === OrderAssignmentType.BIDDING ||
+        order.assignmentType === OrderAssignmentType.HYBRID
+      ) {
+        // Mark accepting supplier as ACCEPTED
+        await tx.orderTargetSupplier.updateMany({
+          where: {
+            orderId,
+            supplierId: companyUser.companyId,
+          },
+          data: {
+            status: OrderTargetStatus.ACCEPTED,
+            respondedAt: new Date(),
+          },
+        });
+
+        // Reject all other suppliers
+        await tx.orderTargetSupplier.updateMany({
+          where: {
+            orderId,
+            supplierId: { not: companyUser.companyId },
+            status: { in: [OrderTargetStatus.PENDING, OrderTargetStatus.INTERESTED] },
+          },
+          data: {
+            status: OrderTargetStatus.REJECTED,
+            respondedAt: new Date(),
+          },
+        });
+      }
+
+      return result;
     });
-
-    // If bidding, update target suppliers
-    if (order.assignmentType === OrderAssignmentType.BIDDING) {
-      await this.prisma.orderTargetSupplier.updateMany({
-        where: {
-          orderId,
-          supplierId: companyUser.companyId,
-        },
-        data: {
-          status: OrderTargetStatus.ACCEPTED,
-          respondedAt: new Date(),
-        },
-      });
-
-      // Reject other suppliers
-      await this.prisma.orderTargetSupplier.updateMany({
-        where: {
-          orderId,
-          supplierId: { not: companyUser.companyId },
-        },
-        data: {
-          status: OrderTargetStatus.REJECTED,
-          respondedAt: new Date(),
-        },
-      });
-    }
 
     // Emit order accepted event
     const acceptedEvent: OrderAcceptedEvent = {
