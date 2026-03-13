@@ -7,6 +7,7 @@ import {
     Send, Loader2, Factory, FileText, Upload, X, Image, CheckCircle, AlertCircle, Star, Film, Copy, Info, Bookmark, Lock
 } from 'lucide-react';
 import { ProductTemplateSelector, PaymentTermsSelector, FavoriteSupplierBadge, SaveAsTemplateModal } from '../../components/favorites';
+import { PRODUCT_TYPE_OPTIONS } from '../../constants/supplierOptions';
 
 interface SupplierOption {
     id: string;
@@ -301,13 +302,22 @@ const CreateOrderPage: React.FC = () => {
                             placeholder="Ex: Camiseta"
                             required
                         />
-                        <Input
-                            label="Categoria"
-                            name="productCategory"
-                            value={formData.productCategory}
-                            onChange={handleChange}
-                            placeholder="Ex: Casual"
-                        />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Categoria
+                            </label>
+                            <select
+                                name="productCategory"
+                                value={formData.productCategory}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all"
+                            >
+                                <option value="">Selecione uma categoria</option>
+                                {PRODUCT_TYPE_OPTIONS.map((cat) => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                     <Input
                         label="Nome do Produto *"
