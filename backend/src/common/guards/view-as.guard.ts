@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, Logger } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, Logger, ForbiddenException } from '@nestjs/common';
 import { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -77,6 +77,17 @@ export class ViewAsGuard implements CanActivate {
     // Mark the request as a ViewAs session for audit/logging
     request.isViewAs = true;
     request.viewAsCompanyId = company.id;
+
+    // ViewAs is read-only: block all mutating HTTP methods
+    const method = request.method.toUpperCase();
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      this.logger.warn(
+        `SuperAdmin ${user.id} blocked from ${method} ${request.url} in ViewAs mode (company: ${company.tradeName})`,
+      );
+      throw new ForbiddenException(
+        'Operação não permitida no modo "Ver Como". Este modo é somente leitura.',
+      );
+    }
 
     this.logger.log(
       `SuperAdmin ${user.id} viewing as ${company.type} "${company.tradeName}" (${company.id})`,
