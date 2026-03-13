@@ -103,6 +103,64 @@ class EducationalContentService {
     async updateOrder(items: { id: string; displayOrder: number }[]): Promise<void> {
         await api.patch(`${this.basePath}/admin/order`, items);
     }
+
+    // ========== FILE UPLOAD ==========
+
+    async uploadVideo(
+        file: File,
+        onProgress?: (percent: number) => void,
+    ): Promise<{ url: string; key: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await api.post<{ url: string; key: string }>(
+            `${this.basePath}/admin/upload/video`,
+            formData,
+            {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                timeout: 600000, // 10 min for large videos
+                onUploadProgress: (progressEvent) => {
+                    if (onProgress && progressEvent.total) {
+                        onProgress(
+                            Math.round((progressEvent.loaded * 100) / progressEvent.total),
+                        );
+                    }
+                },
+            },
+        );
+        return response.data;
+    }
+
+    async uploadThumbnail(
+        file: File,
+        onProgress?: (percent: number) => void,
+    ): Promise<{ url: string; key: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await api.post<{ url: string; key: string }>(
+            `${this.basePath}/admin/upload/thumbnail`,
+            formData,
+            {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onUploadProgress: (progressEvent) => {
+                    if (onProgress && progressEvent.total) {
+                        onProgress(
+                            Math.round((progressEvent.loaded * 100) / progressEvent.total),
+                        );
+                    }
+                },
+            },
+        );
+        return response.data;
+    }
+
+    async getVideoUrl(id: string): Promise<{ url: string; isExternal: boolean }> {
+        const response = await api.get<{ url: string; isExternal: boolean }>(
+            `${this.basePath}/${id}/video-url`,
+        );
+        return response.data;
+    }
 }
 
 export const educationalContentService = new EducationalContentService();

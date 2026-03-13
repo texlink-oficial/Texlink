@@ -38,7 +38,7 @@ const storageProviderFactory = {
     MulterModule.register({
       storage: memoryStorage(), // Store in memory for processing before saving
       limits: {
-        fileSize: 50 * 1024 * 1024, // 50MB (para acomodar vídeos)
+        fileSize: 210 * 1024 * 1024, // 210MB (para acomodar vídeos educacionais)
         files: 5,
       },
     }),

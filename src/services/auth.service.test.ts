@@ -5,6 +5,7 @@ vi.mock('./api', () => {
   const mockApi = {
     post: vi.fn(),
     get: vi.fn(),
+    patch: vi.fn(),
     interceptors: {
       request: { use: vi.fn() },
       response: { use: vi.fn() },
@@ -22,6 +23,8 @@ const mockApi = vi.mocked(api);
 describe('authService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // SEC-F001: Clear in-memory tokens between tests
+    authService.clearTokens();
     sessionStorage.clear();
     localStorage.clear();
   });
@@ -46,17 +49,19 @@ describe('authService', () => {
       });
     });
 
-    it('should store tokens and user in storage', async () => {
+    it('should store tokens in memory (not in storage)', async () => {
       mockApi.post.mockResolvedValue(loginResponse);
 
       await authService.login({ email: 'test@test.com', password: 'pass123' });
 
-      expect(sessionStorage.setItem).toHaveBeenCalledWith('token', 'access-token-123');
-      expect(localStorage.setItem).toHaveBeenCalledWith('refreshToken', 'refresh-token-456');
-      expect(localStorage.setItem).toHaveBeenCalledWith(
-        'user',
-        JSON.stringify(loginResponse.data.user),
-      );
+      // Tokens should be in memory
+      expect(authService.getToken()).toBe('access-token-123');
+      expect(authService.getRefreshToken()).toBe('refresh-token-456');
+
+      // Tokens should NOT be in storage
+      expect(sessionStorage.getItem('token')).toBeNull();
+      expect(localStorage.getItem('refreshToken')).toBeNull();
+      expect(localStorage.getItem('user')).toBeNull();
     });
 
     it('should return the full auth response', async () => {
@@ -78,12 +83,8 @@ describe('authService', () => {
 
       await authService.login({ email: 'test@test.com', password: 'pass123' });
 
-      expect(sessionStorage.setItem).toHaveBeenCalledWith('token', 'access-token-123');
-      // refreshToken should NOT be stored when undefined
-      const refreshCalls = (localStorage.setItem as ReturnType<typeof vi.fn>).mock.calls.filter(
-        ([key]: [string]) => key === 'refreshToken',
-      );
-      expect(refreshCalls).toHaveLength(0);
+      expect(authService.getToken()).toBe('access-token-123');
+      expect(authService.getRefreshToken()).toBeNull();
     });
   });
 
@@ -112,7 +113,7 @@ describe('authService', () => {
       });
     });
 
-    it('should store tokens after register', async () => {
+    it('should store tokens in memory after register', async () => {
       mockApi.post.mockResolvedValue({
         data: {
           user: { id: 'u1', email: 'new@test.com', name: 'New', role: 'SUPPLIER' },
@@ -128,13 +129,36 @@ describe('authService', () => {
         role: 'SUPPLIER',
       });
 
-      expect(sessionStorage.setItem).toHaveBeenCalledWith('token', 'reg-token');
-      expect(localStorage.setItem).toHaveBeenCalledWith('refreshToken', 'reg-refresh');
+      expect(authService.getToken()).toBe('reg-token');
+      expect(authService.getRefreshToken()).toBe('reg-refresh');
+    });
+
+    it('should clear previous tokens before registering', async () => {
+      // Set existing tokens
+      authService.setTokens('old-access', 'old-refresh');
+
+      mockApi.post.mockResolvedValue({
+        data: {
+          user: { id: 'u2', email: 'new@test.com', name: 'New', role: 'BRAND' },
+          accessToken: 'new-token',
+          refreshToken: 'new-refresh',
+        },
+      });
+
+      await authService.register({
+        email: 'new@test.com',
+        password: 'pass',
+        name: 'New',
+        role: 'BRAND',
+      });
+
+      expect(authService.getToken()).toBe('new-token');
+      expect(authService.getRefreshToken()).toBe('new-refresh');
     });
   });
 
   describe('getProfile', () => {
-    it('should call GET /auth/me and update stored user', async () => {
+    it('should call GET /auth/me and return profile without storing in localStorage', async () => {
       const profile = {
         id: 'u1',
         email: 'test@test.com',
@@ -148,21 +172,22 @@ describe('authService', () => {
 
       expect(mockApi.get).toHaveBeenCalledWith('/auth/me');
       expect(result).toEqual(profile);
-      expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(profile));
+      // SEC-F001: Should NOT store PII in localStorage
+      expect(localStorage.getItem('user')).toBeNull();
     });
   });
 
   describe('refreshTokens', () => {
-    it('should return null when no refresh token in storage', async () => {
+    it('should return null when no refresh token in memory', async () => {
       const result = await authService.refreshTokens();
 
       expect(result).toBeNull();
       expect(mockApi.post).not.toHaveBeenCalled();
     });
 
-    it('should call POST /auth/refresh and update tokens', async () => {
-      // Simulate stored refresh token
-      (localStorage.getItem as ReturnType<typeof vi.fn>).mockReturnValue('old-refresh');
+    it('should call POST /auth/refresh and update in-memory tokens', async () => {
+      // Set refresh token in memory
+      authService.setTokens('old-access', 'old-refresh');
       mockApi.post.mockResolvedValue({
         data: { accessToken: 'new-access', refreshToken: 'new-refresh' },
       });
@@ -171,80 +196,87 @@ describe('authService', () => {
 
       expect(mockApi.post).toHaveBeenCalledWith('/auth/refresh', { refreshToken: 'old-refresh' });
       expect(result).toEqual({ accessToken: 'new-access', refreshToken: 'new-refresh' });
-      expect(sessionStorage.setItem).toHaveBeenCalledWith('token', 'new-access');
-      expect(localStorage.setItem).toHaveBeenCalledWith('refreshToken', 'new-refresh');
+      expect(authService.getToken()).toBe('new-access');
+      expect(authService.getRefreshToken()).toBe('new-refresh');
     });
 
-    it('should return null on refresh failure', async () => {
-      (localStorage.getItem as ReturnType<typeof vi.fn>).mockReturnValue('expired-refresh');
+    it('should clear tokens and return null on refresh failure', async () => {
+      authService.setTokens('old-access', 'expired-refresh');
       mockApi.post.mockRejectedValue(new Error('Invalid token'));
 
       const result = await authService.refreshTokens();
 
       expect(result).toBeNull();
+      expect(authService.getToken()).toBeNull();
+      expect(authService.getRefreshToken()).toBeNull();
     });
   });
 
   describe('logout', () => {
-    it('should send logout request and clear all storage', () => {
-      (localStorage.getItem as ReturnType<typeof vi.fn>).mockReturnValue('my-refresh-token');
+    it('should send logout request with in-memory refresh token and clear everything', () => {
+      authService.setTokens('my-access', 'my-refresh-token');
       mockApi.post.mockResolvedValue({});
 
       authService.logout();
 
       expect(mockApi.post).toHaveBeenCalledWith('/auth/logout', { refreshToken: 'my-refresh-token' });
-      expect(sessionStorage.removeItem).toHaveBeenCalledWith('token');
-      expect(localStorage.removeItem).toHaveBeenCalledWith('refreshToken');
-      expect(localStorage.removeItem).toHaveBeenCalledWith('user');
+      // In-memory tokens should be cleared
+      expect(authService.getToken()).toBeNull();
+      expect(authService.getRefreshToken()).toBeNull();
     });
 
     it('should skip logout request when no refresh token', () => {
-      (localStorage.getItem as ReturnType<typeof vi.fn>).mockReturnValue(null);
-
       authService.logout();
 
       expect(mockApi.post).not.toHaveBeenCalled();
-      expect(sessionStorage.removeItem).toHaveBeenCalledWith('token');
     });
   });
 
-  describe('getStoredUser', () => {
-    it('should return parsed user from localStorage', () => {
-      const user = { id: 'u1', email: 'test@test.com', name: 'Test', role: 'BRAND' };
-      (localStorage.getItem as ReturnType<typeof vi.fn>).mockReturnValue(JSON.stringify(user));
+  describe('migrateFromLegacyStorage', () => {
+    it('should migrate tokens from legacy storage to memory', () => {
+      sessionStorage.setItem('token', 'legacy-access');
+      localStorage.setItem('refreshToken', 'legacy-refresh');
+      localStorage.setItem('user', '{"id":"u1"}');
 
-      const result = authService.getStoredUser();
+      const migrated = authService.migrateFromLegacyStorage();
 
-      expect(result).toEqual(user);
+      expect(migrated).toBe(true);
+      expect(authService.getToken()).toBe('legacy-access');
+      expect(authService.getRefreshToken()).toBe('legacy-refresh');
+      // Legacy storage should be cleared
+      expect(sessionStorage.getItem('token')).toBeNull();
+      expect(localStorage.getItem('refreshToken')).toBeNull();
+      expect(localStorage.getItem('user')).toBeNull();
     });
 
-    it('should return null when no user stored', () => {
-      (localStorage.getItem as ReturnType<typeof vi.fn>).mockReturnValue(null);
+    it('should return false when no legacy tokens exist', () => {
+      const migrated = authService.migrateFromLegacyStorage();
 
-      const result = authService.getStoredUser();
-
-      expect(result).toBeNull();
+      expect(migrated).toBe(false);
+      expect(authService.getToken()).toBeNull();
     });
   });
 
   describe('getToken', () => {
-    it('should return token from sessionStorage', () => {
-      (sessionStorage.getItem as ReturnType<typeof vi.fn>).mockReturnValue('my-token');
+    it('should return token from memory', () => {
+      authService.setTokens('my-token', null);
 
       expect(authService.getToken()).toBe('my-token');
+    });
+
+    it('should return null when no token set', () => {
+      expect(authService.getToken()).toBeNull();
     });
   });
 
   describe('isAuthenticated', () => {
-    it('should return true when token exists', () => {
-      (sessionStorage.getItem as ReturnType<typeof vi.fn>).mockReturnValue('token');
+    it('should return true when token exists in memory', () => {
+      authService.setTokens('token', null);
 
       expect(authService.isAuthenticated()).toBe(true);
     });
 
-    it('should return false when no token', () => {
-      (sessionStorage.getItem as ReturnType<typeof vi.fn>).mockReturnValue(null);
-
+    it('should return false when no token in memory', () => {
       expect(authService.isAuthenticated()).toBe(false);
     });
   });

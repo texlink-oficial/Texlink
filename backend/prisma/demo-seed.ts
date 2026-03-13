@@ -96,7 +96,7 @@ async function main() {
             onboardingPhase: 3,
             onboardingComplete: true,
             productTypes: ['Camisetas', 'Moletons'],
-            monthlyCapacity: 5000,
+            dailyCapacity: 5000,
             currentOccupancy: 60,
         },
     });

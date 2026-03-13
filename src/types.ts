@@ -405,7 +405,7 @@ export interface NotificationSettings {
 }
 
 export interface CapacitySettings {
-  monthlyCapacity: number | null;
+  dailyCapacity: number | null;
   currentOccupancy: number;
   activeWorkers: number | null;
   hoursPerDay: number | null;
@@ -416,7 +416,7 @@ export interface CapacitySettings {
 export interface CapacityConfig {
   activeWorkers: number | null;
   hoursPerDay: number | null;
-  monthlyCapacity: number | null;
+  dailyCapacity: number | null;
   currentOccupancy: number;
   productTypes: string[];
   specialties: string[];

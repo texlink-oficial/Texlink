@@ -4,6 +4,12 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
 
+// Production guard: prevent seeding demo data in production
+if (process.env.NODE_ENV === 'production') {
+    console.error('SEED BLOCKED: Cannot run seed in production');
+    process.exit(1);
+}
+
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
@@ -120,7 +126,7 @@ async function main() {
             onboardingComplete: true,
             productTypes: ['Camiseta', 'Calça', 'Vestido'],
             specialties: ['Malha', 'Jeans'],
-            monthlyCapacity: 5000,
+            dailyCapacity: 5000,
             currentOccupancy: 30,
         },
     });

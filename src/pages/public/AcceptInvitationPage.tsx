@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
     Loader2,
     Building2,
@@ -81,10 +81,16 @@ const AcceptInvitationPage: React.FC = () => {
             setIsAccepting(true);
             await api.post(`/suppliers/accept-invite/${token}`);
             setAcceptSuccess(true);
-            // Redirect to login after 3 seconds
+            // Redirect to register page with pre-filled data
             setTimeout(() => {
-                navigate('/login', { state: { message: 'Convite aceito! Faça login para continuar.' } });
-            }, 3000);
+                const params = new URLSearchParams({ token: token });
+                if (invitation?.supplier.contactEmail) params.set('email', invitation.supplier.contactEmail);
+                if (invitation?.supplier.contactName) params.set('name', invitation.supplier.contactName);
+                if (invitation?.supplier.cnpj) params.set('cnpj', invitation.supplier.cnpj);
+                if (invitation?.supplier.legalName) params.set('legalName', invitation.supplier.legalName);
+                if (invitation?.supplier.tradeName) params.set('tradeName', invitation.supplier.tradeName);
+                navigate(`/register?${params.toString()}`);
+            }, 2000);
         } catch (err: unknown) {
             console.error('Error accepting invitation:', err);
             if (err && typeof err === 'object' && 'response' in err) {
@@ -156,7 +162,7 @@ const AcceptInvitationPage: React.FC = () => {
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mb-6">
                         {acceptSuccess
-                            ? 'Você será redirecionado para fazer login em instantes...'
+                            ? 'Você será redirecionado para criar sua conta em instantes...'
                             : 'Este convite já foi aceito anteriormente.'}
                     </p>
                     {acceptSuccess && (
@@ -348,14 +354,17 @@ const AcceptInvitationPage: React.FC = () => {
                     {/* Terms */}
                     <p className="text-xs text-center text-gray-500 dark:text-gray-400">
                         Ao aceitar, você concorda com os{' '}
-                        <a href="/terms" className="text-brand-500 hover:underline">
+                        <Link to="/termos-de-uso" target="_blank" className="text-brand-500 hover:underline">
                             Termos de Uso
-                        </a>{' '}
-                        e{' '}
-                        <a href="/privacy" className="text-brand-500 hover:underline">
+                        </Link>,{' '}
+                        <Link to="/politica-de-privacidade" target="_blank" className="text-brand-500 hover:underline">
                             Política de Privacidade
-                        </a>{' '}
-                        da TexLink.
+                        </Link>{' '}
+                        e{' '}
+                        <Link to="/politica-de-cookies" target="_blank" className="text-brand-500 hover:underline">
+                            Política de Cookies
+                        </Link>{' '}
+                        da Texlink.
                     </p>
                 </div>
             </div>

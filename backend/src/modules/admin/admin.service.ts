@@ -480,17 +480,17 @@ export class AdminService {
         FROM "orders"
         WHERE "status" = 'FINALIZADO'
           AND "updatedAt" >= ${startDate}
-        GROUP BY DATE_TRUNC('month', "updatedAt")
+        GROUP BY 1
       ),
       previous_period AS (
         SELECT
-          DATE_TRUNC('month', "updatedAt" + make_interval(days => ${offsetDays})) as month,
+          DATE_TRUNC('month', "updatedAt" + (${offsetDays} * INTERVAL '1 day')) as month,
           COALESCE(SUM("totalValue"), 0)::float as previous_revenue
         FROM "orders"
         WHERE "status" = 'FINALIZADO'
           AND "updatedAt" >= ${previousStartDate}
           AND "updatedAt" < ${startDate}
-        GROUP BY DATE_TRUNC('month', "updatedAt" + make_interval(days => ${offsetDays}))
+        GROUP BY 1
       )
       SELECT
         c.month,
@@ -849,13 +849,15 @@ export class AdminService {
   // ========== Register Company (full flow) ==========
 
   async registerCompany(dto: AdminRegisterCompanyDto, adminId: string) {
+    const email = dto.email.toLowerCase().trim();
+
     // Hash password outside transaction (CPU-intensive)
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
     const result = await this.prisma.$transaction(async (tx) => {
       // Validate unique email
       const existingUser = await tx.user.findUnique({
-        where: { email: dto.email },
+        where: { email },
       });
       if (existingUser) {
         throw new ConflictException('Já existe um usuário com este e-mail');
@@ -873,7 +875,7 @@ export class AdminService {
       const userRole = dto.type === CompanyType.SUPPLIER ? 'SUPPLIER' : 'BRAND';
       const user = await tx.user.create({
         data: {
-          email: dto.email,
+          email,
           passwordHash,
           name: dto.userName,
           role: userRole,
@@ -891,7 +893,7 @@ export class AdminService {
           city: dto.city,
           state: dto.state,
           phone: dto.companyPhone || dto.userPhone,
-          email: dto.companyEmail || dto.email,
+          email: (dto.companyEmail || email).toLowerCase().trim(),
           status: CompanyStatus.ACTIVE,
           statusChangedAt: new Date(),
           statusChangedById: adminId,
@@ -912,7 +914,7 @@ export class AdminService {
       // Create profile based on type
       if (dto.type === CompanyType.SUPPLIER) {
         const activeWorkers = dto.qtdCostureiras || 0;
-        const monthlyCapacity = activeWorkers > 0 ? activeWorkers * 8 * 60 * 22 : undefined;
+        const dailyCapacity = activeWorkers > 0 ? activeWorkers * 8 * 60 : undefined;
 
         await tx.supplierProfile.create({
           data: {
@@ -922,7 +924,7 @@ export class AdminService {
             productTypes: dto.productTypes,
             specialties: dto.machines || [],
             activeWorkers: activeWorkers || undefined,
-            monthlyCapacity,
+            dailyCapacity,
             businessQualification: {
               qtdColaboradores: dto.qtdCostureiras,
               tempoMercado: dto.tempoMercado,

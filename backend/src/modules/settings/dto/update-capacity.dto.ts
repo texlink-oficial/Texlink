@@ -12,7 +12,7 @@ export class UpdateCapacityDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  monthlyCapacity?: number;
+  dailyCapacity?: number;
 
   @IsOptional()
   @IsInt()

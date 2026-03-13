@@ -174,7 +174,7 @@ export const SupplierDocumentsTab: React.FC<SupplierDocumentsTabProps> = ({
             <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3 text-center">
               <CheckCircle className="w-5 h-5 text-green-500 mx-auto mb-1" />
               <div className="text-xl font-semibold text-gray-900 dark:text-white">{summary.valid}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Validos</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Válidos</div>
             </div>
             <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3 text-center">
               <Clock className="w-5 h-5 text-amber-500 mx-auto mb-1" />
@@ -207,7 +207,7 @@ export const SupplierDocumentsTab: React.FC<SupplierDocumentsTabProps> = ({
           className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         >
           <option value="">Todos os status</option>
-          <option value="VALID">Validos</option>
+          <option value="VALID">Válidos</option>
           <option value="EXPIRING_SOON">Expirando</option>
           <option value="EXPIRED">Vencidos</option>
           <option value="PENDING">Pendentes</option>

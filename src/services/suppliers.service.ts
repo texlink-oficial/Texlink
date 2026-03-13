@@ -11,7 +11,7 @@ export interface SupplierDashboard {
     profile: {
         onboardingPhase: number;
         onboardingComplete: boolean;
-        monthlyCapacity: number;
+        dailyCapacity: number;
         currentOccupancy: number;
     };
     stats: {
@@ -47,7 +47,7 @@ export interface Supplier {
     onTimeDeliveryRate: number;
     productTypes: string[];
     specialties: string[];
-    monthlyCapacity: number;
+    dailyCapacity: number;
     currentOccupancy: number;
     status: string;
     minOrderQuantity?: number;

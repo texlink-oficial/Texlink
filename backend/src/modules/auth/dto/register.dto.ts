@@ -9,6 +9,7 @@ import {
   IsOptional,
 } from 'class-validator';
 import { UserRole } from '@prisma/client';
+import { IsCNPJ } from '../../../common/validators/cnpj.validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -32,13 +33,18 @@ export class RegisterDto {
   })
   role: UserRole;
 
-  // Company fields (required for SUPPLIER)
   @IsString()
-  @IsOptional()
-  companyName?: string;
+  @IsNotEmpty({ message: 'Razao social e obrigatoria' })
+  @MinLength(2, { message: 'Razao social deve ter pelo menos 2 caracteres' })
+  legalName: string;
 
   @IsString()
   @IsOptional()
+  tradeName?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsCNPJ({ message: 'CNPJ inválido. Verifique o número informado.' })
   document?: string; // CNPJ/CPF
 
   @IsString()
@@ -52,4 +58,8 @@ export class RegisterDto {
   @IsString()
   @IsOptional()
   phone?: string;
+
+  @IsString()
+  @IsOptional()
+  invitationToken?: string;
 }

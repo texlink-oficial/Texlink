@@ -117,7 +117,7 @@ export class FavoritesService {
             supplierProfile: {
               select: {
                 productTypes: true,
-                monthlyCapacity: true,
+                dailyCapacity: true,
               },
             },
           },

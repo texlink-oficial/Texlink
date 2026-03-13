@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-    const { user, isLoading, isAuthenticated } = useAuth();
+    const { user, isLoading, isAuthenticated, viewAs } = useAuth();
 
     if (isLoading) {
         return (
@@ -23,8 +23,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
         return <Navigate to="/login" replace />;
     }
 
-    if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-        return <Navigate to="/dashboard" replace />;
+    if (allowedRoles && user) {
+        const effectiveRole = viewAs?.role || user.role;
+        // Allow access if the effective role (viewAs or actual) matches, OR if the actual role matches
+        if (!allowedRoles.includes(effectiveRole) && !allowedRoles.includes(user.role)) {
+            return <Navigate to="/dashboard" replace />;
+        }
     }
 
     return <>{children}</>;

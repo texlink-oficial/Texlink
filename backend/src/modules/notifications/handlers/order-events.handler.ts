@@ -63,15 +63,25 @@ export class OrderEventsHandler {
         recipientIds.push(...supplierUsers.map((u) => u.userId));
       }
 
-      // Send notifications
+      // Send notifications (order created goes to suppliers, use /portal/ prefix)
       for (const recipientId of recipientIds) {
-        await this.notificationsService.notifyOrderCreated(recipientId, {
-          orderId: event.orderId,
-          displayId: event.displayId,
-          brandName: event.brandName,
-          productName: event.productName,
-          quantity: event.quantity,
-          deadline: event.deadline,
+        await this.notificationsService.notify({
+          type: NotificationType.ORDER_CREATED,
+          priority: NotificationPriority.HIGH,
+          recipientId,
+          title: 'Novo Pedido Recebido',
+          body: `${event.brandName} enviou um novo pedido: ${event.productName} (${event.quantity} peças)`,
+          data: {
+            orderId: event.orderId,
+            displayId: event.displayId,
+            brandName: event.brandName,
+            productName: event.productName,
+            quantity: event.quantity,
+            deadline: event.deadline,
+          },
+          actionUrl: `/portal/pedidos/${event.orderId}`,
+          entityType: 'order',
+          entityId: event.orderId,
         });
       }
 
@@ -113,7 +123,7 @@ export class OrderEventsHandler {
           title: 'Pedido Aceito',
           body: `${event.supplierName} aceitou o pedido ${event.displayId}`,
           data: event,
-          actionUrl: `/pedidos/${event.orderId}`,
+          actionUrl: `/brand/pedidos/${event.orderId}`,
           entityType: 'order',
           entityId: event.orderId,
         });
@@ -154,7 +164,7 @@ export class OrderEventsHandler {
             ? `Pedido ${event.displayId} foi recusado: ${event.reason}`
             : `Pedido ${event.displayId} foi recusado pela facção`,
           data: event,
-          actionUrl: `/pedidos/${event.orderId}`,
+          actionUrl: `/brand/pedidos/${event.orderId}`,
           entityType: 'order',
           entityId: event.orderId,
         });
@@ -188,6 +198,15 @@ export class OrderEventsHandler {
 
       if (!order) return;
 
+      const statusLabels: Record<string, string> = {
+        ACEITO_PELA_FACCAO: 'Aceito pela Facção',
+        EM_PRODUCAO: 'Em Produção',
+        PRONTO: 'Pronto para Envio',
+        FINALIZADO: 'Finalizado',
+      };
+
+      const statusLabel = statusLabels[event.newStatus] || event.newStatus;
+
       // Notify brand users (except the one who made the change)
       const brandUsers = await this.prisma.companyUser.findMany({
         where: {
@@ -198,11 +217,21 @@ export class OrderEventsHandler {
       });
 
       for (const user of brandUsers) {
-        await this.notificationsService.notifyOrderStatusChanged(user.userId, {
-          orderId: event.orderId,
-          displayId: event.displayId,
-          newStatus: event.newStatus,
-          productName: order.productName,
+        await this.notificationsService.notify({
+          type: NotificationType.ORDER_STATUS_CHANGED,
+          recipientId: user.userId,
+          companyId: order.brandId,
+          title: 'Status do Pedido Atualizado',
+          body: `Pedido ${event.displayId} (${order.productName}): ${statusLabel}`,
+          data: {
+            orderId: event.orderId,
+            displayId: event.displayId,
+            newStatus: event.newStatus,
+            productName: order.productName,
+          },
+          actionUrl: `/brand/pedidos/${event.orderId}`,
+          entityType: 'order',
+          entityId: event.orderId,
         });
       }
 
@@ -217,15 +246,22 @@ export class OrderEventsHandler {
         });
 
         for (const user of supplierUsers) {
-          await this.notificationsService.notifyOrderStatusChanged(
-            user.userId,
-            {
+          await this.notificationsService.notify({
+            type: NotificationType.ORDER_STATUS_CHANGED,
+            recipientId: user.userId,
+            companyId: order.supplierId,
+            title: 'Status do Pedido Atualizado',
+            body: `Pedido ${event.displayId} (${order.productName}): ${statusLabel}`,
+            data: {
               orderId: event.orderId,
               displayId: event.displayId,
               newStatus: event.newStatus,
               productName: order.productName,
             },
-          );
+            actionUrl: `/portal/pedidos/${event.orderId}`,
+            entityType: 'order',
+            entityId: event.orderId,
+          });
         }
       }
     } catch (error) {
@@ -263,17 +299,23 @@ export class OrderEventsHandler {
       ) as string[];
       const users = await this.prisma.companyUser.findMany({
         where: { companyId: { in: allCompanyIds } },
-        select: { userId: true },
+        select: { userId: true, companyId: true },
       });
 
       for (const user of users) {
+        const actionUrl =
+          user.companyId === order.brandId
+            ? `/brand/pedidos/${event.orderId}`
+            : `/portal/pedidos/${event.orderId}`;
+
         await this.notificationsService.notify({
           type: NotificationType.ORDER_FINALIZED,
           priority: NotificationPriority.NORMAL,
           recipientId: user.userId,
+          companyId: user.companyId,
           title: 'Pedido Finalizado',
           body: `Pedido ${event.displayId} (${order.productName}) foi finalizado com sucesso`,
-          actionUrl: `/pedidos/${event.orderId}`,
+          actionUrl,
           entityType: 'order',
           entityId: event.orderId,
         });

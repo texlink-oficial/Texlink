@@ -2,6 +2,10 @@
 # TEXLINK Staging - Docker Compose
 # ===========================================
 # Usage: docker compose -f docker-compose.staging.yml up -d
+#
+# Required environment variables (set in .env or CI/CD secrets):
+#   POSTGRES_PASSWORD  — PostgreSQL password
+#   REDIS_PASSWORD     — Redis authentication password
 
 services:
   postgres:
@@ -10,7 +14,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: texlink
-      POSTGRES_PASSWORD: texlink_staging_2026
+      # Password must be set via environment — never hardcode here
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: texlink_staging
     ports:
       - "5433:5432"
@@ -28,6 +33,8 @@ services:
     image: redis:7-alpine
     container_name: texlink-staging-redis
     restart: unless-stopped
+    # Redis password set via REDIS_PASSWORD env var — never hardcode here
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     ports:
       - "6380:6379"
     volumes:
@@ -35,7 +42,8 @@ services:
     networks:
       - texlink-staging
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # Use REDIS_PASSWORD for authenticated healthcheck
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5

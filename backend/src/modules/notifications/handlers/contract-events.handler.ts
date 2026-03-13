@@ -115,7 +115,7 @@ export class ContractEventsHandler {
             ? `${event.brandName} enviou um contrato para assinatura: "${event.message}"`
             : `${event.brandName} enviou um contrato (${event.displayId}) para sua assinatura`,
           data: event,
-          actionUrl: `/fornecedor/contratos/${event.contractId}`,
+          actionUrl: `/portal/contratos/${event.contractId}`,
           entityType: 'contract',
           entityId: event.contractId,
         });
@@ -207,7 +207,7 @@ export class ContractEventsHandler {
             ? `Sua solicitação de revisão foi ${statusText}: "${event.responseNotes}"`
             : `Sua solicitação de revisão para o contrato ${event.displayId} foi ${statusText}`,
           data: event,
-          actionUrl: `/fornecedor/contratos/${event.contractId}`,
+          actionUrl: `/portal/contratos/${event.contractId}`,
           entityType: 'contract',
           entityId: event.contractId,
         });
@@ -247,7 +247,7 @@ export class ContractEventsHandler {
 
       const actionUrl =
         event.signedBy === 'BRAND'
-          ? `/fornecedor/contratos/${event.contractId}`
+          ? `/portal/contratos/${event.contractId}`
           : `/brand/contratos/${event.contractId}`;
 
       for (const user of users) {
@@ -294,7 +294,7 @@ export class ContractEventsHandler {
         const actionUrl =
           user.companyId === event.brandId
             ? `/brand/contratos/${event.contractId}`
-            : `/fornecedor/contratos/${event.contractId}`;
+            : `/portal/contratos/${event.contractId}`;
 
         await this.notificationsService.notify({
           type: NotificationType.CONTRACT_FULLY_SIGNED,
@@ -341,7 +341,7 @@ export class ContractEventsHandler {
         const actionUrl =
           user.companyId === event.brandId
             ? `/brand/contratos/${event.contractId}`
-            : `/fornecedor/contratos/${event.contractId}`;
+            : `/portal/contratos/${event.contractId}`;
 
         await this.notificationsService.notify({
           type: NotificationType.CONTRACT_EXPIRING,
@@ -389,7 +389,7 @@ export class ContractEventsHandler {
         const actionUrl =
           user.companyId === event.brandId
             ? `/brand/contratos/${event.contractId}`
-            : `/fornecedor/contratos/${event.contractId}`;
+            : `/portal/contratos/${event.contractId}`;
 
         await this.notificationsService.notify({
           type: NotificationType.CONTRACT_EXPIRED,
@@ -441,7 +441,7 @@ export class ContractEventsHandler {
             ? `O contrato ${event.displayId} foi cancelado: "${event.reason}"`
             : `O contrato ${event.displayId} com ${event.brandName} foi cancelado`,
           data: event,
-          actionUrl: `/fornecedor/contratos`,
+          actionUrl: `/portal/contratos/${event.contractId}`,
           entityType: 'contract',
           entityId: event.contractId,
         });

@@ -1,27 +1,16 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { UserPlus, Mail, Lock, User, Building2, Factory, Loader2, Eye, EyeOff, Phone } from 'lucide-react';
-
-const formatCNPJ = (value: string): string => {
-    const digits = value.replace(/\D/g, '').slice(0, 14);
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-    if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
-    if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
-    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
-};
+import AuthLayout from '../../components/auth/AuthLayout';
+import { UserPlus, Mail, Lock, User, Building2, Factory, Loader2, Eye, EyeOff, Phone, ArrowLeft, ArrowRight, Check, Search } from 'lucide-react';
+import { formatCNPJ, validateCNPJ, stripCNPJ } from '../../utils/cnpj';
+import api from '../../services/api';
 
 const formatPhone = (value: string): string => {
     const digits = value.replace(/\D/g, '').slice(0, 11);
     if (digits.length <= 2) return digits.length > 0 ? `(${digits}` : '';
     if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-};
-
-const isValidCNPJ = (value: string): boolean => {
-    const digits = value.replace(/\D/g, '');
-    return digits.length === 14;
 };
 
 const isValidPhone = (value: string): boolean => {
@@ -32,16 +21,50 @@ const isValidPhone = (value: string): boolean => {
 const RegisterPage: React.FC = () => {
     const navigate = useNavigate();
     const { register } = useAuth();
-    const [email, setEmail] = useState('');
+    const [searchParams] = useSearchParams();
+
+    // Pre-fill from invitation query params
+    const invitationToken = searchParams.get('token') || '';
+    const isFromInvitation = !!invitationToken;
+
+    // Step management
+    const [step, setStep] = useState<1 | 2>(1);
+
+    // Step 1 fields
+    const [name, setName] = useState(searchParams.get('name') || '');
+    const [email, setEmail] = useState(searchParams.get('email') || '');
     const [password, setPassword] = useState('');
-    const [name, setName] = useState('');
-    const [cnpj, setCnpj] = useState('');
-    const [phone, setPhone] = useState('');
-    const [role, setRole] = useState<'BRAND' | 'SUPPLIER'>('SUPPLIER');
     const [showPassword, setShowPassword] = useState(false);
+
+    // Step 2 fields - force SUPPLIER when coming from invitation
+    const [role, setRole] = useState<'BRAND' | 'SUPPLIER'>('SUPPLIER');
+    const [legalName, setLegalName] = useState(searchParams.get('legalName') || '');
+    const [tradeName, setTradeName] = useState(searchParams.get('tradeName') || '');
+    const [cnpj, setCnpj] = useState(searchParams.get('cnpj') ? formatCNPJ(searchParams.get('cnpj')!) : '');
+    const [phone, setPhone] = useState('');
     const [termsAccepted, setTermsAccepted] = useState(false);
+
+    // Location (auto-filled from CNPJ)
+    const [cidade, setCidade] = useState('');
+    const [estado, setEstado] = useState('');
+
+    // Validation state
+    const [cnpjError, setCnpjError] = useState('');
+    const [cnpjLoading, setCnpjLoading] = useState(false);
     const [error, setError] = useState('');
+    const [step1Error, setStep1Error] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const submittingRef = useRef(false);
+
+    // Auto-fetch CNPJ data on mount when pre-filled from invitation
+    useEffect(() => {
+        if (isFromInvitation && cnpj) {
+            const digits = stripCNPJ(cnpj);
+            if (digits.length === 14 && validateCNPJ(digits)) {
+                handleCnpjBlur();
+            }
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const validatePassword = (pwd: string): string | null => {
         if (pwd.length < 8) return 'A senha deve ter pelo menos 8 caracteres';
@@ -51,23 +74,97 @@ const RegisterPage: React.FC = () => {
         return null;
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
+    const passwordChecks = {
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /\d/.test(password),
+    };
 
-        if (!isValidCNPJ(cnpj)) {
-            setError('CNPJ inválido. Informe os 14 dígitos.');
+    const handleCnpjBlur = async () => {
+        const digits = stripCNPJ(cnpj);
+        if (digits.length === 0) {
+            setCnpjError('');
+            return;
+        }
+        if (digits.length !== 14 || !validateCNPJ(digits)) {
+            setCnpjError('CNPJ inválido. Verifique o número informado.');
+            return;
+        }
+        setCnpjError('');
+        setCnpjLoading(true);
+        try {
+            const { data } = await api.get(`/auth/cnpj-lookup/${digits}`);
+            if (data.found) {
+                setLegalName(data.razaoSocial);
+                if (data.nomeFantasia) setTradeName(data.nomeFantasia);
+                if (data.cidade) setCidade(data.cidade);
+                if (data.estado) setEstado(data.estado);
+                if (data.situacao !== 'ATIVA') {
+                    setCnpjError(`CNPJ com situação "${data.situacao}". Verifique.`);
+                }
+            }
+        } catch {
+            // Silently ignore - user can type manually
+        } finally {
+            setCnpjLoading(false);
+        }
+    };
+
+    const step1Loading = false; // Step 1 validation is synchronous
+
+    const handleNextStep = async () => {
+        setStep1Error('');
+
+        if (!name.trim()) {
+            setStep1Error('Nome completo é obrigatório.');
             return;
         }
 
-        if (!isValidPhone(phone)) {
-            setError('Celular inválido. Informe o número com DDD.');
+        if (!email.trim()) {
+            setStep1Error('E-mail é obrigatório.');
+            return;
+        }
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setStep1Error('Informe um e-mail válido.');
+            return;
+        }
+
+        if (!password) {
+            setStep1Error('Senha é obrigatória.');
             return;
         }
 
         const passwordError = validatePassword(password);
         if (passwordError) {
-            setError(passwordError);
+            setStep1Error(passwordError);
+            return;
+        }
+
+        setStep(2);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (submittingRef.current) return;
+        setError('');
+
+        if (!legalName.trim()) {
+            setError('Razão social é obrigatória.');
+            return;
+        }
+
+        if (!validateCNPJ(cnpj)) {
+            setError('CNPJ inválido. Verifique o número informado.');
+            setCnpjError('CNPJ inválido. Verifique o número informado.');
+            return;
+        }
+
+        if (!isValidPhone(phone)) {
+            setError('Celular inválido. Informe o número com DDD.');
             return;
         }
 
@@ -77,11 +174,17 @@ const RegisterPage: React.FC = () => {
         }
 
         setIsLoading(true);
+        submittingRef.current = true;
 
         try {
             await register(email, password, name, role, {
+                legalName,
+                tradeName: tradeName || undefined,
                 document: cnpj.replace(/\D/g, ''),
                 phone: phone.replace(/\D/g, ''),
+                city: cidade || undefined,
+                state: estado || undefined,
+                invitationToken: invitationToken || undefined,
             });
             // Redirect to onboarding based on role
             navigate(role === 'SUPPLIER' ? '/onboarding' : '/brand-onboarding');
@@ -90,149 +193,94 @@ const RegisterPage: React.FC = () => {
             setError(Array.isArray(msg) ? msg.join('. ') : msg || 'Erro ao criar conta');
         } finally {
             setIsLoading(false);
+            submittingRef.current = false;
         }
     };
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-brand-900 via-brand-800 to-brand-950 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                {/* Logo */}
-                <div className="text-center mb-8">
-                    <div className="relative inline-flex items-center justify-center mb-4">
-                        <div className="absolute inset-0 bg-brand-500/30 blur-2xl rounded-full animate-pulse" />
-                        <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/30">
-                            <svg
-                                className="h-9 w-9 text-white"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                            >
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                                <polyline points="15 3 21 3 21 9" />
-                                <line x1="10" y1="14" x2="21" y2="3" />
-                            </svg>
-                        </div>
-                    </div>
-                    <h1 className="text-4xl font-bold text-white mb-2">TEXLINK</h1>
-                    <p className="text-brand-300">Crie sua conta</p>
+    const StepIndicator = () => (
+        <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                    step === 1
+                        ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/30'
+                        : 'bg-brand-500 text-white'
+                }`}>
+                    {step > 1 ? <Check className="w-4 h-4" /> : '1'}
                 </div>
+                <span className={`text-sm font-medium transition-colors ${
+                    step === 1 ? 'text-white lg:text-gray-900 lg:dark:text-white' : 'text-brand-300 lg:text-gray-400'
+                }`}>
+                    Seus Dados
+                </span>
+            </div>
 
-                {/* Card */}
-                <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 shadow-2xl">
-                    <h2 className="text-2xl font-semibold text-white mb-6">Cadastrar</h2>
+            <div className="w-8 h-px bg-white/20 lg:bg-gray-200 lg:dark:bg-gray-700" />
 
-                    {error && (
-                        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 mb-4">
-                            <p className="text-red-200 text-sm">{error}</p>
+            <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                    step === 2
+                        ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/30'
+                        : 'bg-white/10 text-brand-400 border border-white/20 lg:bg-gray-100 lg:text-gray-400 lg:border-gray-200 lg:dark:bg-gray-800 lg:dark:text-gray-500 lg:dark:border-gray-700'
+                }`}>
+                    2
+                </div>
+                <span className={`text-sm font-medium transition-colors ${
+                    step === 2 ? 'text-white lg:text-gray-900 lg:dark:text-white' : 'text-brand-400 lg:text-gray-400'
+                }`}>
+                    Dados da Empresa
+                </span>
+            </div>
+        </div>
+    );
+
+    return (
+        <AuthLayout>
+            <StepIndicator />
+
+            {/* Step 1: Seus Dados */}
+            {step === 1 && (
+                <div>
+                    <h2 className="text-2xl font-semibold text-white lg:text-gray-900 lg:dark:text-white mb-1">Seus Dados</h2>
+                    <p className="text-brand-300 lg:text-gray-500 lg:dark:text-gray-400 mb-6 text-sm">Crie sua conta</p>
+
+                    {step1Error && (
+                        <div className="bg-red-500/20 border border-red-500/50 lg:bg-red-50 lg:border-red-200 lg:dark:bg-red-900/20 lg:dark:border-red-800 rounded-lg p-3 mb-4">
+                            <p className="text-red-200 lg:text-red-600 lg:dark:text-red-400 text-sm">{step1Error}</p>
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Role Selection */}
+                    <div className="space-y-5">
+                        {/* Nome completo */}
                         <div>
-                            <label className="block text-sm font-medium text-brand-200 mb-3">
-                                Tipo de Conta
-                            </label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setRole('SUPPLIER')}
-                                    className={`p-4 rounded-xl border-2 transition-all ${role === 'SUPPLIER'
-                                        ? 'bg-brand-500/20 border-brand-500 text-white'
-                                        : 'bg-white/5 border-white/10 text-brand-300 hover:border-white/30'
-                                        }`}
-                                >
-                                    <Factory className="w-6 h-6 mx-auto mb-2" />
-                                    <span className="text-sm font-medium">Facção de Costura</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRole('BRAND')}
-                                    className={`p-4 rounded-xl border-2 transition-all ${role === 'BRAND'
-                                        ? 'bg-brand-500/20 border-brand-500 text-white'
-                                        : 'bg-white/5 border-white/10 text-brand-300 hover:border-white/30'
-                                        }`}
-                                >
-                                    <Building2 className="w-6 h-6 mx-auto mb-2" />
-                                    <span className="text-sm font-medium">Marca</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Nome */}
-                        <div>
-                            <label className="block text-sm font-medium text-brand-200 mb-2">
-                                Nome
+                            <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
+                                Nome completo
                             </label>
                             <div className="relative">
-                                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 lg:text-gray-400" />
                                 <input
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                                    placeholder="Seu nome"
+                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 text-white placeholder-brand-400 lg:bg-gray-50 lg:dark:bg-gray-900 lg:border-gray-200 lg:dark:border-gray-700 lg:text-gray-900 lg:dark:text-white lg:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    placeholder="Seu nome completo"
                                     required
                                 />
                             </div>
-                        </div>
-
-                        {/* CNPJ */}
-                        <div>
-                            <label className="block text-sm font-medium text-brand-200 mb-2">
-                                CNPJ
-                            </label>
-                            <div className="relative">
-                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
-                                <input
-                                    type="text"
-                                    value={cnpj}
-                                    onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
-                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                                    placeholder="XX.XXX.XXX/XXXX-XX"
-                                    required
-                                />
-                            </div>
-                            <p className="text-xs text-brand-400 mt-1">
-                                A unicidade do CNPJ será validada no servidor.
-                            </p>
                         </div>
 
                         {/* E-mail */}
                         <div>
-                            <label className="block text-sm font-medium text-brand-200 mb-2">
+                            <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
                                 E-mail
                             </label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 lg:text-gray-400" />
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 text-white placeholder-brand-400 lg:bg-gray-50 lg:dark:bg-gray-900 lg:border-gray-200 lg:dark:border-gray-700 lg:text-gray-900 lg:dark:text-white lg:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
                                     placeholder="seu@email.com"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        {/* Celular */}
-                        <div>
-                            <label className="block text-sm font-medium text-brand-200 mb-2">
-                                Celular
-                            </label>
-                            <div className="relative">
-                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
-                                <input
-                                    type="text"
-                                    value={phone}
-                                    onChange={(e) => setPhone(formatPhone(e.target.value))}
-                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                                    placeholder="(XX) XXXXX-XXXX"
                                     required
                                 />
                             </div>
@@ -240,24 +288,24 @@ const RegisterPage: React.FC = () => {
 
                         {/* Senha */}
                         <div>
-                            <label className="block text-sm font-medium text-brand-200 mb-2">
+                            <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
                                 Senha
                             </label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 lg:text-gray-400" />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-11 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                                    placeholder="Mínimo 8 caracteres (maiúscula, minúscula e número)"
+                                    className="w-full pl-11 pr-12 py-3 bg-white/5 border border-white/10 text-white placeholder-brand-400 lg:bg-gray-50 lg:dark:bg-gray-900 lg:border-gray-200 lg:dark:border-gray-700 lg:text-gray-900 lg:dark:text-white lg:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    placeholder="Crie uma senha segura"
                                     minLength={8}
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-400 hover:text-brand-300 transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-400 lg:text-gray-400 hover:text-brand-300 transition-colors"
                                     tabIndex={-1}
                                 >
                                     {showPassword ? (
@@ -266,6 +314,230 @@ const RegisterPage: React.FC = () => {
                                         <Eye className="w-5 h-5" />
                                     )}
                                 </button>
+                            </div>
+
+                            {/* Password strength indicators */}
+                            {password.length > 0 && (
+                                <div className="mt-3 space-y-1.5">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${passwordChecks.length ? 'bg-green-500' : 'bg-white/10 lg:bg-gray-200 lg:dark:bg-gray-700'}`}>
+                                            {passwordChecks.length && <Check className="w-2.5 h-2.5 text-white" />}
+                                        </div>
+                                        <span className={`text-xs ${passwordChecks.length ? 'text-green-400' : 'text-brand-400 lg:text-gray-400'}`}>
+                                            Pelo menos 8 caracteres
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${passwordChecks.uppercase ? 'bg-green-500' : 'bg-white/10 lg:bg-gray-200 lg:dark:bg-gray-700'}`}>
+                                            {passwordChecks.uppercase && <Check className="w-2.5 h-2.5 text-white" />}
+                                        </div>
+                                        <span className={`text-xs ${passwordChecks.uppercase ? 'text-green-400' : 'text-brand-400 lg:text-gray-400'}`}>
+                                            Uma letra maiúscula
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${passwordChecks.lowercase ? 'bg-green-500' : 'bg-white/10 lg:bg-gray-200 lg:dark:bg-gray-700'}`}>
+                                            {passwordChecks.lowercase && <Check className="w-2.5 h-2.5 text-white" />}
+                                        </div>
+                                        <span className={`text-xs ${passwordChecks.lowercase ? 'text-green-400' : 'text-brand-400 lg:text-gray-400'}`}>
+                                            Uma letra minúscula
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${passwordChecks.number ? 'bg-green-500' : 'bg-white/10 lg:bg-gray-200 lg:dark:bg-gray-700'}`}>
+                                            {passwordChecks.number && <Check className="w-2.5 h-2.5 text-white" />}
+                                        </div>
+                                        <span className={`text-xs ${passwordChecks.number ? 'text-green-400' : 'text-brand-400 lg:text-gray-400'}`}>
+                                            Um número
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleNextStep}
+                            disabled={step1Loading}
+                            className="w-full py-3 px-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {step1Loading ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    Próximo
+                                    <ArrowRight className="w-5 h-5" />
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Step 2: Dados da Empresa */}
+            {step === 2 && (
+                <div>
+                    <h2 className="text-2xl font-semibold text-white lg:text-gray-900 lg:dark:text-white mb-6">Dados da Empresa</h2>
+
+                    {error && (
+                        <div className="bg-red-500/20 border border-red-500/50 lg:bg-red-50 lg:border-red-200 lg:dark:bg-red-900/20 lg:dark:border-red-800 rounded-lg p-3 mb-4">
+                            <p className="text-red-200 lg:text-red-600 lg:dark:text-red-400 text-sm">{error}</p>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Role Selection - hidden when from invitation (always SUPPLIER) */}
+                        {!isFromInvitation && (
+                        <div>
+                            <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-3">
+                                Tipo de Conta
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setRole('SUPPLIER')}
+                                    className={`p-4 rounded-xl border-2 transition-all ${role === 'SUPPLIER'
+                                        ? 'bg-brand-500/20 border-brand-500 text-white lg:text-brand-600 lg:dark:text-brand-400'
+                                        : 'bg-white/5 border-white/10 text-brand-300 hover:border-white/30 lg:bg-gray-50 lg:border-gray-200 lg:text-gray-600 lg:dark:bg-gray-900 lg:dark:border-gray-700 lg:dark:text-gray-400'
+                                        }`}
+                                >
+                                    <Factory className="w-6 h-6 mx-auto mb-2" />
+                                    <span className="text-sm font-medium">Facção</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setRole('BRAND')}
+                                    className={`p-4 rounded-xl border-2 transition-all ${role === 'BRAND'
+                                        ? 'bg-brand-500/20 border-brand-500 text-white lg:text-brand-600 lg:dark:text-brand-400'
+                                        : 'bg-white/5 border-white/10 text-brand-300 hover:border-white/30 lg:bg-gray-50 lg:border-gray-200 lg:text-gray-600 lg:dark:bg-gray-900 lg:dark:border-gray-700 lg:dark:text-gray-400'
+                                        }`}
+                                >
+                                    <Building2 className="w-6 h-6 mx-auto mb-2" />
+                                    <span className="text-sm font-medium">Marca</span>
+                                </button>
+                            </div>
+                        </div>
+                        )}
+
+                        {/* CNPJ */}
+                        <div>
+                            <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
+                                CNPJ
+                            </label>
+                            <div className="relative">
+                                {cnpjLoading ? (
+                                    <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 lg:text-gray-400 animate-spin" />
+                                ) : (
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 lg:text-gray-400" />
+                                )}
+                                <input
+                                    type="text"
+                                    value={cnpj}
+                                    onChange={(e) => {
+                                        if (isFromInvitation) return;
+                                        setCnpj(formatCNPJ(e.target.value));
+                                        if (cnpjError) setCnpjError('');
+                                    }}
+                                    onBlur={handleCnpjBlur}
+                                    readOnly={isFromInvitation}
+                                    className={`w-full pl-11 pr-4 py-3 bg-white/5 border text-white placeholder-brand-400 lg:bg-gray-50 lg:dark:bg-gray-900 lg:border-gray-200 lg:dark:border-gray-700 lg:text-gray-900 lg:dark:text-white lg:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all ${cnpjError ? 'border-red-500' : 'border-white/10'} ${isFromInvitation ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                    placeholder="XX.XXX.XXX/XXXX-XX"
+                                    required
+                                    aria-invalid={!!cnpjError}
+                                    aria-describedby={cnpjError ? 'cnpj-error' : undefined}
+                                />
+                            </div>
+                            {cnpjError ? (
+                                <p id="cnpj-error" className="text-xs text-red-400 mt-1" role="alert">
+                                    {cnpjError}
+                                </p>
+                            ) : (
+                                <p className="text-xs text-brand-400 lg:text-gray-400 mt-1">
+                                    {cnpjLoading ? 'Buscando dados da empresa...' : 'Ao informar o CNPJ os dados da empresa serão preenchidos automaticamente.'}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Razao Social */}
+                        <div>
+                            <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
+                                Razão Social
+                            </label>
+                            <div className="relative">
+                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 lg:text-gray-400" />
+                                <input
+                                    type="text"
+                                    value={legalName}
+                                    onChange={(e) => setLegalName(e.target.value)}
+                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 text-white placeholder-brand-400 lg:bg-gray-50 lg:dark:bg-gray-900 lg:border-gray-200 lg:dark:border-gray-700 lg:text-gray-900 lg:dark:text-white lg:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    placeholder="Nome registrado na Receita Federal"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        {/* Nome Fantasia */}
+                        <div>
+                            <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
+                                Nome Fantasia
+                                <span className="text-brand-400 lg:text-gray-400 font-normal ml-1">(opcional)</span>
+                            </label>
+                            <div className="relative">
+                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 lg:text-gray-400" />
+                                <input
+                                    type="text"
+                                    value={tradeName}
+                                    onChange={(e) => setTradeName(e.target.value)}
+                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 text-white placeholder-brand-400 lg:bg-gray-50 lg:dark:bg-gray-900 lg:border-gray-200 lg:dark:border-gray-700 lg:text-gray-900 lg:dark:text-white lg:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    placeholder="Nome comercial da empresa"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Cidade e Estado */}
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
+                                    Cidade
+                                </label>
+                                <input
+                                    type="text"
+                                    value={cidade}
+                                    onChange={(e) => setCidade(e.target.value)}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 text-white placeholder-brand-400 lg:bg-gray-50 lg:dark:bg-gray-900 lg:border-gray-200 lg:dark:border-gray-700 lg:text-gray-900 lg:dark:text-white lg:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    placeholder="Cidade"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
+                                    UF
+                                </label>
+                                <input
+                                    type="text"
+                                    value={estado}
+                                    onChange={(e) => setEstado(e.target.value.toUpperCase().slice(0, 2))}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 text-white placeholder-brand-400 lg:bg-gray-50 lg:dark:bg-gray-900 lg:border-gray-200 lg:dark:border-gray-700 lg:text-gray-900 lg:dark:text-white lg:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    placeholder="UF"
+                                    maxLength={2}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Celular */}
+                        <div>
+                            <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
+                                Telefone
+                            </label>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 lg:text-gray-400" />
+                                <input
+                                    type="text"
+                                    value={phone}
+                                    onChange={(e) => setPhone(formatPhone(e.target.value))}
+                                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 text-white placeholder-brand-400 lg:bg-gray-50 lg:dark:bg-gray-900 lg:border-gray-200 lg:dark:border-gray-700 lg:text-gray-900 lg:dark:text-white lg:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                                    placeholder="(XX) XXXXX-XXXX"
+                                    required
+                                />
                             </div>
                         </div>
 
@@ -278,38 +550,60 @@ const RegisterPage: React.FC = () => {
                                 onChange={(e) => setTermsAccepted(e.target.checked)}
                                 className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-brand-500 focus:ring-brand-500 focus:ring-offset-0"
                             />
-                            <label htmlFor="termsAccepted" className="text-sm text-brand-300 leading-relaxed cursor-pointer">
-                                Eu aceito os termos de uso do aplicativo e estou de acordo com a política de privacidade.
+                            <label htmlFor="termsAccepted" className="text-sm text-brand-300 lg:text-gray-500 lg:dark:text-gray-400 leading-relaxed cursor-pointer">
+                                Eu aceito os{' '}
+                                <Link to="/termos-de-uso" target="_blank" className="text-brand-400 lg:text-brand-600 lg:dark:text-brand-400 hover:underline">
+                                    termos de uso
+                                </Link>{' '}
+                                do aplicativo e estou de acordo com a{' '}
+                                <Link to="/politica-de-privacidade" target="_blank" className="text-brand-400 lg:text-brand-600 lg:dark:text-brand-400 hover:underline">
+                                    política de privacidade
+                                </Link>{' '}
+                                e a{' '}
+                                <Link to="/politica-de-cookies" target="_blank" className="text-brand-400 lg:text-brand-600 lg:dark:text-brand-400 hover:underline">
+                                    política de cookies
+                                </Link>.
                             </label>
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={isLoading || !termsAccepted}
-                            className="w-full py-3 px-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <>
-                                    <UserPlus className="w-5 h-5" />
-                                    Criar Conta
-                                </>
-                            )}
-                        </button>
+                        {/* Action buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => { setStep(1); setError(''); }}
+                                className="flex-shrink-0 py-3 px-4 bg-white/10 hover:bg-white/15 text-white font-medium rounded-xl border border-white/10 lg:bg-gray-100 lg:border-gray-200 lg:text-gray-700 lg:dark:bg-gray-800 lg:dark:border-gray-700 lg:dark:text-gray-300 transition-all duration-300 flex items-center justify-center gap-2"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                                Voltar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isLoading || !termsAccepted || !!cnpjError}
+                                className="flex-1 py-3 px-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <>
+                                        <UserPlus className="w-5 h-5" />
+                                        Criar Conta
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </form>
-
-                    <div className="mt-6 text-center">
-                        <p className="text-brand-300 text-sm">
-                            Já tem conta?{' '}
-                            <Link to="/login" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
-                                Entrar
-                            </Link>
-                        </p>
-                    </div>
                 </div>
+            )}
+
+            <div className="mt-6 text-center">
+                <p className="text-brand-300 lg:text-gray-500 lg:dark:text-gray-400 text-sm">
+                    Já tem conta?{' '}
+                    <Link to="/login" className="text-brand-400 lg:text-brand-600 lg:dark:text-brand-400 hover:text-brand-300 font-medium transition-colors">
+                        Entrar
+                    </Link>
+                </p>
             </div>
-        </div>
+        </AuthLayout>
     );
 };
 

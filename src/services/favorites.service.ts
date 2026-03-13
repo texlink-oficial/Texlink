@@ -49,7 +49,7 @@ export interface FavoriteSupplier {
         state?: string;
         supplierProfile?: {
             productTypes: string[];
-            monthlyCapacity?: number;
+            dailyCapacity?: number;
         };
     };
 }

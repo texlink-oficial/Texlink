@@ -14,7 +14,7 @@ interface SupplierOption {
     avgRating: number;
     supplierProfile?: {
         productTypes: string[];
-        monthlyCapacity: number;
+        dailyCapacity: number;
     };
 }
 

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PermissionsService } from '../permissions/permissions.service';
+import { CacheService } from '../../common/services/cache.service';
 import {
   InviteUserDto,
   CreateUserDto,
@@ -21,6 +22,7 @@ export class TeamService {
   constructor(
     private prisma: PrismaService,
     private permissionsService: PermissionsService,
+    private cache: CacheService,
   ) {}
 
   /**
@@ -36,7 +38,6 @@ export class TeamService {
             email: true,
             name: true,
             role: true,
-            isActive: true,
             createdAt: true,
           },
         },
@@ -51,7 +52,7 @@ export class TeamService {
       email: member.user.email,
       name: member.user.name,
       userRole: member.user.role,
-      isActive: member.user.isActive,
+      isActive: member.isActive,
       companyRole: member.companyRole,
       isCompanyAdmin: member.isCompanyAdmin,
       permissionOverrides: member.permissions,
@@ -77,7 +78,6 @@ export class TeamService {
             email: true,
             name: true,
             role: true,
-            isActive: true,
           },
         },
         permissions: true,
@@ -94,7 +94,7 @@ export class TeamService {
       email: member.user.email,
       name: member.user.name,
       userRole: member.user.role,
-      isActive: member.user.isActive,
+      isActive: member.isActive,
       companyRole: member.companyRole,
       isCompanyAdmin: member.isCompanyAdmin,
       permissionOverrides: member.permissions,
@@ -108,11 +108,13 @@ export class TeamService {
    * Convida um usuário por email
    */
   async inviteUser(companyId: string, invitedById: string, dto: InviteUserDto) {
+    const email = dto.email.toLowerCase().trim();
+
     // Verificar se já existe um usuário com esse email na empresa
     const existingMember = await this.prisma.companyUser.findFirst({
       where: {
         companyId,
-        user: { email: dto.email },
+        user: { email },
       },
     });
 
@@ -124,7 +126,7 @@ export class TeamService {
     const existingInvite = await this.prisma.invitation.findFirst({
       where: {
         companyId,
-        email: dto.email,
+        email,
         status: InvitationStatus.PENDING,
       },
     });
@@ -142,7 +144,7 @@ export class TeamService {
     const invitation = await this.prisma.invitation.create({
       data: {
         companyId,
-        email: dto.email,
+        email,
         companyRole: dto.companyRole || CompanyRole.VIEWER,
         invitedById,
         expiresAt,
@@ -169,9 +171,11 @@ export class TeamService {
    * Cria um usuário diretamente (sem convite)
    */
   async createUser(companyId: string, dto: CreateUserDto) {
+    const email = dto.email.toLowerCase().trim();
+
     // Verificar se email já existe
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email },
     });
 
     if (existingUser) {
@@ -228,7 +232,7 @@ export class TeamService {
 
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
+        email,
         name: dto.name,
         passwordHash: hashedPassword,
         role: userRole,
@@ -370,6 +374,49 @@ export class TeamService {
   }
 
   /**
+   * Ativa/desativa um membro da equipe
+   */
+  async toggleMemberActive(
+    companyId: string,
+    memberId: string,
+    currentUserId: string,
+  ) {
+    // Verificar permissão de modificação
+    const canModify = await this.permissionsService.canModifyMember(
+      currentUserId,
+      memberId,
+      companyId,
+    );
+    if (!canModify.allowed) {
+      throw new ForbiddenException(canModify.reason);
+    }
+
+    const member = await this.prisma.companyUser.findFirst({
+      where: { id: memberId, companyId },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Membro não encontrado');
+    }
+
+    // Não permitir auto-desativação
+    if (member.userId === currentUserId) {
+      throw new BadRequestException('Você não pode desativar a si mesmo');
+    }
+
+    // Toggle isActive no CompanyUser (tenant-scoped, não afeta outras empresas)
+    const updatedCompanyUser = await this.prisma.companyUser.update({
+      where: { id: memberId },
+      data: { isActive: !member.isActive },
+    });
+
+    // Invalidate JWT cache so the change takes effect immediately
+    await this.invalidateUserCache(member.userId);
+
+    return { isActive: updatedCompanyUser.isActive };
+  }
+
+  /**
    * Remove um membro da empresa
    */
   async removeMember(
@@ -418,7 +465,17 @@ export class TeamService {
       where: { id: memberId },
     });
 
+    // Invalidate JWT cache so removed member loses access immediately
+    await this.invalidateUserCache(member.userId);
+
     return { success: true, message: 'Membro removido com sucesso' };
+  }
+
+  /**
+   * Invalidates the JWT user cache so auth re-fetches from database
+   */
+  private async invalidateUserCache(userId: string): Promise<void> {
+    await this.cache.del(`jwt:user:${userId}`);
   }
 
   /**
@@ -572,15 +629,16 @@ export class TeamService {
     }
 
     // Verificar se o usuário já existe
+    const invitationEmail = invitation.email.toLowerCase().trim();
     let user = await this.prisma.user.findUnique({
-      where: { email: invitation.email },
+      where: { email: invitationEmail },
     });
 
     if (!user && !newUserData) {
       // Usuário não existe e não foram fornecidos dados para criar
       return {
         requiresRegistration: true,
-        email: invitation.email,
+        email: invitationEmail,
         company: invitation.company.tradeName,
       };
     }
@@ -595,7 +653,7 @@ export class TeamService {
 
       user = await this.prisma.user.create({
         data: {
-          email: invitation.email,
+          email: invitationEmail,
           name: newUserData.name,
           passwordHash: hashedPassword,
           role: userRole,

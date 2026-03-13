@@ -194,7 +194,14 @@ export class OrdersController {
   @Get('stats/reviews')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.BRAND)
-  async getReviewStats(@Query('companyId') companyId?: string) {
+  async getReviewStats(
+    @CurrentUser() user: { id: string; role: string; companyId?: string },
+    @Query('companyId') companyId?: string,
+  ) {
+    // Non-admin users can only query their own company
+    if (user.role !== 'ADMIN') {
+      return this.ordersService.getReviewStats(user.companyId);
+    }
     return this.ordersService.getReviewStats(companyId);
   }
 

@@ -8,8 +8,12 @@ import {
   Body,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile as NestUploadedFile,
   ParseUUIDPipe,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { EducationalContentService } from './educational-content.service';
 import {
@@ -35,7 +39,6 @@ export class EducationalContentController {
 
   // ========== PUBLIC ENDPOINTS (for suppliers) ==========
 
-  // List active educational contents
   @Get()
   @UseGuards(JwtAuthGuard)
   async findAllActive(
@@ -45,14 +48,19 @@ export class EducationalContentController {
     return this.educationalContentService.findAllActive(category, contentType);
   }
 
-  // Get categories with counts
   @Get('categories')
   @UseGuards(JwtAuthGuard)
   async getCategories() {
     return this.educationalContentService.getCategories();
   }
 
-  // Get content by ID (public)
+  // Video URL endpoint (presigned for S3, direct for external) — must be before :id
+  @Get(':id/video-url')
+  @UseGuards(JwtAuthGuard)
+  async getVideoUrl(@Param('id', ParseUUIDPipe) id: string) {
+    return this.educationalContentService.getVideoUrl(id);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async findOnePublic(@Param('id', ParseUUIDPipe) id: string) {
@@ -61,7 +69,30 @@ export class EducationalContentController {
 
   // ========== ADMIN ENDPOINTS ==========
 
-  // List all educational contents (admin)
+  // Upload endpoints must be before admin/:id to avoid route conflicts
+
+  @Post('admin/upload/video')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadVideo(@NestUploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Nenhum arquivo de vídeo enviado.');
+    }
+    return this.educationalContentService.uploadVideo(file);
+  }
+
+  @Post('admin/upload/thumbnail')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadThumbnail(@NestUploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Nenhum arquivo de thumbnail enviado.');
+    }
+    return this.educationalContentService.uploadThumbnail(file);
+  }
+
   @Get('admin/all')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -79,7 +110,6 @@ export class EducationalContentController {
     );
   }
 
-  // Get content by ID (admin)
   @Get('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -87,7 +117,6 @@ export class EducationalContentController {
     return this.educationalContentService.findOne(id);
   }
 
-  // Create educational content
   @Post('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -95,7 +124,6 @@ export class EducationalContentController {
     return this.educationalContentService.create(dto);
   }
 
-  // Update educational content
   @Patch('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -106,7 +134,6 @@ export class EducationalContentController {
     return this.educationalContentService.update(id, dto);
   }
 
-  // Delete educational content
   @Delete('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -114,7 +141,6 @@ export class EducationalContentController {
     return this.educationalContentService.remove(id);
   }
 
-  // Toggle active status
   @Patch('admin/:id/toggle')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -122,7 +148,6 @@ export class EducationalContentController {
     return this.educationalContentService.toggleActive(id);
   }
 
-  // Update display order
   @Patch('admin/order')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)

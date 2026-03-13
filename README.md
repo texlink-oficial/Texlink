@@ -148,7 +148,7 @@ This will start a PostgreSQL container with the following credentials:
 - Host: `localhost:5432`
 - Database: `texlink`
 - User: `texlink`
-- Password: `texlink123`
+- Password: value of `POSTGRES_PASSWORD` from your `.env` file (see `.env.example`)
 
 ### 3. Backend Setup
 

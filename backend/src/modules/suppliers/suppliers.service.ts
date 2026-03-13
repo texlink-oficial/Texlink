@@ -85,7 +85,7 @@ export class SuppliersService {
         onboardingPhase: 3,
         productTypes: dto.productTypes,
         specialties: dto.specialties || [],
-        monthlyCapacity: dto.monthlyCapacity,
+        dailyCapacity: dto.dailyCapacity,
         activeWorkers: dto.activeWorkers ?? undefined,
         hoursPerDay: dto.hoursPerDay ?? undefined,
         currentOccupancy: dto.currentOccupancy || 0,
@@ -341,12 +341,12 @@ export class SuppliersService {
       ]);
 
     // Calculate real capacity usage for the current month
-    const monthlyCapacity = company.supplierProfile?.monthlyCapacity || 0;
+    const dailyCapacity = company.supplierProfile?.dailyCapacity || 0;
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const DEFAULT_MINUTES_PER_PIECE = 15;
     let capacityUsage = 0;
 
-    if (monthlyCapacity > 0 && activeOrdersForCapacity.length > 0) {
+    if (dailyCapacity > 0 && activeOrdersForCapacity.length > 0) {
       let totalAllocatedMinutes = 0;
       for (const order of activeOrdersForCapacity) {
         const productionMinutes = order.totalProductionMinutes
@@ -370,7 +370,7 @@ export class SuppliersService {
           totalAllocatedMinutes += productionMinutes;
         }
       }
-      capacityUsage = Math.min(100, Math.round((totalAllocatedMinutes / monthlyCapacity) * 100));
+      capacityUsage = Math.min(100, Math.round((totalAllocatedMinutes / dailyCapacity) * 100));
     }
 
     return {
@@ -633,7 +633,7 @@ export class SuppliersService {
     if (filters.minCapacity || filters.maxCapacity) {
       where.supplierProfile = {
         ...(where.supplierProfile as object),
-        monthlyCapacity: {
+        dailyCapacity: {
           ...(filters.minCapacity && { gte: filters.minCapacity }),
           ...(filters.maxCapacity && { lte: filters.maxCapacity }),
         },

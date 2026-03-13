@@ -4,6 +4,7 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -37,20 +38,30 @@ export class AuthService {
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {
     this.refreshSecret =
-      this.configService.get<string>('jwt.refreshSecret') ||
-      this.configService.get<string>('jwt.secret') + '-refresh';
+      this.configService.getOrThrow<string>('jwt.refreshSecret');
     this.refreshExpiresIn =
       this.configService.get<string>('jwt.refreshExpiresIn') || '7d';
   }
 
+  async isEmailAvailable(email: string): Promise<boolean> {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+      select: { id: true },
+    });
+    return !existing;
+  }
+
   async register(dto: RegisterDto) {
+    // Normalize email to lowercase to prevent case-sensitive duplicates
+    const email = dto.email.toLowerCase().trim();
+
     // Hash password before transaction (CPU-intensive, don't hold tx open)
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
     const result = await this.prisma.$transaction(async (tx) => {
       // Check if email already exists
       const existingUser = await tx.user.findUnique({
-        where: { email: dto.email },
+        where: { email },
       });
 
       if (existingUser) {
@@ -70,7 +81,7 @@ export class AuthService {
       // Create user
       const user = await tx.user.create({
         data: {
-          email: dto.email,
+          email,
           passwordHash,
           name: dto.name,
           role: dto.role,
@@ -89,14 +100,14 @@ export class AuthService {
       if (dto.role === 'SUPPLIER') {
         company = await tx.company.create({
           data: {
-            legalName: dto.companyName || dto.name,
-            tradeName: dto.companyName || dto.name,
+            legalName: dto.legalName,
+            tradeName: dto.tradeName || dto.legalName,
             document: dto.document || `PENDING_${user.id}`,
             type: 'SUPPLIER',
             city: dto.city || '',
             state: dto.state || '',
             phone: dto.phone,
-            email: dto.email,
+            email,
             status: 'PENDING',
           },
         });
@@ -119,14 +130,14 @@ export class AuthService {
       } else if (dto.role === 'BRAND') {
         company = await tx.company.create({
           data: {
-            legalName: dto.companyName || dto.name,
-            tradeName: dto.companyName || dto.name,
+            legalName: dto.legalName,
+            tradeName: dto.tradeName || dto.legalName,
             document: dto.document || `PENDING_${user.id}`,
             type: 'BRAND',
             city: dto.city || '',
             state: dto.state || '',
             phone: dto.phone,
-            email: dto.email,
+            email,
             status: 'PENDING',
           },
         });
@@ -148,6 +159,41 @@ export class AuthService {
         });
       }
 
+      // If registering via invitation, link credential to the new company
+      if (dto.invitationToken && company && dto.role === 'SUPPLIER') {
+        const invitation = await tx.credentialInvitation.findFirst({
+          where: { token: dto.invitationToken, response: 'ACCEPTED' },
+          include: { credential: true },
+        });
+
+        if (invitation?.credential) {
+          // Link the credential to the newly created company
+          await tx.supplierCredential.update({
+            where: { id: invitation.credential.id },
+            data: {
+              supplierId: company.id,
+              status: 'ACTIVE',
+            },
+          });
+
+          // Record status change
+          await tx.credentialStatusHistory.create({
+            data: {
+              credentialId: invitation.credential.id,
+              fromStatus: 'ONBOARDING_STARTED',
+              toStatus: 'ACTIVE',
+              reason: 'Fornecedor completou o registro via convite',
+            },
+          });
+
+          // Mark invitation as fully used
+          await tx.credentialInvitation.update({
+            where: { id: invitation.id },
+            data: { response: 'USED' },
+          });
+        }
+      }
+
       return { user, company };
     });
 
@@ -165,8 +211,9 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const lockoutKey = `auth:lockout:${dto.email}`;
-    const attemptsKey = `auth:attempts:${dto.email}`;
+    const loginEmail = dto.email.toLowerCase().trim();
+    const lockoutKey = `auth:lockout:${loginEmail}`;
+    const attemptsKey = `auth:attempts:${loginEmail}`;
 
     // Check if account is locked
     const lockout = await this.cache.get<string>(lockoutKey);
@@ -178,7 +225,7 @@ export class AuthService {
 
     // Find user with company information
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email: loginEmail },
       include: {
         companyUsers: {
           include: {
@@ -225,11 +272,19 @@ export class AuthService {
     const accessToken = this.generateToken(user.id, user.email, user.role);
     const refreshToken = this.generateRefreshToken(user.id, user.email, user.role);
 
-    // Get company matching user role; fall back to first association
+    // Get active company matching user role; fall back to first active association
     const companyUser =
       user.companyUsers?.find(
-        (cu) => cu.company?.type === user.role,
-      ) || user.companyUsers?.[0];
+        (cu) => cu.company?.type === user.role && cu.isActive,
+      ) || user.companyUsers?.find((cu) => cu.isActive);
+
+    // If all company associations are deactivated, deny login for non-ADMIN users
+    if (!companyUser && user.role !== 'ADMIN' && user.companyUsers?.length > 0) {
+      throw new UnauthorizedException(
+        'Sua conta está desativada nesta empresa. Entre em contato com o administrador.',
+      );
+    }
+
     const companyId = companyUser?.company?.id;
     const companyName = companyUser?.company?.tradeName || companyUser?.company?.legalName;
     const companyType = companyUser?.company?.type;
@@ -240,6 +295,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
+        isSuperAdmin: user.isSuperAdmin,
         companyId,
         companyName,
         companyType,
@@ -261,6 +317,7 @@ export class AuthService {
         name: true,
         role: true,
         isActive: true,
+        isSuperAdmin: true,
         createdAt: true,
         companyUsers: {
           include: {
@@ -285,11 +342,11 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado');
     }
 
-    // Extract primary company matching user role; fall back to first association
+    // Extract primary active company matching user role; fall back to first active
     const companyUser =
       user.companyUsers?.find(
-        (cu) => cu.company?.type === user.role,
-      ) || user.companyUsers?.[0];
+        (cu) => cu.company?.type === user.role && cu.isActive,
+      ) || user.companyUsers?.find((cu) => cu.isActive);
     const companyId = companyUser?.company?.id;
     const companyName = companyUser?.company?.tradeName || companyUser?.company?.legalName;
     const companyType = companyUser?.company?.type;
@@ -320,11 +377,13 @@ export class AuthService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const normalizedEmail = dto.email?.toLowerCase().trim();
+
     // If email is changing, check uniqueness
-    if (dto.email) {
+    if (normalizedEmail) {
       const existing = await this.prisma.user.findFirst({
         where: {
-          email: dto.email,
+          email: normalizedEmail,
           id: { not: userId },
         },
       });
@@ -338,7 +397,7 @@ export class AuthService {
       where: { id: userId },
       data: {
         ...(dto.name && { name: dto.name }),
-        ...(dto.email && { email: dto.email }),
+        ...(normalizedEmail && { email: normalizedEmail }),
       },
     });
 
@@ -428,7 +487,7 @@ export class AuthService {
       'Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.';
 
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email: dto.email.toLowerCase().trim() },
       select: { id: true, name: true, email: true, isActive: true },
     });
 
@@ -439,22 +498,24 @@ export class AuthService {
 
     // Generate cryptographically secure token
     const token = crypto.randomBytes(32).toString('hex');
+    // Hash the token before storing — only the hash is persisted in the DB
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     // Calculate expiry
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + PASSWORD_RESET_EXPIRY_HOURS);
 
-    // Store reset token
+    // Store hashed token (raw token is sent to user via email)
     await this.prisma.passwordReset.create({
       data: {
-        token,
+        token: hashedToken,
         userId: user.id,
         expiresAt,
       },
     });
 
     // Build reset URL
-    const frontendUrl = this.configService.getOrThrow<string>('FRONTEND_URL');
+    const frontendUrl = this.configService.getOrThrow<string>('frontendUrl');
     const resetUrl = `${frontendUrl}/redefinir-senha?token=${token}`;
 
     // Send email
@@ -481,9 +542,12 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    // Hash the raw token from the URL to match against stored hash
+    const hashedToken = crypto.createHash('sha256').update(dto.token).digest('hex');
+
     // Find valid, unused, non-expired token
     const passwordReset = await this.prisma.passwordReset.findUnique({
-      where: { token: dto.token },
+      where: { token: hashedToken },
       include: {
         user: {
           select: { id: true, isActive: true },
@@ -539,6 +603,49 @@ export class AuthService {
     await this.cache.del(`jwt:user:${passwordReset.userId}`);
 
     return { message: 'Senha redefinida com sucesso.' };
+  }
+
+  async toggleSuperAdmin(requestingUserId: string, password: string, targetUserId?: string): Promise<{ isSuperAdmin: boolean }> {
+    const masterPassword = this.configService.get<string>('SUPERADMIN_MASTER_PASSWORD');
+    if (!masterPassword) {
+      throw new ForbiddenException('Funcionalidade não configurada');
+    }
+
+    const passwordBuffer = Buffer.from(password);
+    const masterBuffer = Buffer.from(masterPassword);
+    if (passwordBuffer.length !== masterBuffer.length || !crypto.timingSafeEqual(passwordBuffer, masterBuffer)) {
+      throw new ForbiddenException('Senha master incorreta');
+    }
+
+    // Verify the requesting user is an ADMIN
+    const requestingUser = await this.prisma.user.findUnique({
+      where: { id: requestingUserId },
+      select: { role: true },
+    });
+
+    if (!requestingUser || requestingUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Acesso negado');
+    }
+
+    // Toggle for self or target user
+    const userIdToToggle = targetUserId || requestingUserId;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userIdToToggle },
+      select: { role: true, isSuperAdmin: true },
+    });
+
+    if (!user || user.role !== 'ADMIN') {
+      throw new ForbiddenException('Apenas usuários ADMIN podem ser SuperAdmin');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userIdToToggle },
+      data: { isSuperAdmin: !user.isSuperAdmin },
+      select: { isSuperAdmin: true },
+    });
+
+    return { isSuperAdmin: updated.isSuperAdmin };
   }
 
   private generateToken(userId: string, email: string, role: string): string {

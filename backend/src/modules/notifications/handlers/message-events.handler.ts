@@ -30,11 +30,11 @@ export class MessageEventsHandler {
    * Resolve all users from the opposite company (excluding sender).
    * Uses direct companyUser queries like the working order-events handler.
    */
-  private async resolveRecipientUserIds(
+  private async resolveRecipientUsers(
     brandId: string,
     supplierId: string | undefined,
     senderId: string,
-  ): Promise<string[]> {
+  ): Promise<{ userId: string; companyId: string }[]> {
     // Determine which company the sender belongs to
     const senderCompanyUser = await this.prisma.companyUser.findFirst({
       where: {
@@ -63,10 +63,10 @@ export class MessageEventsHandler {
         companyId: recipientCompanyId,
         userId: { not: senderId },
       },
-      select: { userId: true },
+      select: { userId: true, companyId: true },
     });
 
-    return recipientUsers.map((u) => u.userId);
+    return recipientUsers;
   }
 
   /**
@@ -82,22 +82,38 @@ export class MessageEventsHandler {
       // Only notify for text messages, proposals have their own handler
       if (event.type !== 'TEXT') return;
 
-      const recipientUserIds = await this.resolveRecipientUserIds(
+      const recipientUsers = await this.resolveRecipientUsers(
         event.brandId,
         event.supplierId,
         event.senderId,
       );
 
-      for (const userId of recipientUserIds) {
-        await this.notificationsService.notifyNewMessage(userId, {
-          orderId: event.orderId,
-          senderName: event.senderName,
-          messagePreview: event.content || '',
+      for (const user of recipientUsers) {
+        const actionUrl =
+          user.companyId === event.brandId
+            ? `/brand/pedidos/${event.orderId}/chat`
+            : `/portal/pedidos/${event.orderId}/chat`;
+
+        await this.notificationsService.notify({
+          type: NotificationType.MESSAGE_RECEIVED,
+          recipientId: user.userId,
+          companyId: user.companyId,
+          title: 'Nova Mensagem',
+          body: `${event.senderName}: ${(event.content || '').substring(0, 100)}${(event.content || '').length > 100 ? '...' : ''}`,
+          data: {
+            orderId: event.orderId,
+            senderName: event.senderName,
+            messagePreview: event.content || '',
+          },
+          actionUrl,
+          entityType: 'order',
+          entityId: event.orderId,
+          skipEmail: true,
         });
       }
 
       this.logger.log(
-        `Sent ${recipientUserIds.length} chat notifications for order ${event.orderId}`,
+        `Sent ${recipientUsers.length} chat notifications for order ${event.orderId}`,
       );
     } catch (error) {
       this.logger.error(`Error handling message.sent: ${error.message}`, error.stack);
@@ -121,24 +137,45 @@ export class MessageEventsHandler {
 
       if (!order) return;
 
-      const recipientUserIds = await this.resolveRecipientUserIds(
+      const recipientUsers = await this.resolveRecipientUsers(
         event.brandId,
         event.supplierId,
         event.senderId,
       );
 
-      for (const userId of recipientUserIds) {
-        await this.notificationsService.notifyProposalReceived(userId, {
-          orderId: event.orderId,
-          displayId: order.displayId,
-          senderName: event.senderName,
-          proposedPrice: event.proposedPrice,
-          proposedDeadline: event.proposedDeadline?.toISOString(),
+      for (const user of recipientUsers) {
+        const actionUrl =
+          user.companyId === event.brandId
+            ? `/brand/pedidos/${event.orderId}/chat`
+            : `/portal/pedidos/${event.orderId}/chat`;
+
+        let body = `${event.senderName} enviou uma proposta para o pedido ${order.displayId}`;
+        if (event.proposedPrice) {
+          body += `: R$ ${event.proposedPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+        }
+
+        await this.notificationsService.notify({
+          type: NotificationType.ORDER_PROPOSAL_RECEIVED,
+          priority: NotificationPriority.HIGH,
+          recipientId: user.userId,
+          companyId: user.companyId,
+          title: 'Nova Proposta Recebida',
+          body,
+          data: {
+            orderId: event.orderId,
+            displayId: order.displayId,
+            senderName: event.senderName,
+            proposedPrice: event.proposedPrice,
+            proposedDeadline: event.proposedDeadline?.toISOString(),
+          },
+          actionUrl,
+          entityType: 'order',
+          entityId: event.orderId,
         });
       }
 
       this.logger.log(
-        `Sent ${recipientUserIds.length} proposal notifications for order ${event.orderId}`,
+        `Sent ${recipientUsers.length} proposal notifications for order ${event.orderId}`,
       );
     } catch (error) {
       this.logger.error(`Error handling proposal.sent: ${error.message}`, error.stack);
@@ -159,10 +196,21 @@ export class MessageEventsHandler {
     try {
       const order = await this.prisma.order.findUnique({
         where: { id: event.orderId },
-        select: { displayId: true, productName: true },
+        select: { displayId: true, productName: true, brandId: true },
       });
 
       if (!order) return;
+
+      // Determine if the proposer is from the brand or supplier
+      const proposerCompanyUser = await this.prisma.companyUser.findFirst({
+        where: { userId: event.proposerId },
+        select: { companyId: true },
+      });
+
+      const actionUrl =
+        proposerCompanyUser?.companyId === order.brandId
+          ? `/brand/pedidos/${event.orderId}/chat`
+          : `/portal/pedidos/${event.orderId}/chat`;
 
       const isAccepted = event.status === 'ACCEPTED';
 
@@ -170,12 +218,13 @@ export class MessageEventsHandler {
         type: NotificationType.ORDER_PROPOSAL_RESPONDED,
         priority: NotificationPriority.HIGH,
         recipientId: event.proposerId,
+        companyId: proposerCompanyUser?.companyId,
         title: isAccepted ? 'Proposta Aceita!' : 'Proposta Recusada',
         body: isAccepted
           ? `${event.responderName} aceitou sua proposta para o pedido ${order.displayId}`
           : `${event.responderName} recusou sua proposta para o pedido ${order.displayId}`,
         data: event,
-        actionUrl: `/pedidos/${event.orderId}/chat`,
+        actionUrl,
         entityType: 'order',
         entityId: event.orderId,
       });

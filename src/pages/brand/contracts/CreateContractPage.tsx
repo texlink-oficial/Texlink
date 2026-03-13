@@ -283,7 +283,7 @@ export const CreateContractPage: React.FC = () => {
               htmlFor="title"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
             >
-              Titulo do Contrato
+              Título do Contrato
             </label>
             <Input
               id="title"
@@ -301,13 +301,13 @@ export const CreateContractPage: React.FC = () => {
                 htmlFor="description"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
               >
-                Descricao
+                Descrição
               </label>
               <textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descricao detalhada do contrato..."
+                placeholder="Descrição detalhada do contrato..."
                 rows={3}
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors resize-none"
               />

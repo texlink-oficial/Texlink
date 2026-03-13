@@ -108,7 +108,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Check for mock token (development mode only)
       if (
         (token as string).startsWith('mock-token-') &&
-        process.env.NODE_ENV !== 'production'
+        process.env.NODE_ENV === 'development'
       ) {
         // In development mode with mock tokens, use demo user IDs
         const tokenParts = (token as string).split('-');

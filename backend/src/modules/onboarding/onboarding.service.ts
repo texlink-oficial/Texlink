@@ -571,8 +571,10 @@ export class OnboardingService {
       throw new BadRequestException('Email de contato não configurado');
     }
 
+    const contactEmail = credential.contactEmail.toLowerCase().trim();
+
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: credential.contactEmail },
+      where: { email: contactEmail },
     });
 
     if (existingUser) {
@@ -587,7 +589,7 @@ export class OnboardingService {
     // Create the user
     const user = await this.prisma.user.create({
       data: {
-        email: credential.contactEmail,
+        email: contactEmail,
         name: credential.contactName || 'Usuário',
         passwordHash,
         role: 'SUPPLIER',
@@ -782,15 +784,15 @@ export class OnboardingService {
 
     // Update supplier profile with capabilities
     if (supplier) {
-      const monthlyCapacity = data.monthlyCapacity
-        || Math.round(data.activeWorkers * data.hoursPerDay * 60 * 22);
+      const dailyCapacity = data.dailyCapacity
+        || Math.round(data.activeWorkers * data.hoursPerDay * 60);
 
       const profileData = {
         productTypes: data.productTypes,
         specialties: data.specialties || [],
         activeWorkers: data.activeWorkers,
         hoursPerDay: data.hoursPerDay,
-        monthlyCapacity,
+        dailyCapacity,
         currentOccupancy: data.currentOccupancy ?? 0,
         updatedAt: new Date(),
       };

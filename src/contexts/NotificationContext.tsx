@@ -196,7 +196,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         const cleanup = async () => {
             const deleted = await notificationsDb.deleteOldNotifications(30);
             if (deleted > 0) {
-                console.log(`Cleaned up ${deleted} old notifications from IndexedDB`);
+                if (import.meta.env.DEV) console.log(`Cleaned up ${deleted} old notifications from IndexedDB`);
             }
         };
 

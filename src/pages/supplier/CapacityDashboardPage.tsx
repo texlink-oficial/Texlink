@@ -151,6 +151,10 @@ const CapacityDashboardPage: React.FC = () => {
         return 'text-green-500';
     };
 
+    const gaugeColor = isOverloaded ? '#ef4444' : isWarning ? '#eab308' : '#22c55e';
+    const gaugeTrackColor = 'rgba(156,163,175,0.2)';
+
+
     // ---------------------------------------------------------------------------
     // Calendar grid helpers
     // ---------------------------------------------------------------------------
@@ -297,12 +301,59 @@ const CapacityDashboardPage: React.FC = () => {
                     {/* ============================================================= */}
                     {/* Left Sidebar - Occupancy Gauge & Stats                        */}
                     {/* ============================================================= */}
-                    <div className="lg:col-span-1">
+                    <div className="lg:col-span-1 space-y-6">
+                        {/* Occupancy Gauge */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Resumo</h2>
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ocupação do Mês</h2>
 
-                            {/* Stats */}
-                            <div className="space-y-4">
+                            {/* SVG Gauge */}
+                            <div className="flex justify-center mb-4">
+                                <div className="relative w-40 h-40">
+                                    <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+                                        {/* Track */}
+                                        <circle
+                                            cx="60" cy="60" r="50"
+                                            fill="none"
+                                            stroke={gaugeTrackColor}
+                                            strokeWidth="12"
+                                        />
+                                        {/* Value */}
+                                        <circle
+                                            cx="60" cy="60" r="50"
+                                            fill="none"
+                                            stroke={gaugeColor}
+                                            strokeWidth="12"
+                                            strokeLinecap="round"
+                                            strokeDasharray={`${(occupancyPercent / 100) * 314.16} 314.16`}
+                                            className="transition-all duration-700 ease-out"
+                                        />
+                                    </svg>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                        <span className={`text-3xl font-bold ${getCapacityColor()}`}>
+                                            {occupancyPercent}%
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">ocupado</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Capacity summary */}
+                            <div className="grid grid-cols-2 gap-3 text-center">
+                                <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Alocado</p>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{minutesToHours(totalAllocated)}</p>
+                                </div>
+                                <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Disponível</p>
+                                    <p className="text-sm font-semibold text-green-600 dark:text-green-400">{minutesToHours(totalCapacity - totalAllocated)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Resumo</h2>
+                            <div className="space-y-3">
                                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                                     <div className="flex items-center gap-2">
                                         <Users className="h-5 w-5 text-gray-400" />
@@ -324,11 +375,11 @@ const CapacityDashboardPage: React.FC = () => {
                                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                                     <div className="flex items-center gap-2">
                                         <Package className="h-5 w-5 text-gray-400" />
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">Ocupação Mensal</span>
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">Capacidade Diária</span>
                                     </div>
                                     <span className="font-semibold text-gray-900 dark:text-white">
-                                        {config?.monthlyCapacity != null
-                                            ? minutesToHours(config.monthlyCapacity)
+                                        {config?.activeWorkers != null && config?.hoursPerDay != null
+                                            ? minutesToHours(config.activeWorkers * config.hoursPerDay * 60)
                                             : '-'}
                                     </span>
                                 </div>

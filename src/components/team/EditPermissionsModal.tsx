@@ -270,7 +270,7 @@ const EditPermissionsModal: React.FC<EditPermissionsModalProps> = ({
                             </span>
                           )}
                           {hasFromRole && override === 'inherit' && (
-                            <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium italic">Role</span>
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium italic">Função</span>
                           )}
                         </div>
                       </button>

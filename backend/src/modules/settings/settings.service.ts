@@ -239,7 +239,7 @@ export class SettingsService {
     const profile = await this.prisma.supplierProfile.findUnique({
       where: { companyId },
       select: {
-        monthlyCapacity: true,
+        dailyCapacity: true,
         currentOccupancy: true,
         activeWorkers: true,
         hoursPerDay: true,
@@ -251,7 +251,7 @@ export class SettingsService {
     if (!profile) {
       // Return default values
       return {
-        monthlyCapacity: null,
+        dailyCapacity: null,
         currentOccupancy: 0,
         activeWorkers: null,
         hoursPerDay: null,
@@ -275,7 +275,7 @@ export class SettingsService {
         where: { companyId },
         data: dto,
         select: {
-          monthlyCapacity: true,
+          dailyCapacity: true,
           currentOccupancy: true,
           activeWorkers: true,
           hoursPerDay: true,
@@ -291,7 +291,7 @@ export class SettingsService {
         ...dto,
       },
       select: {
-        monthlyCapacity: true,
+        dailyCapacity: true,
         currentOccupancy: true,
         activeWorkers: true,
         hoursPerDay: true,

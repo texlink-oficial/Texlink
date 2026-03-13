@@ -61,7 +61,7 @@ export interface SupplierProfile {
     companyId: string;
     productTypes: string[];
     specialties: string[];
-    monthlyCapacity: number;
+    dailyCapacity: number;
     currentOccupancy: number;
     avgRating?: number;
 }

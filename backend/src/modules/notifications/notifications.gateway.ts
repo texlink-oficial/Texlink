@@ -91,7 +91,7 @@ export class NotificationsGateway
       // Check for mock token (development mode only)
       if (
         (token as string).startsWith('mock-token-') &&
-        process.env.NODE_ENV !== 'production'
+        process.env.NODE_ENV === 'development'
       ) {
         const tokenParts = (token as string).split('-');
         const role = tokenParts[2]?.toLowerCase();

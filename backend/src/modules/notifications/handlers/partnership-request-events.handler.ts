@@ -107,7 +107,7 @@ export class PartnershipRequestEventsHandler {
             supplierName: event.supplierName,
             relationshipId: event.relationshipId,
           },
-          actionUrl: `/marca/fornecedores`,
+          actionUrl: `/brand/fornecedores`,
           entityType: 'PartnershipRequest',
           entityId: event.requestId,
         });
@@ -157,7 +157,7 @@ export class PartnershipRequestEventsHandler {
             supplierName: event.supplierName,
             rejectionReason: event.rejectionReason,
           },
-          actionUrl: `/marca/fornecedores/solicitacoes`,
+          actionUrl: `/brand/fornecedores/solicitacoes`,
           entityType: 'PartnershipRequest',
           entityId: event.requestId,
         });

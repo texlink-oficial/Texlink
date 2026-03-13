@@ -7,11 +7,11 @@ import {
   Body,
   Query,
   UseGuards,
-  Request,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { NotificationsService } from './notifications.service';
 import { GetNotificationsQueryDto, MarkReadDto } from './dto/notification.dto';
 
@@ -27,18 +27,22 @@ export class NotificationsController {
    */
   @Get()
   async getNotifications(
-    @Request() req: any,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('companyId') companyId: string,
     @Query() query: GetNotificationsQueryDto,
   ) {
-    return this.notificationsService.getNotifications(req.user.sub, query, req.user.companyId);
+    return this.notificationsService.getNotifications(userId, query, companyId);
   }
 
   /**
    * Get unread notification count
    */
   @Get('unread-count')
-  async getUnreadCount(@Request() req: any) {
-    const count = await this.notificationsService.getUnreadCount(req.user.sub, req.user.companyId);
+  async getUnreadCount(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('companyId') companyId: string,
+  ) {
+    const count = await this.notificationsService.getUnreadCount(userId, companyId);
     return { count };
   }
 
@@ -46,22 +50,23 @@ export class NotificationsController {
    * Get a single notification
    */
   @Get(':id')
-  async getNotification(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
-    return this.notificationsService.getNotification(id, req.user.sub);
+  async getNotification(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.notificationsService.getNotification(id, userId);
   }
 
   /**
    * Mark notification(s) as read
    */
   @Patch('read')
-  async markAsRead(@Request() req: any, @Body() body: MarkReadDto) {
-    const result = await this.notificationsService.markAsRead(
-      req.user.sub,
-      body,
-    );
-    const unreadCount = await this.notificationsService.getUnreadCount(
-      req.user.sub,
-    );
+  async markAsRead(
+    @CurrentUser('id') userId: string,
+    @Body() body: MarkReadDto,
+  ) {
+    const result = await this.notificationsService.markAsRead(userId, body);
+    const unreadCount = await this.notificationsService.getUnreadCount(userId);
     return { ...result, unreadCount };
   }
 
@@ -69,13 +74,14 @@ export class NotificationsController {
    * Mark a single notification as read
    */
   @Patch(':id/read')
-  async markOneAsRead(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
-    const result = await this.notificationsService.markAsRead(req.user.sub, {
+  async markOneAsRead(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const result = await this.notificationsService.markAsRead(userId, {
       notificationId: id,
     });
-    const unreadCount = await this.notificationsService.getUnreadCount(
-      req.user.sub,
-    );
+    const unreadCount = await this.notificationsService.getUnreadCount(userId);
     return { ...result, unreadCount };
   }
 
@@ -83,10 +89,13 @@ export class NotificationsController {
    * Mark all notifications as read
    */
   @Post('mark-all-read')
-  async markAllAsRead(@Request() req: any) {
-    const result = await this.notificationsService.markAsRead(req.user.sub, {
+  async markAllAsRead(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('companyId') companyId: string,
+  ) {
+    const result = await this.notificationsService.markAsRead(userId, {
       markAll: true,
-    }, req.user.companyId);
+    }, companyId);
     return { ...result, unreadCount: 0 };
   }
 }

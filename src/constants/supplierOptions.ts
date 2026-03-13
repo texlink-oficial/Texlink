@@ -34,5 +34,6 @@ export const MACHINE_OPTIONS = [
     'Reta industrial',
     'Reta doméstica',
     'Travete',
+    'Type',
     'Zig-zag',
 ] as const;

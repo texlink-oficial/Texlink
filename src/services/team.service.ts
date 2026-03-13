@@ -56,6 +56,11 @@ export const teamService = {
     return response.data;
   },
 
+  async toggleMemberActive(companyId: string, memberId: string): Promise<{ isActive: boolean }> {
+    const response = await api.patch<{ isActive: boolean }>(`/companies/${companyId}/team/${memberId}/toggle-active`);
+    return response.data;
+  },
+
   async removeMember(companyId: string, memberId: string): Promise<void> {
     await api.delete(`/companies/${companyId}/team/${memberId}`);
   },

@@ -92,7 +92,7 @@ export class CapacityReportsService {
 
     for (const rel of relationships) {
       const capacity =
-        rel.supplier.supplierProfile?.monthlyCapacity || 0;
+        rel.supplier.supplierProfile?.dailyCapacity || 0;
       totalCapacity += capacity;
 
       // Get brand's allocation for this supplier in the period
@@ -162,7 +162,7 @@ export class CapacityReportsService {
 
     for (const rel of relationships) {
       const totalCapacity =
-        rel.supplier.supplierProfile?.monthlyCapacity || 0;
+        rel.supplier.supplierProfile?.dailyCapacity || 0;
 
       // Get brand's allocation
       const brandOrders = await this.prisma.order.findMany({

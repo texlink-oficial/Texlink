@@ -87,7 +87,7 @@ export class TicketEventsHandler {
 
         const actionUrl =
           ticket.company.type === 'SUPPLIER'
-            ? `/supplier/chamados/${event.ticketId}`
+            ? `/portal/suporte/${event.ticketId}`
             : `/brand/suporte/${event.ticketId}`;
 
         for (const cu of companyUsers) {

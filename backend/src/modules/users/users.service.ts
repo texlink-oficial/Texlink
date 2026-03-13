@@ -1,12 +1,16 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CacheService } from '../../common/services/cache.service';
 import { UserRole } from '@prisma/client';
 import { AdminCreateUserDto, AdminUpdateUserDto } from '../admin/dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cache: CacheService,
+  ) {}
 
   async findAll(role?: UserRole) {
     return this.prisma.user.findMany({
@@ -17,6 +21,7 @@ export class UsersService {
         name: true,
         role: true,
         isActive: true,
+        isSuperAdmin: true,
         createdAt: true,
         companyUsers: {
           include: {
@@ -55,7 +60,7 @@ export class UsersService {
   }
 
   async updateStatus(id: string, isActive: boolean) {
-    return this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id },
       data: { isActive },
       select: {
@@ -65,11 +70,18 @@ export class UsersService {
         isActive: true,
       },
     });
+
+    // Invalidate JWT cache so the status change takes effect immediately
+    await this.invalidateUserCache(id);
+
+    return result;
   }
 
   async createUser(dto: AdminCreateUserDto) {
+    const email = dto.email.toLowerCase().trim();
+
     const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email },
     });
 
     if (existing) {
@@ -80,7 +92,7 @@ export class UsersService {
 
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
+        email,
         name: dto.name,
         passwordHash: hashedPassword,
         role: dto.role,
@@ -129,7 +141,7 @@ export class UsersService {
       }
     }
 
-    return this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
@@ -143,6 +155,7 @@ export class UsersService {
         name: true,
         role: true,
         isActive: true,
+        isSuperAdmin: true,
         createdAt: true,
         companyUsers: {
           include: {
@@ -153,6 +166,11 @@ export class UsersService {
         },
       },
     });
+
+    // Invalidate JWT cache when user data changes (role, isActive, email, name)
+    await this.invalidateUserCache(id);
+
+    return result;
   }
 
   async deleteUser(id: string) {
@@ -161,16 +179,39 @@ export class UsersService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    return this.prisma.user.update({
-      where: { id },
-      data: { isActive: false },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        isActive: true,
-      },
-    });
+    try {
+      // Hard delete: remove non-cascading related records then the user
+      await this.prisma.$transaction(async (tx) => {
+        // Nullify optional user references on other tables
+        await tx.order.updateMany({ where: { acceptedById: id }, data: { acceptedById: null } });
+        await tx.supplierOnboarding.updateMany({ where: { userId: id }, data: { userId: null } });
+        // Remove records that reference the user without cascade
+        await tx.companyUser.deleteMany({ where: { userId: id } });
+        await tx.passwordReset.deleteMany({ where: { userId: id } });
+        // Delete the user (cascading relations like notifications are auto-deleted)
+        await tx.user.delete({ where: { id } });
+      });
+
+      // Invalidate JWT cache so any active session is rejected
+      await this.invalidateUserCache(id);
+
+      return { deleted: true };
+    } catch (error: unknown) {
+      const prismaError = error as { code?: string };
+      if (prismaError.code === 'P2003') {
+        throw new BadRequestException(
+          'Não é possível excluir este usuário porque ele possui dados vinculados (pedidos, mensagens, etc). Desative-o em vez de excluir.',
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Invalidates the JWT user cache so auth re-fetches from database
+   */
+  private async invalidateUserCache(userId: string): Promise<void> {
+    await this.cache.del(`jwt:user:${userId}`);
   }
 
   async resetPassword(id: string, newPassword: string) {
@@ -181,14 +222,22 @@ export class UsersService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    return this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id },
-      data: { passwordHash: hashedPassword },
+      data: {
+        passwordHash: hashedPassword,
+        passwordChangedAt: new Date(),
+      },
       select: {
         id: true,
         email: true,
         name: true,
       },
     });
+
+    // Invalidate JWT cache so old tokens are rejected immediately
+    await this.invalidateUserCache(id);
+
+    return result;
   }
 }

@@ -4,6 +4,10 @@ import type { Job } from 'bull';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { NotificationsService } from '../notifications.service';
 import { QUEUE_NAMES, JOB_NAMES } from '../../../config/bull.config';
+import {
+  NotificationType,
+  NotificationPriority,
+} from '../dto/notification.dto';
 
 /**
  * Bull processor for notification-related jobs
@@ -72,6 +76,19 @@ export class NotificationProcessor {
           (order.deliveryDeadline.getTime() - now.getTime()) / (60 * 60 * 1000),
         );
 
+        const priority =
+          hoursRemaining <= 24
+            ? NotificationPriority.URGENT
+            : NotificationPriority.HIGH;
+
+        const notifData = {
+          orderId: order.id,
+          displayId: order.displayId,
+          productName: order.productName,
+          deadline: order.deliveryDeadline,
+          hoursRemaining,
+        };
+
         // Notify brand users
         const brandUsers = await this.prisma.companyUser.findMany({
           where: { companyId: order.brandId },
@@ -79,16 +96,18 @@ export class NotificationProcessor {
         });
 
         for (const user of brandUsers) {
-          await this.notificationsService.notifyDeadlineApproaching(
-            user.userId,
-            {
-              orderId: order.id,
-              displayId: order.displayId,
-              productName: order.productName,
-              deadline: order.deliveryDeadline,
-              hoursRemaining,
-            },
-          );
+          await this.notificationsService.notify({
+            type: NotificationType.ORDER_DEADLINE_APPROACHING,
+            priority,
+            recipientId: user.userId,
+            companyId: order.brandId,
+            title: 'Prazo de Entrega Próximo',
+            body: `Pedido ${order.displayId} vence em ${hoursRemaining}h. Produto: ${order.productName}`,
+            data: notifData,
+            actionUrl: `/brand/pedidos/${order.id}`,
+            entityType: 'order',
+            entityId: order.id,
+          });
         }
 
         // Notify supplier users
@@ -99,16 +118,18 @@ export class NotificationProcessor {
           });
 
           for (const user of supplierUsers) {
-            await this.notificationsService.notifyDeadlineApproaching(
-              user.userId,
-              {
-                orderId: order.id,
-                displayId: order.displayId,
-                productName: order.productName,
-                deadline: order.deliveryDeadline,
-                hoursRemaining,
-              },
-            );
+            await this.notificationsService.notify({
+              type: NotificationType.ORDER_DEADLINE_APPROACHING,
+              priority,
+              recipientId: user.userId,
+              companyId: order.supplierId,
+              title: 'Prazo de Entrega Próximo',
+              body: `Pedido ${order.displayId} vence em ${hoursRemaining}h. Produto: ${order.productName}`,
+              data: notifData,
+              actionUrl: `/portal/pedidos/${order.id}`,
+              entityType: 'order',
+              entityId: order.id,
+            });
           }
         }
       }
@@ -168,25 +189,45 @@ export class NotificationProcessor {
           (order.deliveryDeadline.getTime() - now.getTime()) / (60 * 60 * 1000),
         );
 
+        const priority =
+          hoursRemaining <= 24
+            ? NotificationPriority.URGENT
+            : NotificationPriority.HIGH;
+
+        const notifData = {
+          orderId: order.id,
+          displayId: order.displayId,
+          productName: order.productName,
+          deadline: order.deliveryDeadline,
+          hoursRemaining,
+        };
+
         const companyIds = [order.brandId, order.supplierId].filter(
           Boolean,
         ) as string[];
         const users = await this.prisma.companyUser.findMany({
           where: { companyId: { in: companyIds } },
-          select: { userId: true },
+          select: { userId: true, companyId: true },
         });
 
         for (const user of users) {
-          await this.notificationsService.notifyDeadlineApproaching(
-            user.userId,
-            {
-              orderId: order.id,
-              displayId: order.displayId,
-              productName: order.productName,
-              deadline: order.deliveryDeadline,
-              hoursRemaining,
-            },
-          );
+          const actionUrl =
+            user.companyId === order.brandId
+              ? `/brand/pedidos/${order.id}`
+              : `/portal/pedidos/${order.id}`;
+
+          await this.notificationsService.notify({
+            type: NotificationType.ORDER_DEADLINE_APPROACHING,
+            priority,
+            recipientId: user.userId,
+            companyId: user.companyId,
+            title: 'Prazo de Entrega Próximo',
+            body: `Pedido ${order.displayId} vence em ${hoursRemaining}h. Produto: ${order.productName}`,
+            data: notifData,
+            actionUrl,
+            entityType: 'order',
+            entityId: order.id,
+          });
         }
       }
 

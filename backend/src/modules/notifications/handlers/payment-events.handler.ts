@@ -45,12 +45,22 @@ export class PaymentEventsHandler {
       });
 
       for (const user of supplierUsers) {
-        await this.notificationsService.notifyPaymentRegistered(user.userId, {
-          paymentId: event.paymentId,
-          orderId: event.orderId,
-          displayId: event.orderDisplayId,
-          amount: event.amount,
-          dueDate: event.dueDate,
+        await this.notificationsService.notify({
+          type: NotificationType.PAYMENT_REGISTERED,
+          recipientId: user.userId,
+          companyId: event.supplierId,
+          title: 'Pagamento Registrado',
+          body: `Pagamento de R$ ${event.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} registrado para o pedido ${event.orderDisplayId}`,
+          data: {
+            paymentId: event.paymentId,
+            orderId: event.orderId,
+            displayId: event.orderDisplayId,
+            amount: event.amount,
+            dueDate: event.dueDate,
+          },
+          actionUrl: `/portal/pedidos/${event.orderId}`,
+          entityType: 'payment',
+          entityId: event.paymentId,
         });
       }
     } catch (error) {
@@ -77,11 +87,22 @@ export class PaymentEventsHandler {
       });
 
       for (const user of supplierUsers) {
-        await this.notificationsService.notifyPaymentReceived(user.userId, {
-          paymentId: event.paymentId,
-          orderId: event.orderId,
-          displayId: event.orderDisplayId,
-          amount: event.amount,
+        await this.notificationsService.notify({
+          type: NotificationType.PAYMENT_RECEIVED,
+          priority: NotificationPriority.HIGH,
+          recipientId: user.userId,
+          companyId: event.supplierId,
+          title: 'Pagamento Recebido',
+          body: `Pagamento de R$ ${event.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} confirmado para o pedido ${event.orderDisplayId}`,
+          data: {
+            paymentId: event.paymentId,
+            orderId: event.orderId,
+            displayId: event.orderDisplayId,
+            amount: event.amount,
+          },
+          actionUrl: `/portal/pedidos/${event.orderId}`,
+          entityType: 'payment',
+          entityId: event.paymentId,
         });
       }
     } catch (error) {
@@ -116,7 +137,7 @@ export class PaymentEventsHandler {
           title: 'Pagamento em Atraso',
           body: `Pagamento de R$ ${event.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} para o pedido ${event.orderDisplayId} está ${event.daysOverdue} dias atrasado`,
           data: event,
-          actionUrl: `/pedidos/${event.orderId}`,
+          actionUrl: `/brand/pedidos/${event.orderId}`,
           entityType: 'payment',
           entityId: event.paymentId,
         });
@@ -137,7 +158,7 @@ export class PaymentEventsHandler {
           title: 'Pagamento Pendente',
           body: `Pagamento de R$ ${event.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} do pedido ${event.orderDisplayId} está ${event.daysOverdue} dias atrasado`,
           data: event,
-          actionUrl: `/pedidos/${event.orderId}`,
+          actionUrl: `/portal/pedidos/${event.orderId}`,
           entityType: 'payment',
           entityId: event.paymentId,
         });

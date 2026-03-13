@@ -19,7 +19,7 @@ interface Company {
     };
     supplierProfile?: {
         productTypes?: string[];
-        monthlyCapacity?: number;
+        dailyCapacity?: number;
         onboardingComplete?: boolean;
     } | null;
 }

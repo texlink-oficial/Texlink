@@ -8,6 +8,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastContainer } from './components/ui/ToastContainer';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ViewAsBanner } from './components/ViewAsBanner';
 import ErrorBoundary from './components/error/ErrorBoundary';
 
 // Error pages
@@ -21,6 +22,8 @@ const ForgotPasswordPage = React.lazy(() => import('./pages/auth/ForgotPasswordP
 const ResetPasswordPage = React.lazy(() => import('./pages/auth/ResetPasswordPage'));
 const AcceptInvitePage = React.lazy(() => import('./pages/auth/AcceptInvitePage'));
 const AcceptInvitationPage = React.lazy(() => import('./pages/public/AcceptInvitationPage'));
+const PrivacyPolicyPage = React.lazy(() => import('./pages/public/PrivacyPolicyPage'));
+const CookiePolicyPage = React.lazy(() => import('./pages/public/CookiePolicyPage'));
 
 // Settings pages
 const TeamPage = React.lazy(() => import('./pages/settings/TeamPage'));
@@ -105,6 +108,7 @@ const PayoutFrequencyPage = React.lazy(() => import('./pages/portal/financial/Pa
 const AdvancePage = React.lazy(() => import('./pages/portal/financial/AdvancePage'));
 const SupplierBrandsPage = React.lazy(() => import('./pages/portal/BrandsPage'));
 const SupplierPartnershipRequestsPage = React.lazy(() => import('./pages/supplier/PartnershipRequestsPage'));
+const SupplierPartnershipRequestDetailPage = React.lazy(() => import('./pages/supplier/PartnershipRequestDetailPage'));
 
 // Onboarding pages
 const OnboardingLayout = React.lazy(() => import('./components/onboarding/OnboardingLayout'));
@@ -134,6 +138,7 @@ const App: React.FC = () => {
                         <NotificationProvider>
                             <PermissionProvider>
                                 <BrowserRouter>
+                                    <ViewAsBanner />
                                     <React.Suspense
                                         fallback={
                                             <div className="min-h-screen bg-brand-950 flex items-center justify-center">
@@ -149,6 +154,8 @@ const App: React.FC = () => {
                                             <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
                                             <Route path="/convite/:token" element={<AcceptInvitePage />} />
                                             <Route path="/aceitar-convite/:token" element={<AcceptInvitationPage />} />
+                                            <Route path="/politica-de-privacidade" element={<PrivacyPolicyPage />} />
+                                            <Route path="/politica-de-cookies" element={<CookiePolicyPage />} />
 
                                             {/* Onboarding routes (protected, supplier only) */}
                                             <Route path="/onboarding" element={<ProtectedRoute allowedRoles={['SUPPLIER']}><OnboardingLayout /></ProtectedRoute>}>
@@ -183,6 +190,7 @@ const App: React.FC = () => {
                                                 <Route path="marcas" element={<SupplierBrandsPage />} />
                                                 {/* Solicitações de Parceria */}
                                                 <Route path="solicitacoes" element={<SupplierPartnershipRequestsPage />} />
+                                                <Route path="solicitacoes/:id" element={<SupplierPartnershipRequestDetailPage />} />
                                                 {/* Documentos */}
                                                 <Route path="documentos" element={<SupplierDocuments />} />
                                                 {/* Contratos */}
@@ -311,9 +319,19 @@ const App: React.FC = () => {
 };
 
 const DashboardRouter: React.FC = () => {
-    const { user } = useAuth();
+    const { user, viewAs } = useAuth();
 
     if (!user) return <Navigate to="/login" replace />;
+
+    // If admin is in viewAs mode, redirect to the simulated role's dashboard
+    if (viewAs) {
+        switch (viewAs.role) {
+            case 'SUPPLIER':
+                return <Navigate to="/portal/inicio" replace />;
+            case 'BRAND':
+                return <Navigate to="/brand" replace />;
+        }
+    }
 
     switch (user.role) {
         case 'SUPPLIER':

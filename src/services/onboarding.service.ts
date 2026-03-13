@@ -14,7 +14,7 @@ export interface SupplierProfile {
     };
     productTypes?: string[];
     specialties?: string[];
-    monthlyCapacity?: number;
+    dailyCapacity?: number;
     currentOccupancy?: number;
 }
 
@@ -128,7 +128,7 @@ export const onboardingService = {
     async updatePhase3(data: {
         productTypes: string[];
         specialties?: string[];
-        monthlyCapacity: number;
+        dailyCapacity: number;
         activeWorkers?: number;
         hoursPerDay?: number;
         currentOccupancy?: number;
@@ -220,7 +220,7 @@ export const onboardingService = {
             specialties?: string[];
             activeWorkers: number;
             hoursPerDay: number;
-            monthlyCapacity?: number;
+            dailyCapacity?: number;
             currentOccupancy?: number;
         }
     ): Promise<{ success: boolean; onboardingId: string; currentStep: number }> {

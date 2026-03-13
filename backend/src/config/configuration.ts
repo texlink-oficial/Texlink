@@ -1,11 +1,21 @@
 export default () => {
   // Validate required environment variables in production
   if (process.env.NODE_ENV === 'production') {
-    const requiredEnvVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DATABASE_URL', 'CORS_ORIGINS'];
+    const requiredEnvVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DATABASE_URL', 'CORS_ORIGINS', 'FRONTEND_URL'];
     const missing = requiredEnvVars.filter((v) => !process.env[v]);
     if (missing.length > 0) {
       throw new Error(
         `Missing required environment variables: ${missing.join(', ')}`,
+      );
+    }
+
+    // Validate SUPERADMIN_MASTER_PASSWORD strength
+    if (
+      process.env.SUPERADMIN_MASTER_PASSWORD &&
+      process.env.SUPERADMIN_MASTER_PASSWORD.length < 16
+    ) {
+      throw new Error(
+        'SUPERADMIN_MASTER_PASSWORD must be at least 16 characters in production',
       );
     }
 
@@ -45,6 +55,7 @@ export default () => {
     redis: {
       url: process.env.REDIS_URL,
     },
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
     webhooks: {
       sendgridValidation:
         process.env.SENDGRID_WEBHOOK_SIGNATURE_VALIDATION === 'true',

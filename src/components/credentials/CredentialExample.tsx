@@ -57,10 +57,10 @@ export const CredentialExample: React.FC = () => {
     { status: 'COMPLIANCE_APPROVED', createdAt: '2024-01-05' },
   ];
 
-  const handleView = () => console.log('View credential');
-  const handleEdit = () => console.log('Edit credential');
-  const handleDelete = () => console.log('Delete credential');
-  const handleSendInvite = () => console.log('Send invitation');
+  const handleView = () => { if (import.meta.env.DEV) console.log('View credential'); };
+  const handleEdit = () => { if (import.meta.env.DEV) console.log('Edit credential'); };
+  const handleDelete = () => { if (import.meta.env.DEV) console.log('Delete credential'); };
+  const handleSendInvite = () => { if (import.meta.env.DEV) console.log('Send invitation'); };
 
   return (
     <div className="p-8 space-y-8 bg-gray-50 dark:bg-gray-900 min-h-screen">

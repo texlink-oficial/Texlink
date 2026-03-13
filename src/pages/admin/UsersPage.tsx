@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
     Users, Shield, Building2, Factory,
     Search, Plus, MoreVertical, Loader2,
     ChevronRight, Filter, RefreshCw,
-    Edit3, KeyRound, UserX, UserCheck
+    Edit3, KeyRound, UserX, UserCheck, X, Trash2
 } from 'lucide-react';
 import { adminService, AdminUser } from '../../services/admin.service';
+import { authService } from '../../services/auth.service';
+import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import CreateUserModal from '../../components/admin/CreateUserModal';
 import EditUserModal from '../../components/admin/EditUserModal';
@@ -18,12 +20,36 @@ const UsersPage: React.FC = () => {
     const [selectedRole, setSelectedRole] = useState<string>('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [openActionId, setOpenActionId] = useState<string | null>(null);
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
     const [showCreateUser, setShowCreateUser] = useState(false);
     const [showEditUser, setShowEditUser] = useState(false);
     const [showResetPassword, setShowResetPassword] = useState(false);
+    const [showSuperAdminModal, setShowSuperAdminModal] = useState(false);
+    const [superAdminTarget, setSuperAdminTarget] = useState<AdminUser | null>(null);
+    const [masterPassword, setMasterPassword] = useState('');
+    const [superAdminLoading, setSuperAdminLoading] = useState(false);
+    const [superAdminError, setSuperAdminError] = useState('');
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
+    const actionBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const { user: currentUser } = useAuth();
     const toast = useToast();
+
+    // Close dropdown on click outside
+    useEffect(() => {
+        if (!openActionId) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setOpenActionId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [openActionId]);
 
     useEffect(() => {
         loadUsers();
@@ -51,6 +77,87 @@ const UsersPage: React.FC = () => {
         }
     };
 
+    const handleOpenSuperAdminModal = (user: AdminUser) => {
+        setSuperAdminTarget(user);
+        setMasterPassword('');
+        setSuperAdminError('');
+        setShowSuperAdminModal(true);
+    };
+
+    const handleToggleSuperAdmin = async () => {
+        if (!superAdminTarget) return;
+        setSuperAdminLoading(true);
+        setSuperAdminError('');
+        try {
+            await authService.toggleSuperAdmin(masterPassword, superAdminTarget.id);
+            toast.success('SuperAdmin atualizado', `SuperAdmin ${!superAdminTarget.isSuperAdmin ? 'ativado' : 'desativado'} para ${superAdminTarget.name}`);
+            setShowSuperAdminModal(false);
+            setSuperAdminTarget(null);
+            setMasterPassword('');
+            loadUsers();
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { message?: string } }; message?: string };
+            setSuperAdminError(error?.response?.data?.message || error?.message || 'Senha incorreta');
+        } finally {
+            setSuperAdminLoading(false);
+        }
+    };
+
+    const handleDeleteUser = async () => {
+        if (!deleteTarget) return;
+        setDeleteLoading(true);
+        try {
+            await adminService.deleteUser(deleteTarget.id);
+            toast.success('Usuário excluído', `"${deleteTarget.name}" foi removido permanentemente`);
+            setShowDeleteConfirm(false);
+            setDeleteTarget(null);
+            loadUsers();
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { message?: string } }; message?: string };
+            toast.error('Erro ao excluir', error?.response?.data?.message || 'Não foi possível excluir o usuário');
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+
+    // Only SA can delete ADMIN users; any admin can delete BRAND/SUPPLIER users
+    const canDeleteUser = (user: AdminUser) => {
+        if (user.id === currentUser?.id) return false; // Can't delete yourself
+        if (user.role === 'ADMIN') return !!currentUser?.isSuperAdmin;
+        return true;
+    };
+
+    const handleOpenDropdown = useCallback((userId: string) => {
+        if (openActionId === userId) {
+            setOpenActionId(null);
+            return;
+        }
+
+        const btn = actionBtnRefs.current[userId];
+        if (!btn) return;
+
+        const rect = btn.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const dropdownHeight = 200; // approximate
+
+        const style: React.CSSProperties = {
+            position: 'fixed',
+            right: window.innerWidth - rect.right,
+            zIndex: 9999,
+        };
+
+        if (spaceBelow < dropdownHeight) {
+            // Open upward
+            style.bottom = window.innerHeight - rect.top + 4;
+        } else {
+            // Open downward
+            style.top = rect.bottom + 4;
+        }
+
+        setDropdownStyle(style);
+        setOpenActionId(userId);
+    }, [openActionId]);
+
     const filteredUsers = users.filter(user => {
         const query = searchQuery.toLowerCase();
         const matchesSearch = user.name?.toLowerCase().includes(query) || user.email?.toLowerCase().includes(query);
@@ -68,11 +175,7 @@ const UsersPage: React.FC = () => {
         suppliers: users.filter(u => u.role === 'SUPPLIER').length,
     };
 
-    const roleLabels: Record<string, string> = {
-        ADMIN: 'Admin',
-        BRAND: 'Marca',
-        SUPPLIER: 'Facção',
-    };
+    const activeUser = openActionId ? filteredUsers.find(u => u.id === openActionId) : null;
 
     return (
         <div className="animate-fade-in">
@@ -209,7 +312,7 @@ const UsersPage: React.FC = () => {
                         <p className="text-gray-500 max-w-sm mx-auto font-medium">Não encontramos resultados para os filtros aplicados.</p>
                     </div>
                 ) : (
-                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-3xl shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-3xl shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
@@ -230,7 +333,12 @@ const UsersPage: React.FC = () => {
                                             className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors"
                                         >
                                             <td className="px-6 py-4">
-                                                <span className="text-sm font-bold text-gray-900 dark:text-white">{user.name}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-gray-900 dark:text-white">{user.name}</span>
+                                                    {user.isSuperAdmin && (
+                                                        <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded text-[9px] font-bold uppercase">SA</span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{user.email}</span>
@@ -262,63 +370,13 @@ const UsersPage: React.FC = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="relative inline-block">
-                                                    <button
-                                                        onClick={() => setOpenActionId(openActionId === user.id ? null : user.id)}
-                                                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition-colors"
-                                                    >
-                                                        <MoreVertical className="w-4 h-4" />
-                                                    </button>
-                                                    {openActionId === user.id && (
-                                                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl shadow-xl z-20 overflow-hidden">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedUser(user);
-                                                                    setShowEditUser(true);
-                                                                    setOpenActionId(null);
-                                                                }}
-                                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
-                                                            >
-                                                                <Edit3 className="w-4 h-4" />
-                                                                Editar
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedUser(user);
-                                                                    setShowResetPassword(true);
-                                                                    setOpenActionId(null);
-                                                                }}
-                                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
-                                                            >
-                                                                <KeyRound className="w-4 h-4" />
-                                                                Redefinir Senha
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    handleToggleStatus(user);
-                                                                    setOpenActionId(null);
-                                                                }}
-                                                                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
-                                                                    user.isActive
-                                                                        ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
-                                                                        : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
-                                                                }`}
-                                                            >
-                                                                {user.isActive ? (
-                                                                    <>
-                                                                        <UserX className="w-4 h-4" />
-                                                                        Desativar
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <UserCheck className="w-4 h-4" />
-                                                                        Ativar
-                                                                    </>
-                                                                )}
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                <button
+                                                    ref={(el) => { actionBtnRefs.current[user.id] = el; }}
+                                                    onClick={(e) => { e.stopPropagation(); handleOpenDropdown(user.id); }}
+                                                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition-colors"
+                                                >
+                                                    <MoreVertical className="w-4 h-4" />
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
@@ -328,6 +386,89 @@ const UsersPage: React.FC = () => {
                     </div>
                 )}
             </main>
+
+            {/* Floating dropdown menu - rendered via portal-like fixed positioning */}
+            {openActionId && activeUser && (
+                <div ref={dropdownRef} style={dropdownStyle} className="w-48 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-xl shadow-xl overflow-hidden">
+                    <button
+                        onClick={() => {
+                            setSelectedUser(activeUser);
+                            setShowEditUser(true);
+                            setOpenActionId(null);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
+                    >
+                        <Edit3 className="w-4 h-4" />
+                        Editar
+                    </button>
+                    <button
+                        onClick={() => {
+                            setSelectedUser(activeUser);
+                            setShowResetPassword(true);
+                            setOpenActionId(null);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
+                    >
+                        <KeyRound className="w-4 h-4" />
+                        Redefinir Senha
+                    </button>
+                    {activeUser.role === 'ADMIN' && (
+                        <button
+                            onClick={() => {
+                                handleOpenSuperAdminModal(activeUser);
+                                setOpenActionId(null);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                                activeUser.isSuperAdmin
+                                    ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                                    : 'text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10'
+                            }`}
+                        >
+                            <Shield className="w-4 h-4" />
+                            {activeUser.isSuperAdmin ? 'Remover SuperAdmin' : 'Tornar SuperAdmin'}
+                        </button>
+                    )}
+                    <button
+                        onClick={() => {
+                            handleToggleStatus(activeUser);
+                            setOpenActionId(null);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                            activeUser.isActive
+                                ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
+                                : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
+                        }`}
+                    >
+                        {activeUser.isActive ? (
+                            <>
+                                <UserX className="w-4 h-4" />
+                                Desativar
+                            </>
+                        ) : (
+                            <>
+                                <UserCheck className="w-4 h-4" />
+                                Ativar
+                            </>
+                        )}
+                    </button>
+                    {canDeleteUser(activeUser) && (
+                        <>
+                            <div className="border-t border-gray-100 dark:border-white/[0.06]" />
+                            <button
+                                onClick={() => {
+                                    setDeleteTarget(activeUser);
+                                    setShowDeleteConfirm(true);
+                                    setOpenActionId(null);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Excluir Permanente
+                            </button>
+                        </>
+                    )}
+                </div>
+            )}
 
             {/* Modals */}
             {showCreateUser && (
@@ -349,6 +490,123 @@ const UsersPage: React.FC = () => {
                     onClose={() => { setShowResetPassword(false); setSelectedUser(null); }}
                     onSuccess={() => { setShowResetPassword(false); setSelectedUser(null); }}
                 />
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && deleteTarget && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-white/10">
+                            <div className="flex items-center gap-2.5">
+                                <Trash2 className="w-5 h-5 text-rose-500" />
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    Excluir Usuário
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => { setShowDeleteConfirm(false); setDeleteTarget(null); }}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Tem certeza que deseja excluir permanentemente o usuário <strong className="text-gray-900 dark:text-white">{deleteTarget.name}</strong> ({deleteTarget.email})?
+                            </p>
+                            <p className="text-xs text-rose-500 font-medium">
+                                Esta ação não pode ser desfeita. Todos os dados do usuário serão removidos.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowDeleteConfirm(false); setDeleteTarget(null); }}
+                                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleDeleteUser}
+                                    disabled={deleteLoading}
+                                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-rose-500 rounded-lg hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {deleteLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* SuperAdmin Toggle Modal */}
+            {showSuperAdminModal && superAdminTarget && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-white/10">
+                            <div className="flex items-center gap-2.5">
+                                <Shield className="w-5 h-5 text-amber-500" />
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    {superAdminTarget.isSuperAdmin ? 'Remover' : 'Tornar'} SuperAdmin
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setShowSuperAdminModal(false)}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form
+                            onSubmit={(e) => { e.preventDefault(); handleToggleSuperAdmin(); }}
+                            className="p-5 space-y-4"
+                        >
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {superAdminTarget.isSuperAdmin
+                                    ? `Remover SuperAdmin de "${superAdminTarget.name}"?`
+                                    : `Tornar "${superAdminTarget.name}" SuperAdmin?`
+                                }
+                            </p>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                    Senha Master
+                                </label>
+                                <input
+                                    type="password"
+                                    value={masterPassword}
+                                    onChange={(e) => setMasterPassword(e.target.value)}
+                                    placeholder="Digite a senha master..."
+                                    className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-gray-900 dark:text-white placeholder-gray-400"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {superAdminError && (
+                                <p className="text-sm text-red-500">{superAdminError}</p>
+                            )}
+
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSuperAdminModal(false)}
+                                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!masterPassword || superAdminLoading}
+                                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {superAdminLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    Confirmar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     );

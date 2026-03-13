@@ -238,6 +238,7 @@ const MessagesPage: React.FC = () => {
                             orderDisplayId={selectedConv.displayId}
                             partnerName={selectedConv.supplierName}
                             partnerImage={selectedConv.supplierImage}
+                            orderStatus={selectedConv.order.status}
                             currentOrder={{
                                 pricePerUnit: Number(selectedConv.order.pricePerUnit),
                                 quantity: selectedConv.order.quantity,

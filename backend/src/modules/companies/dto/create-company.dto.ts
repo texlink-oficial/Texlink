@@ -1,5 +1,6 @@
 import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { CompanyType } from '@prisma/client';
+import { IsCNPJ } from '../../../common/validators/cnpj.validator';
 
 export class CreateCompanyDto {
   @IsString()
@@ -12,6 +13,7 @@ export class CreateCompanyDto {
 
   @IsString()
   @IsNotEmpty()
+  @IsCNPJ({ message: 'CNPJ inválido. Verifique o número informado.' })
   document: string; // CNPJ or CPF
 
   @IsEnum(CompanyType)

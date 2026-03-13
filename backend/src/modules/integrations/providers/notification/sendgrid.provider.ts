@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InvitationType } from '@prisma/client';
-import * as sgMail from '@sendgrid/mail';
+import sgMail from '@sendgrid/mail';
 import { ResponseError } from '@sendgrid/mail';
 import {
   INotificationProvider,
