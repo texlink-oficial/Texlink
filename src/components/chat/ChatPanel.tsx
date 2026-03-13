@@ -15,6 +15,8 @@ import {
     Loader2,
     WifiOff,
     Wifi,
+    AlertCircle,
+    RotateCw,
 } from 'lucide-react';
 import { NEGOTIATION_STATUSES } from '../../constants/orderStatuses';
 
@@ -64,6 +66,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         deliveryDeadline: currentOrder?.deliveryDeadline || '',
     });
     const [isSending, setIsSending] = useState(false);
+    const [sendError, setSendError] = useState<{ message: string; data: { type: 'TEXT' | 'PROPOSAL'; content?: string } } | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -101,15 +104,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const handleSendText = async () => {
         if (!inputValue.trim() || isSending) return;
 
+        const content = inputValue.trim();
+        setSendError(null);
         setIsSending(true);
         const success = await sendMessage({
             type: 'TEXT',
-            content: inputValue.trim(),
+            content,
         });
 
         if (success) {
             setInputValue('');
             sendTyping(false);
+        } else {
+            setSendError({ message: 'Falha ao enviar mensagem.', data: { type: 'TEXT', content } });
         }
         setIsSending(false);
     };
@@ -117,6 +124,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const handleSendProposal = async () => {
         if (isSending) return;
 
+        setSendError(null);
         setIsSending(true);
         const success = await sendMessage({
             type: 'PROPOSAL',
@@ -127,6 +135,36 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         if (success) {
             setShowProposalForm(false);
+        } else {
+            setSendError({ message: 'Falha ao enviar proposta.', data: { type: 'PROPOSAL' } });
+        }
+        setIsSending(false);
+    };
+
+    const handleRetry = async () => {
+        if (!sendError) return;
+        setSendError(null);
+        setIsSending(true);
+
+        if (sendError.data.type === 'TEXT' && sendError.data.content) {
+            const success = await sendMessage({ type: 'TEXT', content: sendError.data.content });
+            if (success) {
+                setInputValue('');
+            } else {
+                setSendError({ message: 'Falha ao enviar mensagem.', data: sendError.data });
+            }
+        } else if (sendError.data.type === 'PROPOSAL') {
+            const success = await sendMessage({
+                type: 'PROPOSAL',
+                proposedPrice: proposalValues.pricePerUnit,
+                proposedQuantity: proposalValues.quantity,
+                proposedDeadline: proposalValues.deliveryDeadline,
+            });
+            if (success) {
+                setShowProposalForm(false);
+            } else {
+                setSendError({ message: 'Falha ao enviar proposta.', data: sendError.data });
+            }
         }
         setIsSending(false);
     };
@@ -375,13 +413,22 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                                         className={`flex items-center justify-end gap-1 px-4 pb-2 text-[10px] ${isOwnMessage(msg) ? 'text-brand-100' : 'text-gray-400 dark:text-gray-500'
                                             }`}
                                     >
-                                        {formatTime(msg.createdAt)}
-                                        {isOwnMessage(msg) && (
-                                            msg.read ? (
-                                                <CheckCheck className="h-3 w-3 text-brand-100" />
-                                            ) : (
-                                                <Check className="h-3 w-3 opacity-70" />
-                                            )
+                                        {msg.isPending ? (
+                                            <>
+                                                <Loader2 className="h-3 w-3 animate-spin opacity-70" />
+                                                <span className="opacity-70">Enviando...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {formatTime(msg.createdAt)}
+                                                {isOwnMessage(msg) && (
+                                                    msg.read ? (
+                                                        <CheckCheck className="h-3 w-3 text-brand-100" />
+                                                    ) : (
+                                                        <Check className="h-3 w-3 opacity-70" />
+                                                    )
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -505,6 +552,33 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         <Coins className="h-4 w-4" />
                         Enviar Proposta de Negociação
                     </button>
+                </div>
+            )}
+
+            {/* Send Error Banner */}
+            {sendError && (
+                <div className="px-3 py-2 bg-red-50 dark:bg-red-900/20 border-t border-red-200 dark:border-red-800 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-red-700 dark:text-red-400 text-xs font-medium">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>{sendError.message}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={handleRetry}
+                            disabled={isSending}
+                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            <RotateCw className="w-3 h-3" />
+                            Tentar novamente
+                        </button>
+                        <button
+                            onClick={() => setSendError(null)}
+                            className="p-1 text-red-400 hover:text-red-600 dark:hover:text-red-300 rounded"
+                        >
+                            <span className="sr-only">Fechar</span>
+                            &times;
+                        </button>
+                    </div>
                 </div>
             )}
 
