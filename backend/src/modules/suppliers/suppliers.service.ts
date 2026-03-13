@@ -402,12 +402,12 @@ export class SuppliersService {
           supplierId: companyId,
           status: OrderStatus.LANCADO_PELA_MARCA,
         },
-        // Bidding orders where this supplier is targeted
+        // Bidding orders where this supplier is targeted (pending or already expressed interest)
         {
           targetSuppliers: {
             some: {
               supplierId: companyId,
-              status: 'PENDING',
+              status: { in: [OrderTargetStatus.PENDING, OrderTargetStatus.INTERESTED] },
             },
           },
           status: OrderStatus.LANCADO_PELA_MARCA,
