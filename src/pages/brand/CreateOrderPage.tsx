@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ordersService, suppliersService, uploadService, favoritesService, settingsService } from '../../services';
 import { ProductTemplate } from '../../services/favorites.service';
 import {
-    ArrowLeft, Package, DollarSign, Calendar,
+    ArrowLeft, Package, DollarSign, Calendar, MapPin,
     Send, Loader2, Factory, FileText, Upload, X, Image, CheckCircle, AlertCircle, Star, Film, Copy, Info, Bookmark, Lock
 } from 'lucide-react';
 import { ProductTemplateSelector, PaymentTermsSelector, FavoriteSupplierBadge, SaveAsTemplateModal } from '../../components/favorites';
@@ -15,8 +15,11 @@ interface SupplierOption {
     id: string;
     tradeName: string;
     avgRating: number;
+    city?: string;
+    state?: string;
     supplierProfile?: {
         productTypes: string[];
+        specialties: string[];
         dailyCapacity: number;
     };
 }
@@ -49,6 +52,11 @@ const CreateOrderPage: React.FC = () => {
     const [linkedSupplierIds, setLinkedSupplierIds] = useState<string[]>([]);
     const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
     const [orderCreated, setOrderCreated] = useState(false);
+
+    // Supplier filters
+    const [supplierFilterProductType, setSupplierFilterProductType] = useState('');
+    const [supplierFilterSpecialty, setSupplierFilterSpecialty] = useState('');
+    const [supplierFilterCity, setSupplierFilterCity] = useState('');
 
     // Check for duplicate order data from navigation state
     const duplicateFrom = (location.state as { duplicateFrom?: DuplicateOrderData })?.duplicateFrom;
@@ -263,13 +271,45 @@ const CreateOrderPage: React.FC = () => {
     // Sort suppliers: favorites first, then by rating
     // Filter suppliers based on assignment type:
     // DIRECT → only linked (vinculadas) suppliers
-    // BIDDING/HYBRID → all suppliers
+    // BIDDING/HYBRID → all suppliers, DIRECT → only linked
     const filteredSuppliers = useMemo(() => {
-        if (formData.assignmentType === 'DIRECT') {
-            return suppliers.filter(s => linkedSupplierIds.includes(s.id));
+        let list = formData.assignmentType === 'DIRECT'
+            ? suppliers.filter(s => linkedSupplierIds.includes(s.id))
+            : suppliers;
+
+        // Apply user filters
+        if (supplierFilterProductType) {
+            list = list.filter(s => s.supplierProfile?.productTypes?.includes(supplierFilterProductType));
         }
-        return suppliers;
-    }, [suppliers, linkedSupplierIds, formData.assignmentType]);
+        if (supplierFilterSpecialty) {
+            list = list.filter(s => s.supplierProfile?.specialties?.includes(supplierFilterSpecialty));
+        }
+        if (supplierFilterCity) {
+            list = list.filter(s =>
+                s.city?.toLowerCase().includes(supplierFilterCity.toLowerCase()) ||
+                s.state?.toLowerCase().includes(supplierFilterCity.toLowerCase())
+            );
+        }
+        return list;
+    }, [suppliers, linkedSupplierIds, formData.assignmentType, supplierFilterProductType, supplierFilterSpecialty, supplierFilterCity]);
+
+    // Derive unique values for filter dropdowns from ALL suppliers (not filtered list)
+    const supplierCities = useMemo(() => {
+        const cities = new Set<string>();
+        suppliers.forEach(s => {
+            if (s.city && s.state) cities.add(`${s.city}, ${s.state}`);
+            else if (s.city) cities.add(s.city);
+        });
+        return Array.from(cities).sort();
+    }, [suppliers]);
+
+    const supplierSpecialties = useMemo(() => {
+        const specs = new Set<string>();
+        suppliers.forEach(s => s.supplierProfile?.specialties?.forEach(sp => specs.add(sp)));
+        return Array.from(specs).sort();
+    }, [suppliers]);
+
+    const hasActiveFilters = supplierFilterProductType || supplierFilterSpecialty || supplierFilterCity;
 
     const sortedSuppliers = useMemo(() => {
         const favorites = filteredSuppliers.filter(s => favoriteSupplierIds.includes(s.id));
@@ -636,11 +676,67 @@ const CreateOrderPage: React.FC = () => {
                                 </div>
                             )}
 
+                            {/* Supplier Filters */}
+                            <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <select
+                                    value={supplierFilterProductType}
+                                    onChange={(e) => setSupplierFilterProductType(e.target.value)}
+                                    className="px-3 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
+                                >
+                                    <option value="">Todos os tipos de produto</option>
+                                    {PRODUCT_TYPE_OPTIONS.map((t) => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={supplierFilterSpecialty}
+                                    onChange={(e) => setSupplierFilterSpecialty(e.target.value)}
+                                    className="px-3 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
+                                >
+                                    <option value="">Todas as especialidades</option>
+                                    {supplierSpecialties.map((s) => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
+                                </select>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    <input
+                                        type="text"
+                                        list="supplier-cities"
+                                        value={supplierFilterCity}
+                                        onChange={(e) => setSupplierFilterCity(e.target.value)}
+                                        placeholder="Filtrar por cidade/estado"
+                                        className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
+                                    />
+                                    <datalist id="supplier-cities">
+                                        {supplierCities.map((c) => (
+                                            <option key={c} value={c} />
+                                        ))}
+                                    </datalist>
+                                </div>
+                            </div>
+                            {hasActiveFilters && (
+                                <div className="mb-3 flex items-center justify-between">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                        {filteredSuppliers.length} facção(ões) encontrada(s)
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setSupplierFilterProductType(''); setSupplierFilterSpecialty(''); setSupplierFilterCity(''); }}
+                                        className="text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                                    >
+                                        Limpar filtros
+                                    </button>
+                                </div>
+                            )}
+
                             {sortedSuppliers.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500 bg-gray-50 dark:bg-gray-900/30 rounded-xl border border-gray-200 dark:border-gray-800 border-dashed">
-                                    {formData.assignmentType === 'DIRECT'
-                                        ? 'Nenhuma facção vinculada. Vincule facções em "Facções > Adicionar".'
-                                        : 'Nenhuma facção encontrada'}
+                                    {hasActiveFilters
+                                        ? 'Nenhuma facção encontrada com esses filtros.'
+                                        : formData.assignmentType === 'DIRECT'
+                                            ? 'Nenhuma facção vinculada. Vincule facções em "Facções > Adicionar".'
+                                            : 'Nenhuma facção encontrada'}
                                 </div>
                             ) : (
                                 <div className="max-h-96 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
