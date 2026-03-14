@@ -50,12 +50,12 @@
 
 | Metric         | Count |
 |----------------|-------|
-| Source files    | 303   |
+| Source files    | 320   |
 | Components     | 145   |
-| Pages          | 98    |
+| Pages          | 105   |
 | Hooks          | 10    |
-| Services       | 37    |
-| Total commits  | 272   |
+| Services       | 38    |
+| Total commits  | 389   |
 
 ## Pipeline Status
 
@@ -64,18 +64,18 @@
 | 00-audit           | 5     | Done        | Yes     |
 | 01-discovery       | 0     | Pending     | No      |
 | 02-design          | 10    | Done        | Yes     |
-| 03-architecture    | 2     | In Progress | No      |
-| 04-qa              | 0     | Pending     | No      |
-| 05-deploy          | 3     | Done        | Yes     |
+| 03-architecture    | 3     | In Progress | No      |
+| 04-qa              | 5     | Done        | Yes     |
+| 05-deploy          | 4     | Done        | Yes     |
 | 06-agentic         | 0     | Pending     | No      |
 | 07-reports         | 6     | In Progress | -       |
-| 08-reviews         | 3     | In Progress | -       |
-| 09-security        | 4     | In Progress | -       |
+| 08-reviews         | 19    | In Progress | -       |
+| 09-security        | 8     | Done        | Yes     |
 | 10-data            | 0     | Pending     | -       |
 
 ## Current Phase
 
-**Development** — Active bug-fix and feature polish cycle on `main` branch.
+**QA Planning** — Plano de testes abrangente criado em 2026-03-13. Cobertura atual: ~15% backend, ~2% frontend. Execução da Fase 1 de testes pendente de aprovação.
 
 ### Recent Work
 - Tenant isolation enforcement in notification system
@@ -84,7 +84,14 @@
 - Admin action menus for brands/suppliers
 - Nginx API proxy configuration
 - Removal of mock mode / seed data from production
-- Bug fixes from user testing session
+- Bug fixes from user testing session (all 37 items addressed, 5 sprints)
+- Gemini Vision API for document expiration extraction
+- Forgot password full-stack flow (PasswordReset model, 24h token, email)
+- Settings page 3-tab redesign (Perfil / Equipe / Empresa)
+- SuperAdmin ViewAs role-gated route access
+- Refresh token persistence in sessionStorage
+- Inline editing of document expiration dates (admin)
+- Capacity module with working days utility
 
 ## Key Decisions
 
@@ -103,8 +110,10 @@
 
 ## Next Steps
 
-1. **URGENT:** Execute Quick Wins 1-9 (security fixes, ~2 days)
-2. Execute Quick Wins 10-15 (performance + validation, ~1 day)
-3. Rotate all secrets found in git history
-4. Set up frontend testing (Vitest + Testing Library)
-5. Enable strict TypeScript + CI pipeline
+1. **URGENT:** Aprovar e iniciar Fase 1 do plano de testes (testes P0 de segurança e multi-tenant)
+2. Configurar `vitest.config.ts` com cobertura e instalar MSW
+3. Criar `src/test/setup.ts` com mocks globais
+4. Criar `PermissionsGuard.spec.ts` (bloqueador crítico — sem testes de isolamento)
+5. Criar testes de integração de isolamento multi-tenant (2 tenants, verificar 403)
+6. Configurar Playwright para testes E2E
+7. Executar Fase 2–4 conforme plano em `artifacts/04-qa/test-plan-comprehensive.md`

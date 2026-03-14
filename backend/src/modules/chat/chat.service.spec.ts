@@ -79,6 +79,7 @@ describe('ChatService', () => {
       id: 'order-1',
       brandId: 'brand-1',
       supplierId: 'supplier-1',
+      status: 'EM_NEGOCIACAO',
       pricePerUnit: 100,
       quantity: 50,
       deliveryDeadline: new Date('2026-03-01'),
