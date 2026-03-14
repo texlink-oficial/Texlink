@@ -70,6 +70,15 @@ class AdminDocumentsService {
         );
         return response.data;
     }
+
+    // Update document expiration date
+    async updateDocumentExpiry(documentId: string, expiresAt: string): Promise<AdminDocument> {
+        const response = await api.patch<AdminDocument>(
+            `${this.basePath}/documents/${documentId}/expiry`,
+            { expiresAt }
+        );
+        return response.data;
+    }
 }
 
 export const adminDocumentsService = new AdminDocumentsService();

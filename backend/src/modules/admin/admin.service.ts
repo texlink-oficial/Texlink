@@ -452,6 +452,39 @@ export class AdminService {
     };
   }
 
+  // Update document expiration date (admin-only)
+  async updateDocumentExpiry(documentId: string, expiresAt: string) {
+    const document = await this.prisma.supplierDocument.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Documento não encontrado');
+    }
+
+    const expiresDate = new Date(expiresAt);
+    const now = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+    let status: SupplierDocumentStatus;
+    if (expiresDate < now) {
+      status = SupplierDocumentStatus.EXPIRED;
+    } else if (expiresDate < thirtyDaysFromNow) {
+      status = SupplierDocumentStatus.EXPIRING_SOON;
+    } else {
+      status = SupplierDocumentStatus.VALID;
+    }
+
+    return this.prisma.supplierDocument.update({
+      where: { id: documentId },
+      data: { expiresAt: expiresDate, status },
+      include: {
+        company: { select: { id: true, tradeName: true, document: true } },
+      },
+    });
+  }
+
   /**
    * Get monthly revenue history for dashboard charts
    * Returns last N months of revenue data

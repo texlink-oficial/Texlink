@@ -123,6 +123,14 @@ export class AdminController {
     return this.adminService.getSupplierDocuments(supplierId);
   }
 
+  @Patch('documents/:id/expiry')
+  async updateDocumentExpiry(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('expiresAt') expiresAt: string,
+  ) {
+    return this.adminService.updateDocumentExpiry(id, expiresAt);
+  }
+
   @Get('dashboard/revenue-history')
   async getRevenueHistory(@Query('months') months?: string) {
     return this.adminService.getRevenueHistory(
