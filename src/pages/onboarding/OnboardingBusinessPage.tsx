@@ -87,6 +87,8 @@ const OnboardingBusinessPage: React.FC = () => {
             await onboardingService.updatePhase3({
                 productTypes: formData.productTypes,
                 specialties: formData.machines,
+                activeWorkers: formData.qtdCostureiras || 1,
+                hoursPerDay: 8,
                 dailyCapacity: (formData.qtdCostureiras || 1) * 8 * 60,
             });
             await onboardingService.completeOnboarding();
