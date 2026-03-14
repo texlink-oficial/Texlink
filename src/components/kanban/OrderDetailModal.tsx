@@ -69,6 +69,13 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                 { targetStatus: OrderStatus.IN_REVIEW, label: 'Confirmar Recebimento', icon: 'receipt', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Confirmar Recebimento?', confirmMsg: 'Confirma que o pedido foi recebido e deseja iniciar a revisão de qualidade?' },
             ],
             [OrderStatus.IN_REVIEW]: [], // Handled by OrderReviewModal
+            [OrderStatus.PARTIALLY_APPROVED]: [
+                { targetStatus: OrderStatus.PAYMENT_PROCESS, label: 'Iniciar Pagamento', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Iniciar Pagamento?', confirmMsg: 'Iniciar o processo de pagamento da parte aprovada do pedido?' },
+                { targetStatus: OrderStatus.FINALIZED, label: 'Finalizar Pedido', icon: 'advance', color: 'bg-green-600 hover:bg-green-700', confirmTitle: 'Finalizar Pedido?', confirmMsg: 'Finalizar o pedido com aprovação parcial?' },
+            ],
+            [OrderStatus.DISAPPROVED]: [
+                { targetStatus: OrderStatus.CANCELLED, label: 'Cancelar Pedido', icon: 'advance', color: 'bg-red-600 hover:bg-red-700', confirmTitle: 'Cancelar Pedido?', confirmMsg: 'Cancelar o pedido reprovado?' },
+            ],
             [OrderStatus.PAYMENT_PROCESS]: [
                 { targetStatus: OrderStatus.FINALIZED, label: 'Confirmar Pagamento', icon: 'advance', color: 'bg-green-600 hover:bg-green-700', confirmTitle: 'Confirmar Pagamento?', confirmMsg: 'Confirma que o pagamento foi realizado e deseja finalizar o pedido?' },
             ],
@@ -102,6 +109,10 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             [OrderStatus.PRODUCTION]: [
                 { targetStatus: OrderStatus.TRANSIT_TO_BRAND, label: 'Produção Concluída', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Produção Concluída e Despacho', confirmMsg: 'Confirma que a produção está concluída e o pedido será despachado para a marca?' },
             ],
+            [OrderStatus.AWAITING_REWORK]: [
+                { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar Retrabalho', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Retrabalho?', confirmMsg: 'Aceitar o retrabalho e reiniciar o fluxo de produção?' },
+                { targetStatus: OrderStatus.CANCELLED, label: 'Cancelar Retrabalho', icon: 'advance', color: 'bg-red-600 hover:bg-red-700', confirmTitle: 'Cancelar Retrabalho?', confirmMsg: 'Tem certeza que deseja cancelar este pedido de retrabalho?' },
+            ],
             // Backward compat: orders already in READY_SEND
             [OrderStatus.READY_SEND]: [
                 { targetStatus: OrderStatus.TRANSIT_TO_BRAND, label: 'Marcar Despacho', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Marcar Despacho?', confirmMsg: 'Confirma que o pedido foi despachado para a marca?' },
@@ -120,6 +131,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
     const WAITING_MESSAGES: Record<string, Record<string, string>> = {
         BRAND: {
             [OrderStatus.NEW]: 'Aguardando a Facção aceitar o pedido',
+            [OrderStatus.AVAILABLE_FOR_OTHERS]: 'Disponível para facções interessadas',
             [OrderStatus.NEGOTIATING]: 'Em negociação com a Facção',
             [OrderStatus.ACCEPTED]: 'Aguardando a Facção iniciar produção',
             [OrderStatus.TRANSIT_TO_SUPPLIER]: 'Aguardando a Facção confirmar recebimento',
@@ -140,7 +152,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
     // Brand IN_REVIEW → opens OrderReviewModal instead of simple confirmation
     const isReviewStatus = userRole === 'BRAND' && order.status === OrderStatus.IN_REVIEW;
     const waitingMessage = !isReviewStatus && currentActions.length === 0 ? (WAITING_MESSAGES[userRole]?.[order.status] || null) : null;
-    const isTerminal = [OrderStatus.FINALIZED, OrderStatus.PARTIALLY_APPROVED, OrderStatus.DISAPPROVED, OrderStatus.REJECTED, OrderStatus.CANCELLED].includes(order.status);
+    const isTerminal = [OrderStatus.FINALIZED, OrderStatus.REJECTED, OrderStatus.CANCELLED].includes(order.status);
 
     // State for selected action for confirmation
     const [pendingAction, setPendingAction] = useState<ActionDef | null>(null);
