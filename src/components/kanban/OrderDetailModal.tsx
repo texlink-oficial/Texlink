@@ -96,8 +96,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                 { targetStatus: OrderStatus.PRODUCTION, label: 'Iniciar Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Iniciar Produção?', confirmMsg: 'Confirma que vai iniciar a produção deste pedido?' },
             ],
             [OrderStatus.PRODUCTION]: [
-                { targetStatus: OrderStatus.READY_SEND, label: 'Produção Concluída', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Produção Concluída?', confirmMsg: 'Confirma que a produção está concluída e pronta para envio?' },
+                { targetStatus: OrderStatus.TRANSIT_TO_BRAND, label: 'Produção Concluída', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Produção Concluída e Despacho', confirmMsg: 'Confirma que a produção está concluída e o pedido será despachado para a marca?' },
             ],
+            // Backward compat: orders already in READY_SEND
             [OrderStatus.READY_SEND]: [
                 { targetStatus: OrderStatus.TRANSIT_TO_BRAND, label: 'Marcar Despacho', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Marcar Despacho?', confirmMsg: 'Confirma que o pedido foi despachado para a marca?' },
             ],

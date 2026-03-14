@@ -216,12 +216,12 @@ export class OrdersService {
     ],
     [OrderStatus.EM_PRODUCAO]: [
       {
-        nextStatus: OrderStatus.PRONTO,
+        nextStatus: OrderStatus.EM_TRANSITO_PARA_MARCA,
         allowedRoles: ['SUPPLIER'],
         label: 'Produção Concluída',
-        description: 'Marcar a produção como concluída e pronta para envio',
+        description: 'Marcar a produção como concluída e despachar para a marca',
         requiresConfirmation: true,
-        requiresNotes: false,
+        requiresNotes: true,
         requiresReview: false,
       },
       {
