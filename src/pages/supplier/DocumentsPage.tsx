@@ -31,6 +31,9 @@ const DocumentsPage: React.FC = () => {
     const [expiryDate, setExpiryDate] = useState('');
     const [competenceMonth, setCompetenceMonth] = useState('');
     const [competenceYear, setCompetenceYear] = useState('');
+    const [pendingFile, setPendingFile] = useState<File | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [aiConfidence, setAiConfidence] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -48,8 +51,8 @@ const DocumentsPage: React.FC = () => {
             setDocuments(docs);
             setChecklist(check);
             setSummary(sum);
-        } catch (error) {
-            console.error('Error loading documents:', error);
+        } catch {
+            // Failed to load documents
         } finally {
             setIsLoading(false);
         }
@@ -60,9 +63,10 @@ const DocumentsPage: React.FC = () => {
         setExpiryDate('');
         setCompetenceMonth('');
         setCompetenceYear('');
-        // Only trigger file picker immediately if no extra metadata is needed
-        // Otherwise, let the modal render first so user fills in expiry/competence
-        if (!item.requiresExpiry && !item.isMonthly) {
+        setPendingFile(null);
+        setAiConfidence(null);
+        // Always show file picker first — for requiresExpiry, we analyze after file selection
+        if (!item.isMonthly) {
             fileInputRef.current?.click();
         }
     };
@@ -71,11 +75,32 @@ const DocumentsPage: React.FC = () => {
         const file = e.target.files?.[0];
         if (!file || !uploadingType) return;
 
+        const item = checklist.find(c => c.type === uploadingType);
+
+        // For documents with expiry: analyze file first, then show modal with pre-filled date
+        if (item?.requiresExpiry) {
+            setPendingFile(file);
+            setIsAnalyzing(true);
+            try {
+                const result = await supplierDocumentsService.analyzeDocument(file, uploadingType);
+                if (result.expiresAt) {
+                    setExpiryDate(result.expiresAt);
+                    setAiConfidence(result.confidence);
+                }
+            } catch {
+                // AI analysis failed — user will enter manually
+            } finally {
+                setIsAnalyzing(false);
+            }
+            // Don't upload yet — modal will show for date confirmation
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+
+        // For non-expiry documents: upload immediately
         try {
-            const item = checklist.find(c => c.type === uploadingType);
             const dto = {
                 type: uploadingType,
-                ...(item?.requiresExpiry && expiryDate ? { expiresAt: expiryDate } : {}),
                 ...(item?.isMonthly && competenceMonth ? { competenceMonth: parseInt(competenceMonth) } : {}),
                 ...(item?.isMonthly && competenceYear ? { competenceYear: parseInt(competenceYear) } : {}),
             };
@@ -87,13 +112,43 @@ const DocumentsPage: React.FC = () => {
             }
 
             await loadData();
-        } catch (error) {
-            console.error('Error uploading file:', error);
+        } catch {
+            // Upload failed
         } finally {
             setUploadingType(null);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    // Called when user confirms expiry date in the modal
+    const handleConfirmUpload = async () => {
+        if (!pendingFile || !uploadingType) return;
+
+        const item = checklist.find(c => c.type === uploadingType);
+        if (!expiryDate && item?.requiresExpiry) return;
+
+        try {
+            const dto = {
+                type: uploadingType,
+                ...(expiryDate ? { expiresAt: expiryDate } : {}),
+            };
+
+            if (item?.documentId) {
+                await supplierDocumentsService.uploadFile(item.documentId, pendingFile);
+                if (expiryDate) {
+                    await supplierDocumentsService.update(item.documentId, { expiresAt: expiryDate });
+                }
+            } else {
+                await supplierDocumentsService.createWithFile(dto, pendingFile);
             }
+
+            await loadData();
+        } catch {
+            // Upload failed
+        } finally {
+            setUploadingType(null);
+            setPendingFile(null);
+            setAiConfidence(null);
         }
     };
 
@@ -325,41 +380,68 @@ const DocumentsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Upload Modal for documents requiring extra info */}
-            {uploadingType && checklist.find(c => c.type === uploadingType)?.requiresExpiry && (
+            {/* Upload Modal for documents requiring expiry — with AI date extraction */}
+            {uploadingType && pendingFile && checklist.find(c => c.type === uploadingType)?.requiresExpiry && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 w-full max-w-md shadow-xl">
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
                             {SUPPLIER_DOCUMENT_TYPE_LABELS[uploadingType]}
                         </h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Data de Validade
-                                </label>
-                                <input
-                                    type="date"
-                                    value={expiryDate}
-                                    onChange={(e) => setExpiryDate(e.target.value)}
-                                    className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                                />
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                            {pendingFile.name}
+                        </p>
+
+                        {isAnalyzing ? (
+                            <div className="flex flex-col items-center py-8 gap-3">
+                                <RefreshCw className="w-8 h-8 text-brand-500 animate-spin" />
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Analisando documento...</p>
                             </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setUploadingType(null)}
-                                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={!expiryDate}
-                                    className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Selecionar Arquivo
-                                </button>
+                        ) : (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Data de Validade <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={expiryDate}
+                                        onChange={(e) => { setExpiryDate(e.target.value); setAiConfidence(null); }}
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                    />
+                                    {aiConfidence && expiryDate && (
+                                        <p className={`text-xs mt-1 flex items-center gap-1 ${
+                                            aiConfidence === 'high' ? 'text-green-600 dark:text-green-400'
+                                            : aiConfidence === 'medium' ? 'text-yellow-600 dark:text-yellow-400'
+                                            : 'text-gray-500 dark:text-gray-400'
+                                        }`}>
+                                            <CheckCircle className="w-3 h-3" />
+                                            Data extraída automaticamente (confiança {aiConfidence === 'high' ? 'alta' : aiConfidence === 'medium' ? 'média' : 'baixa'}) — confirme antes de enviar
+                                        </p>
+                                    )}
+                                    {!expiryDate && !isAnalyzing && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            {aiConfidence === null ? 'Não foi possível extrair a data automaticamente. Informe manualmente.' : 'Informe a data de validade do documento.'}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => { setUploadingType(null); setPendingFile(null); setAiConfidence(null); }}
+                                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleConfirmUpload}
+                                        disabled={!expiryDate}
+                                        className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        <Upload className="w-4 h-4" />
+                                        Confirmar e Enviar
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -233,8 +233,8 @@ export class SettingsService {
 
   // ==================== CAPACITY ====================
 
-  async getCapacitySettings(userId: string) {
-    const companyId = await this.getSupplierCompanyId(userId);
+  async getCapacitySettings(userId: string, overrideCompanyId?: string) {
+    const companyId = overrideCompanyId || await this.getSupplierCompanyId(userId);
 
     const profile = await this.prisma.supplierProfile.findUnique({
       where: { companyId },

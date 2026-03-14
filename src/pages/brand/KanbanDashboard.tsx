@@ -20,7 +20,8 @@ const KANBAN_COLUMNS = [
     { id: 'production_queue', label: 'Fila de Produção', statuses: [OrderStatus.PRODUCTION_QUEUE] },
     { id: 'production', label: 'Em Produção', statuses: [OrderStatus.PRODUCTION] },
     { id: 'transit', label: 'Em Trânsito', statuses: [OrderStatus.READY_SEND, OrderStatus.TRANSIT_TO_BRAND] },
-    { id: 'approval', label: 'Em Aprovação', statuses: [OrderStatus.IN_REVIEW, OrderStatus.PARTIALLY_APPROVED, OrderStatus.DISAPPROVED, OrderStatus.AWAITING_REWORK] },
+    { id: 'approval', label: 'Em Aprovação', statuses: [OrderStatus.IN_REVIEW, OrderStatus.PARTIALLY_APPROVED, OrderStatus.DISAPPROVED] },
+    { id: 'rework', label: 'Retrabalho', statuses: [OrderStatus.AWAITING_REWORK] },
     { id: 'payment', label: 'Processo de Pagamento', statuses: [OrderStatus.PAYMENT_PROCESS] },
     { id: 'finalized', label: 'Finalizados', statuses: [OrderStatus.FINALIZED] },
     { id: 'cancelled', label: 'Cancelados', statuses: [OrderStatus.CANCELLED] },
@@ -197,12 +198,6 @@ const BrandKanbanDashboard: React.FC = () => {
             grouped[col.id] = [];
         });
         filteredOrders.forEach(order => {
-            // When supplier provides materials (materialsProvided=false), ACCEPTED orders
-            // skip "Enviando Insumos" and go directly to "Fila de Produção"
-            if (order.status === OrderStatus.ACCEPTED && !order.materialsProvided) {
-                grouped['production_queue']?.push(order);
-                return;
-            }
             const col = KANBAN_COLUMNS.find(c => c.statuses.includes(order.status));
             if (col) {
                 grouped[col.id].push(order);
@@ -211,17 +206,17 @@ const BrandKanbanDashboard: React.FC = () => {
         return grouped;
     }, [filteredOrders]);
 
-    const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    const handleStatusChange = async (orderId: string, newStatus: OrderStatus, extra?: { plannedStartDate?: string }) => {
         try {
-            // Call API to persist the status change (enum values now match backend strings)
-            await ordersService.advanceStatus(orderId, newStatus as any);
-        } catch (error) {
-            console.error('Error advancing status:', error);
-        }
-        // Update local state regardless (optimistic update)
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-        if (selectedOrder && selectedOrder.id === orderId) {
-            setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+            await ordersService.updateStatus(orderId, newStatus, undefined, extra);
+            const updateData: Partial<Order> = { status: newStatus };
+            if (extra?.plannedStartDate) updateData.plannedStartDate = extra.plannedStartDate;
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updateData } : o));
+            if (selectedOrder && selectedOrder.id === orderId) {
+                setSelectedOrder(prev => prev ? { ...prev, ...updateData } : null);
+            }
+        } catch {
+            // Status change failed — state unchanged
         }
     };
 

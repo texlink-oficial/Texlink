@@ -402,12 +402,18 @@ export function useChatSocket(
                 return true; // Return true because it was queued
             }
 
-            // If online, send normally
+            // If online, send normally (with timeout to prevent infinite pending state)
             return new Promise((resolve) => {
+                const timeout = setTimeout(() => {
+                    resolve(false);
+                }, 10000); // 10s timeout
+
                 socketRef.current!.emit(
                     'send-message',
                     { orderId, ...data },
                     (response: any) => {
+                        clearTimeout(timeout);
+
                         // Update rate limit info if provided
                         if (response.rateLimitRemaining !== undefined) {
                             setRateLimitInfo(prev => ({

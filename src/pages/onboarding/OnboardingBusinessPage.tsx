@@ -87,6 +87,8 @@ const OnboardingBusinessPage: React.FC = () => {
             await onboardingService.updatePhase3({
                 productTypes: formData.productTypes,
                 specialties: formData.machines,
+                activeWorkers: formData.qtdCostureiras || 1,
+                hoursPerDay: 8,
                 dailyCapacity: (formData.qtdCostureiras || 1) * 8 * 60,
             });
             await onboardingService.completeOnboarding();
@@ -290,7 +292,7 @@ const OnboardingBusinessPage: React.FC = () => {
                 <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-brand-200 mb-3">
                         <Users className="w-4 h-4" />
-                        Número de Costureiras
+                        Número de Costureiras <span className="text-red-400">*</span>
                     </label>
                     <input
                         type="number"
@@ -303,9 +305,14 @@ const OnboardingBusinessPage: React.FC = () => {
                             })
                         }
                         placeholder="Ex: 15"
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                        className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
+                            error && !formData.qtdCostureiras ? 'border-red-500' : 'border-white/10'
+                        }`}
                         required
                     />
+                    {error && !formData.qtdCostureiras && (
+                        <p className="text-red-400 text-xs mt-1">Informe o número de costureiras</p>
+                    )}
                 </div>
 
                 {/* Tempo no Mercado */}

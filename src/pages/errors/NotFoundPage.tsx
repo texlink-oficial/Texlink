@@ -17,7 +17,7 @@ const NotFoundPage: React.FC = () => {
         </p>
         <div className="flex gap-3 justify-center">
           <Link
-            to="/"
+            to="/dashboard"
             className="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors font-medium"
           >
             Ir para o início

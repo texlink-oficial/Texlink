@@ -95,8 +95,11 @@ export class SettingsController {
   @Get('capacity')
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPPLIER)
-  async getCapacitySettings(@CurrentUser('id') userId: string) {
-    return this.settingsService.getCapacitySettings(userId);
+  async getCapacitySettings(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('companyId') companyId?: string,
+  ) {
+    return this.settingsService.getCapacitySettings(userId, companyId);
   }
 
   @Patch('capacity')

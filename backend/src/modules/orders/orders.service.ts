@@ -105,13 +105,13 @@ export class OrdersService {
     ],
     [OrderStatus.ACEITO_PELA_FACCAO]: [
       {
-        nextStatus: OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
+        nextStatus: OrderStatus.EM_TRANSITO_PARA_FACCAO,
         allowedRoles: ['BRAND'],
         requiresMaterials: true,
-        label: 'Preparar Insumos',
-        description: 'Iniciar preparação dos insumos para envio à facção',
+        label: 'Despachar Insumos',
+        description: 'Confirmar que os insumos foram despachados para a facção',
         requiresConfirmation: true,
-        requiresNotes: false,
+        requiresNotes: true,
         requiresReview: false,
       },
       {
@@ -156,10 +156,10 @@ export class OrdersService {
     ],
     [OrderStatus.EM_TRANSITO_PARA_FACCAO]: [
       {
-        nextStatus: OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO,
+        nextStatus: OrderStatus.FILA_DE_PRODUCAO,
         allowedRoles: ['SUPPLIER'],
         label: 'Confirmar Recebimento',
-        description: 'Confirmar que os insumos foram recebidos na facção',
+        description: 'Confirmar recebimento dos insumos e enviar para fila de produção',
         requiresConfirmation: true,
         requiresNotes: false,
         requiresReview: false,
@@ -216,12 +216,12 @@ export class OrdersService {
     ],
     [OrderStatus.EM_PRODUCAO]: [
       {
-        nextStatus: OrderStatus.PRONTO,
+        nextStatus: OrderStatus.EM_TRANSITO_PARA_MARCA,
         allowedRoles: ['SUPPLIER'],
         label: 'Produção Concluída',
-        description: 'Marcar a produção como concluída e pronta para envio',
+        description: 'Marcar a produção como concluída e despachar para a marca',
         requiresConfirmation: true,
-        requiresNotes: false,
+        requiresNotes: true,
         requiresReview: false,
       },
       {
@@ -237,7 +237,7 @@ export class OrdersService {
     [OrderStatus.PRONTO]: [
       {
         nextStatus: OrderStatus.EM_TRANSITO_PARA_MARCA,
-        allowedRoles: ['BRAND', 'SUPPLIER'],
+        allowedRoles: ['SUPPLIER'],
         label: 'Marcar Despacho',
         description: 'Confirmar que o pedido foi despachado para a marca',
         requiresConfirmation: true,
@@ -296,22 +296,97 @@ export class OrdersService {
         requiresReview: false,
       },
     ],
+    [OrderStatus.AGUARDANDO_RETRABALHO]: [
+      {
+        nextStatus: OrderStatus.ACEITO_PELA_FACCAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Aceitar Retrabalho',
+        description: 'Aceitar o retrabalho e iniciar o fluxo de produção',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.CANCELADO,
+        allowedRoles: ['BRAND', 'SUPPLIER'],
+        label: 'Cancelar Retrabalho',
+        description: 'Cancelar este pedido de retrabalho',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.PARCIALMENTE_APROVADO]: [
+      {
+        nextStatus: OrderStatus.EM_PROCESSO_PAGAMENTO,
+        allowedRoles: ['BRAND'],
+        label: 'Iniciar Pagamento',
+        description: 'Iniciar o processo de pagamento da parte aprovada',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.FINALIZADO,
+        allowedRoles: ['BRAND'],
+        label: 'Finalizar Pedido',
+        description: 'Finalizar o pedido com aprovação parcial',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.DISPONIVEL_PARA_OUTRAS]: [
+      {
+        nextStatus: OrderStatus.ACEITO_PELA_FACCAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Aceitar Pedido',
+        description: 'Aceitar este pedido disponível',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.EM_NEGOCIACAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Negociar Pedido',
+        description: 'Iniciar negociação de condições com a marca',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
+    ],
+    [OrderStatus.REPROVADO]: [
+      {
+        nextStatus: OrderStatus.CANCELADO,
+        allowedRoles: ['BRAND'],
+        label: 'Cancelar Pedido',
+        description: 'Cancelar o pedido reprovado',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
+    ],
   };
 
   // Mapa de "quem estamos aguardando" por status
   private readonly WAITING_FOR_MAP: Record<string, { waitingFor: 'BRAND' | 'SUPPLIER'; label: string }> = {
     [OrderStatus.LANCADO_PELA_MARCA]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção aceitar o pedido' },
     [OrderStatus.EM_NEGOCIACAO]: { waitingFor: 'SUPPLIER', label: 'Em negociação com a facção' },
-    [OrderStatus.ACEITO_PELA_FACCAO]: { waitingFor: 'BRAND', label: 'Aguardando a Marca preparar insumos' },
+    [OrderStatus.ACEITO_PELA_FACCAO]: { waitingFor: 'BRAND', label: 'Aguardando a Marca despachar insumos' },
     [OrderStatus.EM_PREPARACAO_SAIDA_MARCA]: { waitingFor: 'BRAND', label: 'Marca preparando insumos para envio' },
     [OrderStatus.EM_TRANSITO_PARA_FACCAO]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção confirmar recebimento' },
     [OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO]: { waitingFor: 'SUPPLIER', label: 'Facção conferindo insumos recebidos' },
     [OrderStatus.EM_PRODUCAO]: { waitingFor: 'SUPPLIER', label: 'Facção em produção' },
-    [OrderStatus.PRONTO]: { waitingFor: 'BRAND', label: 'Pronto para despacho' },
+    [OrderStatus.PRONTO]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção despachar o pedido' },
     [OrderStatus.EM_TRANSITO_PARA_MARCA]: { waitingFor: 'BRAND', label: 'Aguardando a Marca confirmar recebimento' },
     [OrderStatus.EM_REVISAO]: { waitingFor: 'BRAND', label: 'Marca revisando qualidade' },
     [OrderStatus.FILA_DE_PRODUCAO]: { waitingFor: 'SUPPLIER', label: 'Aguardando início da produção' },
     [OrderStatus.EM_PROCESSO_PAGAMENTO]: { waitingFor: 'BRAND', label: 'Aguardando confirmação de pagamento' },
+    [OrderStatus.DISPONIVEL_PARA_OUTRAS]: { waitingFor: 'SUPPLIER', label: 'Disponível para facções interessadas' },
+    [OrderStatus.AGUARDANDO_RETRABALHO]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção aceitar o retrabalho' },
+    [OrderStatus.PARCIALMENTE_APROVADO]: { waitingFor: 'BRAND', label: 'Aprovação parcial — aguardando decisão da Marca' },
+    [OrderStatus.REPROVADO]: { waitingFor: 'BRAND', label: 'Pedido reprovado — aguardando decisão da Marca' },
   };
 
   constructor(
@@ -448,6 +523,11 @@ export class OrdersService {
           'targetSupplierIds is required for BIDDING orders',
         );
       }
+      if (dto.targetSupplierIds.length !== 1) {
+        throw new BadRequestException(
+          'Pedidos do tipo Fechado devem ter exatamente uma facção selecionada',
+        );
+      }
       orderData.targetSuppliers = {
         createMany: {
           data: dto.targetSupplierIds.map((supplierId) => ({
@@ -527,14 +607,20 @@ export class OrdersService {
               { supplierId: companyUser.companyId },
               {
                 targetSuppliers: {
-                  some: { supplierId: companyUser.companyId },
+                  some: {
+                    supplierId: companyUser.companyId,
+                    status: { not: OrderTargetStatus.REJECTED },
+                  },
                 },
               },
               {
                 assignmentType: 'HYBRID',
-                status: 'LANCADO_PELA_MARCA', // Only show open hybrid orders if they are in initial status
-                // Don't show if already assigned (checked by supplierId clause)
+                status: 'LANCADO_PELA_MARCA',
                 supplierId: null,
+              },
+              // Orders available to all suppliers (after original supplier rejected)
+              {
+                status: 'DISPONIVEL_PARA_OUTRAS',
               },
             ],
           };
@@ -722,69 +808,100 @@ export class OrdersService {
     }
 
     // Check if this supplier can accept
+    const isTargetSupplier = order.targetSuppliers.some(
+      (t) =>
+        t.supplierId === companyUser.companyId &&
+        (t.status === OrderTargetStatus.PENDING || t.status === OrderTargetStatus.INTERESTED),
+    );
+    const isDirectSupplier = order.supplierId === companyUser.companyId;
+    const isHybridOpen =
+      order.assignmentType === OrderAssignmentType.HYBRID &&
+      !order.supplierId &&
+      order.status === OrderStatus.LANCADO_PELA_MARCA;
+
     const canAccept =
       ((order.status === OrderStatus.LANCADO_PELA_MARCA ||
         order.status === OrderStatus.EM_NEGOCIACAO) &&
-        (order.supplierId === companyUser.companyId ||
-          order.targetSuppliers.some(
-            (t) =>
-              t.supplierId === companyUser.companyId &&
-              (t.status === OrderTargetStatus.PENDING || t.status === OrderTargetStatus.INTERESTED),
-          ))) ||
+        (isDirectSupplier || isTargetSupplier || isHybridOpen)) ||
       order.status === OrderStatus.DISPONIVEL_PARA_OUTRAS;
 
     if (!canAccept) {
       throw new ForbiddenException('Você não pode aceitar este pedido');
     }
 
-    // Update order
-    const updated = await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: OrderStatus.ACEITO_PELA_FACCAO,
-        supplierId: companyUser.companyId,
-        acceptedAt: new Date(),
-        acceptedById: userId,
-        statusHistory: {
-          create: {
-            previousStatus: order.status,
-            newStatus: OrderStatus.ACEITO_PELA_FACCAO,
-            changedById: userId,
-            notes: 'Order accepted by supplier',
+    // Use transaction to prevent race condition where two suppliers accept simultaneously
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Re-check status inside transaction to prevent race condition
+      const freshOrder = await tx.order.findUnique({
+        where: { id: orderId },
+        select: { status: true, supplierId: true },
+      });
+
+      if (
+        !freshOrder ||
+        (freshOrder.status !== OrderStatus.LANCADO_PELA_MARCA &&
+          freshOrder.status !== OrderStatus.EM_NEGOCIACAO &&
+          freshOrder.status !== OrderStatus.DISPONIVEL_PARA_OUTRAS)
+      ) {
+        throw new ForbiddenException('Este pedido já foi aceito por outra facção');
+      }
+
+      // Update order
+      const result = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: OrderStatus.ACEITO_PELA_FACCAO,
+          supplierId: companyUser.companyId,
+          acceptedAt: new Date(),
+          acceptedById: userId,
+          statusHistory: {
+            create: {
+              previousStatus: order.status,
+              newStatus: OrderStatus.ACEITO_PELA_FACCAO,
+              changedById: userId,
+              notes: 'Order accepted by supplier',
+            },
           },
         },
-      },
-      include: {
-        brand: { select: { id: true, tradeName: true, logoUrl: true } },
-        supplier: { select: { id: true, tradeName: true, logoUrl: true } },
-      },
+        include: {
+          brand: { select: { id: true, tradeName: true, logoUrl: true } },
+          supplier: { select: { id: true, tradeName: true, logoUrl: true } },
+        },
+      });
+
+      // For BIDDING and HYBRID: update target suppliers
+      if (
+        order.assignmentType === OrderAssignmentType.BIDDING ||
+        order.assignmentType === OrderAssignmentType.HYBRID
+      ) {
+        // Mark accepting supplier as ACCEPTED
+        await tx.orderTargetSupplier.updateMany({
+          where: {
+            orderId,
+            supplierId: companyUser.companyId,
+          },
+          data: {
+            status: OrderTargetStatus.ACCEPTED,
+            respondedAt: new Date(),
+          },
+        });
+
+        // Reject all other suppliers
+        await tx.orderTargetSupplier.updateMany({
+          where: {
+            orderId,
+            supplierId: { not: companyUser.companyId },
+            status: { in: [OrderTargetStatus.PENDING, OrderTargetStatus.INTERESTED] },
+          },
+          data: {
+            status: OrderTargetStatus.REJECTED,
+            respondedAt: new Date(),
+          },
+        });
+      }
+
+      return result;
     });
-
-    // If bidding, update target suppliers
-    if (order.assignmentType === OrderAssignmentType.BIDDING) {
-      await this.prisma.orderTargetSupplier.updateMany({
-        where: {
-          orderId,
-          supplierId: companyUser.companyId,
-        },
-        data: {
-          status: OrderTargetStatus.ACCEPTED,
-          respondedAt: new Date(),
-        },
-      });
-
-      // Reject other suppliers
-      await this.prisma.orderTargetSupplier.updateMany({
-        where: {
-          orderId,
-          supplierId: { not: companyUser.companyId },
-        },
-        data: {
-          status: OrderTargetStatus.REJECTED,
-          respondedAt: new Date(),
-        },
-      });
-    }
 
     // Emit order accepted event
     const acceptedEvent: OrderAcceptedEvent = {
@@ -1030,6 +1147,7 @@ export class OrdersService {
       data: {
         status: dto.status,
         ...(dto.rejectionReason && { rejectionReason: dto.rejectionReason }),
+        ...(dto.plannedStartDate && { plannedStartDate: new Date(dto.plannedStartDate) }),
         statusHistory: {
           create: {
             previousStatus: order.status,

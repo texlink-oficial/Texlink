@@ -164,16 +164,16 @@ export const OrderReviewModal: React.FC<OrderReviewModalProps> = ({
                                 <div className="font-medium">Revisão Final</div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400">Antes de finalizar o pedido</div>
                             </button>
-                            <button
-                                onClick={() => setReviewType('QUALITY_CHECK')}
-                                className={`flex-1 px-4 py-3 rounded-xl border-2 transition-all ${reviewType === 'QUALITY_CHECK'
-                                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
-                                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                                    }`}
+                            <div
+                                className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-60 cursor-not-allowed relative"
+                                title="Funcionalidade disponível em breve"
                             >
-                                <div className="font-medium">Verificação</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">Durante a produção</div>
-                            </button>
+                                <div className="font-medium text-gray-400 dark:text-gray-500">Verificação</div>
+                                <div className="text-xs text-gray-400 dark:text-gray-500">Durante a produção</div>
+                                <span className="absolute top-1 right-1 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded">
+                                    Em breve
+                                </span>
+                            </div>
                         </div>
                     </div>
 

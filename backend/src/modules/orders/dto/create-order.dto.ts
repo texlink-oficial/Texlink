@@ -7,8 +7,25 @@ import {
   IsEnum,
   IsDateString,
   IsUUID,
+  Validate,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
 } from 'class-validator';
 import { OrderAssignmentType } from '@prisma/client';
+
+@ValidatorConstraint({ name: 'isFutureDate', async: false })
+class IsFutureDateConstraint implements ValidatorConstraintInterface {
+  validate(value: string) {
+    if (!value) return false;
+    // Compare date strings only (YYYY-MM-DD) to avoid timezone issues
+    const dateStr = value.split('T')[0];
+    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    return dateStr >= todayStr;
+  }
+  defaultMessage() {
+    return 'A data de entrega não pode ser no passado';
+  }
+}
 
 export class CreateOrderDto {
   @IsString()
@@ -40,6 +57,7 @@ export class CreateOrderDto {
   pricePerUnit: number;
 
   @IsDateString()
+  @Validate(IsFutureDateConstraint)
   deliveryDeadline: string;
 
   @IsString()

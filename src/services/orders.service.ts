@@ -186,7 +186,7 @@ export interface CreateOrderDto {
     materialsProvided?: boolean;
     observations?: string;
     protectTechnicalSheet?: boolean;
-    assignmentType: 'DIRECT' | 'BIDDING';
+    assignmentType: 'DIRECT' | 'BIDDING' | 'HYBRID';
     supplierId?: string;
     targetSupplierIds?: string[];
 }
@@ -224,8 +224,8 @@ export const ordersService = {
         return response.data;
     },
 
-    async updateStatus(id: string, status: OrderStatus, notes?: string): Promise<Order> {
-        const response = await api.patch<Order>(`/orders/${id}/status`, { status, notes });
+    async updateStatus(id: string, status: OrderStatus, notes?: string, extra?: { plannedStartDate?: string }): Promise<Order> {
+        const response = await api.patch<Order>(`/orders/${id}/status`, { status, notes, ...extra });
         return response.data;
     },
 

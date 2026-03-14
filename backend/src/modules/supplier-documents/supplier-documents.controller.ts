@@ -15,6 +15,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { SupplierDocumentsService } from './supplier-documents.service';
+import { DocumentAnalyzerService } from './document-analyzer.service';
 import { CreateSupplierDocumentDto, UpdateSupplierDocumentDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -33,7 +34,34 @@ import {
 export class SupplierDocumentsController {
   constructor(
     private readonly supplierDocumentsService: SupplierDocumentsService,
+    private readonly documentAnalyzer: DocumentAnalyzerService,
   ) {}
+
+  // Analyze uploaded file to extract expiration date
+  @Post('analyze')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPPLIER)
+  @UseInterceptors(FileInterceptor('file'))
+  async analyzeDocument(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('type') documentType: SupplierDocumentType,
+  ) {
+    if (!file) {
+      return { expiresAt: null, confidence: 'low', available: false };
+    }
+
+    if (!this.documentAnalyzer.isAvailable) {
+      return { expiresAt: null, confidence: 'low', available: false };
+    }
+
+    const result = await this.documentAnalyzer.extractExpirationDate(
+      file.buffer,
+      file.mimetype,
+      documentType,
+    );
+
+    return { ...result, available: true };
+  }
 
   // List all documents for the supplier's company
   @Get()

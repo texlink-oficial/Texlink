@@ -119,6 +119,7 @@ export class ChatService {
       where: { id: orderId },
       select: {
         id: true,
+        status: true,
         brandId: true,
         supplierId: true,
         pricePerUnit: true,
@@ -129,6 +130,16 @@ export class ChatService {
 
     if (!order) {
       throw new NotFoundException('Pedido não encontrado');
+    }
+
+    // Proposals are only allowed during negotiation phases
+    if (dto.type === MessageType.PROPOSAL) {
+      const negotiationStatuses = ['LANCADO_PELA_MARCA', 'EM_NEGOCIACAO'];
+      if (!negotiationStatuses.includes(order.status)) {
+        throw new BadRequestException(
+          'Propostas só podem ser enviadas durante a fase de negociação',
+        );
+      }
     }
 
     const messageData: any = {

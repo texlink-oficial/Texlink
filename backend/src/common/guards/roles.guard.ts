@@ -8,10 +8,12 @@ interface AuthenticatedUser {
   id: string;
   email: string;
   role: UserRole;
+  company?: { type?: string } | null;
 }
 
 interface AuthenticatedRequest extends Request {
   user?: AuthenticatedUser;
+  isViewAs?: boolean;
 }
 
 @Injectable()
@@ -33,6 +35,11 @@ export class RolesGuard implements CanActivate {
 
     if (!user) {
       return false;
+    }
+
+    // Allow ADMIN users through role-gated routes (admins have global access)
+    if (user.role === UserRole.ADMIN) {
+      return true;
     }
 
     return requiredRoles.some((role) => user.role === role);

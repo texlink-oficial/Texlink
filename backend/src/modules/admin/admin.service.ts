@@ -452,6 +452,39 @@ export class AdminService {
     };
   }
 
+  // Update document expiration date (admin-only)
+  async updateDocumentExpiry(documentId: string, expiresAt: string) {
+    const document = await this.prisma.supplierDocument.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Documento não encontrado');
+    }
+
+    const expiresDate = new Date(expiresAt);
+    const now = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+    let status: SupplierDocumentStatus;
+    if (expiresDate < now) {
+      status = SupplierDocumentStatus.EXPIRED;
+    } else if (expiresDate < thirtyDaysFromNow) {
+      status = SupplierDocumentStatus.EXPIRING_SOON;
+    } else {
+      status = SupplierDocumentStatus.VALID;
+    }
+
+    return this.prisma.supplierDocument.update({
+      where: { id: documentId },
+      data: { expiresAt: expiresDate, status },
+      include: {
+        company: { select: { id: true, tradeName: true, document: true } },
+      },
+    });
+  }
+
   /**
    * Get monthly revenue history for dashboard charts
    * Returns last N months of revenue data
@@ -607,6 +640,77 @@ export class AdminService {
         count: b._count,
         value: Number(b._sum.totalValue) || 0,
       })),
+    };
+  }
+
+  // ========== Company Details ==========
+
+  async getCompanyDetails(companyId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      include: {
+        supplierProfile: true,
+        brandProfile: true,
+        bankAccount: true,
+        companyUsers: {
+          include: {
+            user: { select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true } },
+          },
+        },
+        _count: {
+          select: {
+            ordersAsBrand: true,
+            ordersAsSupplier: true,
+          },
+        },
+      },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Empresa não encontrada');
+    }
+
+    // Get order stats by status
+    const orderStats = await this.prisma.order.groupBy({
+      by: ['status'],
+      where: company.type === CompanyType.SUPPLIER
+        ? { supplierId: companyId }
+        : { brandId: companyId },
+      _count: true,
+      _sum: { totalValue: true },
+    });
+
+    // Get avg rating for suppliers
+    let avgRating = null;
+    if (company.type === CompanyType.SUPPLIER) {
+      const rating = await this.prisma.rating.aggregate({
+        where: { toCompanyId: companyId },
+        _avg: { score: true },
+        _count: true,
+      });
+      avgRating = {
+        average: rating._avg.score ? Number(rating._avg.score) : 0,
+        count: rating._count,
+      };
+    }
+
+    // Mask sensitive bank data for display
+    const bankAccount = company.bankAccount ? {
+      ...company.bankAccount,
+      accountNumber: company.bankAccount.accountNumber
+        ? `****${company.bankAccount.accountNumber.slice(-4)}`
+        : null,
+    } : null;
+
+    return {
+      ...company,
+      bankAccount,
+      orderStats: orderStats.map((s) => ({
+        status: s.status,
+        count: s._count,
+        totalValue: Number(s._sum.totalValue) || 0,
+      })),
+      avgRating,
     };
   }
 

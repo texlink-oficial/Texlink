@@ -183,6 +183,11 @@ export const adminService = {
         return response.data?.data ?? response.data;
     },
 
+    async getCompanyDetails(id: string) {
+        const response = await api.get(`/admin/companies/${id}`);
+        return response.data;
+    },
+
     async getBrands(status?: string) {
         const params = status ? { status } : undefined;
         const response = await api.get('/admin/brands', { params });

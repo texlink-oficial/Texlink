@@ -10,14 +10,14 @@ import { X, CheckCircle, AlertOctagon, FileText, Truck, MapPin, DollarSign, Cale
 interface OrderDetailModalProps {
     order: Order;
     onClose: () => void;
-    onStatusChange: (id: string, newStatus: OrderStatus) => void;
+    onStatusChange: (id: string, newStatus: OrderStatus, extra?: { plannedStartDate?: string }) => void;
     onTimelineStepToggle?: (id: string, stepName: string) => void;
     onOrderUpdated?: (order: any) => void;
 }
 
 export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onStatusChange, onTimelineStepToggle, onOrderUpdated }) => {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, viewAs } = useAuth();
     const [isChatOpen, setIsChatOpen] = useState(false);
 
     const handleDuplicateOrder = () => {
@@ -42,8 +42,12 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
 
     if (!order) return null;
 
-    // Detect user role from auth context
-    const userRole: 'BRAND' | 'SUPPLIER' = user?.role === 'SUPPLIER' ? 'SUPPLIER' : 'BRAND';
+    // Detect user role from auth context (respect ViewAs mode for admins)
+    const effectiveRole = viewAs?.role || user?.role;
+    const userRole: 'BRAND' | 'SUPPLIER' | null =
+        effectiveRole === 'SUPPLIER' ? 'SUPPLIER'
+        : effectiveRole === 'BRAND' || effectiveRole === 'ADMIN' ? 'BRAND'
+        : null;
 
     // Transition map: what actions each role can take per status
     type ActionDef = { targetStatus: OrderStatus; label: string; icon: string; color: string; confirmTitle: string; confirmMsg: string; requiresMaterials?: boolean };
@@ -51,27 +55,37 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
         BRAND: {
             [OrderStatus.NEW]: [], // Brand waits for supplier to accept
             [OrderStatus.ACCEPTED]: [
-                { targetStatus: OrderStatus.PREPARING_BRAND, label: 'Preparar Insumos', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Preparar Insumos?', confirmMsg: 'Confirma que vai iniciar a preparação dos insumos para envio à facção?', requiresMaterials: true },
+                { targetStatus: OrderStatus.TRANSIT_TO_SUPPLIER, label: 'Despachar Insumos', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Despachar Insumos?', confirmMsg: 'Confirma que os insumos foram despachados para a facção?', requiresMaterials: true },
             ],
+            // Keep for backward compat with orders already in this status
             [OrderStatus.PREPARING_BRAND]: [
                 { targetStatus: OrderStatus.TRANSIT_TO_SUPPLIER, label: 'Despachar Insumos', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Despachar Insumos?', confirmMsg: 'Confirma que os insumos foram despachados para a facção?' },
             ],
             [OrderStatus.TRANSIT_TO_SUPPLIER]: [], // Brand waits for supplier
             [OrderStatus.RECEIVED_SUPPLIER]: [], // Brand waits for supplier
             [OrderStatus.PRODUCTION]: [], // Brand waits for supplier
-            [OrderStatus.READY_SEND]: [
-                { targetStatus: OrderStatus.TRANSIT_TO_BRAND, label: 'Marcar Despacho', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Marcar Despacho?', confirmMsg: 'Confirma que o pedido foi despachado para a marca?' },
-            ],
+            [OrderStatus.READY_SEND]: [], // Brand waits for supplier to dispatch
             [OrderStatus.TRANSIT_TO_BRAND]: [
                 { targetStatus: OrderStatus.IN_REVIEW, label: 'Confirmar Recebimento', icon: 'receipt', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Confirmar Recebimento?', confirmMsg: 'Confirma que o pedido foi recebido e deseja iniciar a revisão de qualidade?' },
             ],
             [OrderStatus.IN_REVIEW]: [], // Handled by OrderReviewModal
+            [OrderStatus.PARTIALLY_APPROVED]: [
+                { targetStatus: OrderStatus.PAYMENT_PROCESS, label: 'Iniciar Pagamento', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Iniciar Pagamento?', confirmMsg: 'Iniciar o processo de pagamento da parte aprovada do pedido?' },
+                { targetStatus: OrderStatus.FINALIZED, label: 'Finalizar Pedido', icon: 'advance', color: 'bg-green-600 hover:bg-green-700', confirmTitle: 'Finalizar Pedido?', confirmMsg: 'Finalizar o pedido com aprovação parcial?' },
+            ],
+            [OrderStatus.DISAPPROVED]: [
+                { targetStatus: OrderStatus.CANCELLED, label: 'Cancelar Pedido', icon: 'advance', color: 'bg-red-600 hover:bg-red-700', confirmTitle: 'Cancelar Pedido?', confirmMsg: 'Cancelar o pedido reprovado?' },
+            ],
             [OrderStatus.PAYMENT_PROCESS]: [
                 { targetStatus: OrderStatus.FINALIZED, label: 'Confirmar Pagamento', icon: 'advance', color: 'bg-green-600 hover:bg-green-700', confirmTitle: 'Confirmar Pagamento?', confirmMsg: 'Confirma que o pagamento foi realizado e deseja finalizar o pedido?' },
             ],
         },
         SUPPLIER: {
             [OrderStatus.NEW]: [
+                { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar Pedido', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Pedido?', confirmMsg: 'O pedido entrará em fase de Produção. Certifique-se de que tem capacidade para atender o prazo.' },
+                { targetStatus: OrderStatus.NEGOTIATING, label: 'Negociar', icon: 'advance', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Negociar Pedido?', confirmMsg: 'Deseja iniciar uma negociação de condições com a marca?' },
+            ],
+            [OrderStatus.AVAILABLE_FOR_OTHERS]: [
                 { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar Pedido', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Pedido?', confirmMsg: 'O pedido entrará em fase de Produção. Certifique-se de que tem capacidade para atender o prazo.' },
                 { targetStatus: OrderStatus.NEGOTIATING, label: 'Negociar', icon: 'advance', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Negociar Pedido?', confirmMsg: 'Deseja iniciar uma negociação de condições com a marca?' },
             ],
@@ -83,8 +97,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                 { targetStatus: OrderStatus.PRODUCTION_QUEUE, label: 'Enviar para Fila de Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Fila de Produção?', confirmMsg: 'Enviar para a fila de produção sem aguardar insumos da marca?', requiresMaterials: false },
             ],
             [OrderStatus.TRANSIT_TO_SUPPLIER]: [
-                { targetStatus: OrderStatus.RECEIVED_SUPPLIER, label: 'Confirmar Recebimento', icon: 'receipt', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Confirmar Recebimento?', confirmMsg: 'Confirma que os insumos foram recebidos na facção?' },
+                { targetStatus: OrderStatus.PRODUCTION_QUEUE, label: 'Confirmar Recebimento', icon: 'receipt', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Confirmar Recebimento?', confirmMsg: 'Confirma que os insumos foram recebidos? O pedido será enviado automaticamente para a fila de produção.' },
             ],
+            // Backward compat: orders already in RECEIVED_SUPPLIER
             [OrderStatus.RECEIVED_SUPPLIER]: [
                 { targetStatus: OrderStatus.PRODUCTION_QUEUE, label: 'Enviar para Fila de Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Fila de Produção?', confirmMsg: 'Enviar para a fila de produção após conferência dos insumos?' },
             ],
@@ -92,8 +107,13 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                 { targetStatus: OrderStatus.PRODUCTION, label: 'Iniciar Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Iniciar Produção?', confirmMsg: 'Confirma que vai iniciar a produção deste pedido?' },
             ],
             [OrderStatus.PRODUCTION]: [
-                { targetStatus: OrderStatus.READY_SEND, label: 'Produção Concluída', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Produção Concluída?', confirmMsg: 'Confirma que a produção está concluída e pronta para envio?' },
+                { targetStatus: OrderStatus.TRANSIT_TO_BRAND, label: 'Produção Concluída', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Produção Concluída e Despacho', confirmMsg: 'Confirma que a produção está concluída e o pedido será despachado para a marca?' },
             ],
+            [OrderStatus.AWAITING_REWORK]: [
+                { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar Retrabalho', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Retrabalho?', confirmMsg: 'Aceitar o retrabalho e reiniciar o fluxo de produção?' },
+                { targetStatus: OrderStatus.CANCELLED, label: 'Cancelar Retrabalho', icon: 'advance', color: 'bg-red-600 hover:bg-red-700', confirmTitle: 'Cancelar Retrabalho?', confirmMsg: 'Tem certeza que deseja cancelar este pedido de retrabalho?' },
+            ],
+            // Backward compat: orders already in READY_SEND
             [OrderStatus.READY_SEND]: [
                 { targetStatus: OrderStatus.TRANSIT_TO_BRAND, label: 'Marcar Despacho', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Marcar Despacho?', confirmMsg: 'Confirma que o pedido foi despachado para a marca?' },
             ],
@@ -111,16 +131,18 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
     const WAITING_MESSAGES: Record<string, Record<string, string>> = {
         BRAND: {
             [OrderStatus.NEW]: 'Aguardando a Facção aceitar o pedido',
+            [OrderStatus.AVAILABLE_FOR_OTHERS]: 'Disponível para facções interessadas',
             [OrderStatus.NEGOTIATING]: 'Em negociação com a Facção',
             [OrderStatus.ACCEPTED]: 'Aguardando a Facção iniciar produção',
             [OrderStatus.TRANSIT_TO_SUPPLIER]: 'Aguardando a Facção confirmar recebimento',
             [OrderStatus.RECEIVED_SUPPLIER]: 'Facção conferindo insumos recebidos',
             [OrderStatus.PRODUCTION_QUEUE]: 'Aguardando início da produção',
             [OrderStatus.PRODUCTION]: 'Facção em produção',
+            [OrderStatus.READY_SEND]: 'Aguardando a Facção despachar o pedido',
         },
         SUPPLIER: {
             [OrderStatus.PREPARING_BRAND]: 'Marca preparando insumos para envio',
-            [OrderStatus.ACCEPTED]: 'Aguardando a Marca preparar insumos',
+            [OrderStatus.ACCEPTED]: 'Aguardando a Marca despachar insumos',
             [OrderStatus.TRANSIT_TO_BRAND]: 'Aguardando a Marca confirmar recebimento',
             [OrderStatus.IN_REVIEW]: 'Marca revisando qualidade',
             [OrderStatus.PAYMENT_PROCESS]: 'Aguardando confirmação de pagamento',
@@ -130,7 +152,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
     // Brand IN_REVIEW → opens OrderReviewModal instead of simple confirmation
     const isReviewStatus = userRole === 'BRAND' && order.status === OrderStatus.IN_REVIEW;
     const waitingMessage = !isReviewStatus && currentActions.length === 0 ? (WAITING_MESSAGES[userRole]?.[order.status] || null) : null;
-    const isTerminal = [OrderStatus.FINALIZED, OrderStatus.PARTIALLY_APPROVED, OrderStatus.DISAPPROVED, OrderStatus.REJECTED, OrderStatus.CANCELLED].includes(order.status);
+    const isTerminal = [OrderStatus.FINALIZED, OrderStatus.REJECTED, OrderStatus.CANCELLED].includes(order.status);
 
     // State for selected action for confirmation
     const [pendingAction, setPendingAction] = useState<ActionDef | null>(null);
@@ -140,6 +162,10 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
 
     // Review modal state
     const [showReviewModal, setShowReviewModal] = useState(false);
+
+    // Planned start date modal state (shown when supplier confirms receipt)
+    const [showPlannedDateModal, setShowPlannedDateModal] = useState(false);
+    const [plannedStartDate, setPlannedStartDate] = useState('');
 
     const REVIEW_RESULT_TO_STATUS: Record<string, OrderStatus> = {
         APPROVED: OrderStatus.PAYMENT_PROCESS,
@@ -158,6 +184,17 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
 
     const executeAction = () => {
         if (pendingAction) {
+            // Intercept: when supplier confirms receipt → show planned date modal
+            if (
+                pendingAction.targetStatus === OrderStatus.PRODUCTION_QUEUE &&
+                order.status === OrderStatus.TRANSIT_TO_SUPPLIER &&
+                userRole === 'SUPPLIER'
+            ) {
+                setPendingAction(null);
+                setShowPlannedDateModal(true);
+                return;
+            }
+
             onStatusChange(order.id, pendingAction.targetStatus);
             setPendingAction(null);
             onClose();
@@ -169,6 +206,14 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             onClose();
             return;
         }
+    };
+
+    const handlePlannedDateConfirm = () => {
+        if (!plannedStartDate) return;
+        onStatusChange(order.id, OrderStatus.PRODUCTION_QUEUE, { plannedStartDate });
+        setShowPlannedDateModal(false);
+        setPlannedStartDate('');
+        onClose();
     };
 
     const getConfirmationDetails = () => {
@@ -322,7 +367,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                {userRole !== 'SUPPLIER' && (
+                                {userRole === 'BRAND' && (
                                     <button
                                         onClick={handleDuplicateOrder}
                                         title="Duplicar Pedido"
@@ -671,6 +716,54 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                 onClose={() => setShowReviewModal(false)}
                 onReviewComplete={handleReviewComplete}
             />
+
+            {/* Planned Start Date Modal */}
+            {showPlannedDateModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowPlannedDateModal(false)} />
+                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-sm p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center">
+                                <Calendar className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-gray-900 dark:text-white">Data prevista de início</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Quando pretende iniciar a produção?</p>
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Início previsto da produção *
+                            </label>
+                            <input
+                                type="date"
+                                value={plannedStartDate}
+                                onChange={(e) => setPlannedStartDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                className="w-full px-4 py-3 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowPlannedDateModal(false); setPlannedStartDate(''); }}
+                                className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-xl transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handlePlannedDateConfirm}
+                                disabled={!plannedStartDate}
+                                className="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

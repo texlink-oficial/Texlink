@@ -72,6 +72,9 @@ export default () => {
         cloudFrontDomain: process.env.CLOUDFRONT_DOMAIN,
       },
     },
+    gemini: {
+      apiKey: process.env.GEMINI_API_KEY,
+    },
     credit: {
       provider: process.env.CREDIT_PROVIDER || 'mock', // 'mock', 'serasa', or 'spc'
       serasa: {

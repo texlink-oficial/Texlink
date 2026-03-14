@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     FileText, CheckCircle, AlertTriangle, XCircle, Clock,
-    Filter, Search, Factory, Download, Eye, X, RefreshCw, FolderOpen
+    Filter, Search, Factory, Download, Eye, X, RefreshCw, FolderOpen, Edit2, Check, Loader2
 } from 'lucide-react';
 import { adminDocumentsService, AdminDocument, AdminDocumentStats } from '../../services/adminDocuments.service';
 import { SUPPLIER_DOCUMENT_TYPE_LABELS } from '../../types';
@@ -57,6 +57,11 @@ const DocumentsPage: React.FC = () => {
     const [supplierDocuments, setSupplierDocuments] = useState<SupplierDocument[]>([]);
     const [isLoadingModal, setIsLoadingModal] = useState(false);
 
+    // Inline expiry date editing
+    const [editingDocId, setEditingDocId] = useState<string | null>(null);
+    const [editingDate, setEditingDate] = useState('');
+    const [isSavingDate, setIsSavingDate] = useState(false);
+
     useEffect(() => {
         loadData();
     }, [selectedStatus, selectedType, selectedSupplier]);
@@ -104,8 +109,27 @@ const DocumentsPage: React.FC = () => {
         try {
             const { url } = await adminDocumentsService.getDownloadUrl(docId);
             window.open(url, '_blank');
-        } catch (error) {
-            console.error('Error getting download URL:', error);
+        } catch {
+            // Download failed
+        }
+    };
+
+    const handleStartEditExpiry = (docId: string, currentDate?: string) => {
+        setEditingDocId(docId);
+        setEditingDate(currentDate ? currentDate.split('T')[0] : '');
+    };
+
+    const handleSaveExpiry = async () => {
+        if (!editingDocId || !editingDate) return;
+        setIsSavingDate(true);
+        try {
+            await adminDocumentsService.updateDocumentExpiry(editingDocId, editingDate);
+            await loadData();
+        } catch {
+            // Save failed
+        } finally {
+            setIsSavingDate(false);
+            setEditingDocId(null);
         }
     };
 
@@ -265,9 +289,41 @@ const DocumentsPage: React.FC = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/10 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300">
-                                                        {formatDate(doc.expiresAt)}
-                                                    </div>
+                                                    {editingDocId === doc.id ? (
+                                                        <div className="inline-flex items-center gap-1.5">
+                                                            <input
+                                                                type="date"
+                                                                value={editingDate}
+                                                                onChange={(e) => setEditingDate(e.target.value)}
+                                                                className="px-2 py-1 bg-white dark:bg-gray-900 border border-sky-300 dark:border-sky-600 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                                autoFocus
+                                                            />
+                                                            <button
+                                                                onClick={handleSaveExpiry}
+                                                                disabled={!editingDate || isSavingDate}
+                                                                className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-500/10 rounded disabled:opacity-50"
+                                                                title="Salvar"
+                                                            >
+                                                                {isSavingDate ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setEditingDocId(null)}
+                                                                className="p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                                                                title="Cancelar"
+                                                            >
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleStartEditExpiry(doc.id, doc.expiresAt)}
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/10 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:border-sky-300 dark:hover:border-sky-600 hover:text-sky-600 dark:hover:text-sky-400 transition-colors group"
+                                                            title="Clique para editar a data de validade"
+                                                        >
+                                                            {formatDate(doc.expiresAt)}
+                                                            <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                        </button>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
