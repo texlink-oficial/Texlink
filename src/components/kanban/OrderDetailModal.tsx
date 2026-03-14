@@ -51,8 +51,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
         BRAND: {
             [OrderStatus.NEW]: [], // Brand waits for supplier to accept
             [OrderStatus.ACCEPTED]: [
-                { targetStatus: OrderStatus.PREPARING_BRAND, label: 'Preparar Insumos', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Preparar Insumos?', confirmMsg: 'Confirma que vai iniciar a preparação dos insumos para envio à facção?', requiresMaterials: true },
+                { targetStatus: OrderStatus.TRANSIT_TO_SUPPLIER, label: 'Despachar Insumos', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Despachar Insumos?', confirmMsg: 'Confirma que os insumos foram despachados para a facção?', requiresMaterials: true },
             ],
+            // Keep for backward compat with orders already in this status
             [OrderStatus.PREPARING_BRAND]: [
                 { targetStatus: OrderStatus.TRANSIT_TO_SUPPLIER, label: 'Despachar Insumos', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Despachar Insumos?', confirmMsg: 'Confirma que os insumos foram despachados para a facção?' },
             ],
@@ -120,7 +121,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
         },
         SUPPLIER: {
             [OrderStatus.PREPARING_BRAND]: 'Marca preparando insumos para envio',
-            [OrderStatus.ACCEPTED]: 'Aguardando a Marca preparar insumos',
+            [OrderStatus.ACCEPTED]: 'Aguardando a Marca despachar insumos',
             [OrderStatus.TRANSIT_TO_BRAND]: 'Aguardando a Marca confirmar recebimento',
             [OrderStatus.IN_REVIEW]: 'Marca revisando qualidade',
             [OrderStatus.PAYMENT_PROCESS]: 'Aguardando confirmação de pagamento',

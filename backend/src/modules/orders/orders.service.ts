@@ -105,13 +105,13 @@ export class OrdersService {
     ],
     [OrderStatus.ACEITO_PELA_FACCAO]: [
       {
-        nextStatus: OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
+        nextStatus: OrderStatus.EM_TRANSITO_PARA_FACCAO,
         allowedRoles: ['BRAND'],
         requiresMaterials: true,
-        label: 'Preparar Insumos',
-        description: 'Iniciar preparação dos insumos para envio à facção',
+        label: 'Despachar Insumos',
+        description: 'Confirmar que os insumos foram despachados para a facção',
         requiresConfirmation: true,
-        requiresNotes: false,
+        requiresNotes: true,
         requiresReview: false,
       },
       {
@@ -353,7 +353,7 @@ export class OrdersService {
   private readonly WAITING_FOR_MAP: Record<string, { waitingFor: 'BRAND' | 'SUPPLIER'; label: string }> = {
     [OrderStatus.LANCADO_PELA_MARCA]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção aceitar o pedido' },
     [OrderStatus.EM_NEGOCIACAO]: { waitingFor: 'SUPPLIER', label: 'Em negociação com a facção' },
-    [OrderStatus.ACEITO_PELA_FACCAO]: { waitingFor: 'BRAND', label: 'Aguardando a Marca preparar insumos' },
+    [OrderStatus.ACEITO_PELA_FACCAO]: { waitingFor: 'BRAND', label: 'Aguardando a Marca despachar insumos' },
     [OrderStatus.EM_PREPARACAO_SAIDA_MARCA]: { waitingFor: 'BRAND', label: 'Marca preparando insumos para envio' },
     [OrderStatus.EM_TRANSITO_PARA_FACCAO]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção confirmar recebimento' },
     [OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO]: { waitingFor: 'SUPPLIER', label: 'Facção conferindo insumos recebidos' },
