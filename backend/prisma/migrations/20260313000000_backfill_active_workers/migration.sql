@@ -3,7 +3,7 @@
 -- but did not have activeWorkers/hoursPerDay saved to the profile.
 
 -- Step 1: Backfill activeWorkers from JSON field
-UPDATE "SupplierProfile"
+UPDATE "supplier_profiles"
 SET
   "activeWorkers" = CAST("businessQualification"->>'qtdColaboradores' AS INTEGER)
 WHERE "activeWorkers" IS NULL
@@ -12,13 +12,13 @@ WHERE "activeWorkers" IS NULL
   AND CAST("businessQualification"->>'qtdColaboradores' AS INTEGER) > 0;
 
 -- Step 2: Set default hoursPerDay (8h) where missing
-UPDATE "SupplierProfile"
+UPDATE "supplier_profiles"
 SET "hoursPerDay" = 8.00
 WHERE "hoursPerDay" IS NULL
   AND "activeWorkers" IS NOT NULL;
 
 -- Step 3: Recalculate dailyCapacity where activeWorkers was just backfilled
-UPDATE "SupplierProfile"
+UPDATE "supplier_profiles"
 SET "dailyCapacity" = "activeWorkers" * COALESCE("hoursPerDay", 8) * 60
 WHERE "activeWorkers" IS NOT NULL
   AND ("dailyCapacity" IS NULL OR "dailyCapacity" = 0);
