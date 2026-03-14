@@ -78,6 +78,10 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                 { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar Pedido', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Pedido?', confirmMsg: 'O pedido entrará em fase de Produção. Certifique-se de que tem capacidade para atender o prazo.' },
                 { targetStatus: OrderStatus.NEGOTIATING, label: 'Negociar', icon: 'advance', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Negociar Pedido?', confirmMsg: 'Deseja iniciar uma negociação de condições com a marca?' },
             ],
+            [OrderStatus.AVAILABLE_FOR_OTHERS]: [
+                { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar Pedido', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Pedido?', confirmMsg: 'O pedido entrará em fase de Produção. Certifique-se de que tem capacidade para atender o prazo.' },
+                { targetStatus: OrderStatus.NEGOTIATING, label: 'Negociar', icon: 'advance', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Negociar Pedido?', confirmMsg: 'Deseja iniciar uma negociação de condições com a marca?' },
+            ],
             [OrderStatus.NEGOTIATING]: [
                 { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar após Negociação', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Pedido?', confirmMsg: 'Aceitar o pedido após negociação de condições?' },
                 { targetStatus: OrderStatus.CANCELLED, label: 'Cancelar Pedido', icon: 'advance', color: 'bg-red-600 hover:bg-red-700', confirmTitle: 'Cancelar Pedido?', confirmMsg: 'Tem certeza que deseja cancelar este pedido em negociação?' },

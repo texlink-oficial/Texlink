@@ -336,6 +336,26 @@ export class OrdersService {
         requiresReview: false,
       },
     ],
+    [OrderStatus.DISPONIVEL_PARA_OUTRAS]: [
+      {
+        nextStatus: OrderStatus.ACEITO_PELA_FACCAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Aceitar Pedido',
+        description: 'Aceitar este pedido disponível',
+        requiresConfirmation: true,
+        requiresNotes: false,
+        requiresReview: false,
+      },
+      {
+        nextStatus: OrderStatus.EM_NEGOCIACAO,
+        allowedRoles: ['SUPPLIER'],
+        label: 'Negociar Pedido',
+        description: 'Iniciar negociação de condições com a marca',
+        requiresConfirmation: true,
+        requiresNotes: true,
+        requiresReview: false,
+      },
+    ],
     [OrderStatus.REPROVADO]: [
       {
         nextStatus: OrderStatus.CANCELADO,
@@ -363,6 +383,7 @@ export class OrdersService {
     [OrderStatus.EM_REVISAO]: { waitingFor: 'BRAND', label: 'Marca revisando qualidade' },
     [OrderStatus.FILA_DE_PRODUCAO]: { waitingFor: 'SUPPLIER', label: 'Aguardando início da produção' },
     [OrderStatus.EM_PROCESSO_PAGAMENTO]: { waitingFor: 'BRAND', label: 'Aguardando confirmação de pagamento' },
+    [OrderStatus.DISPONIVEL_PARA_OUTRAS]: { waitingFor: 'SUPPLIER', label: 'Disponível para facções interessadas' },
     [OrderStatus.AGUARDANDO_RETRABALHO]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção aceitar o retrabalho' },
     [OrderStatus.PARCIALMENTE_APROVADO]: { waitingFor: 'BRAND', label: 'Aprovação parcial — aguardando decisão da Marca' },
     [OrderStatus.REPROVADO]: { waitingFor: 'BRAND', label: 'Pedido reprovado — aguardando decisão da Marca' },
