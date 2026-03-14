@@ -230,16 +230,15 @@ const SupplierKanbanDashboard: React.FC = () => {
                 return;
             }
 
-            // OrderStatus enum values are the same as API strings
-            await ordersService.updateStatus(orderId, newStatus as any, undefined, extra);
-            const updateData: any = { status: newStatus };
+            await ordersService.updateStatus(orderId, newStatus, undefined, extra);
+            const updateData: Partial<Order> = { status: newStatus };
             if (extra?.plannedStartDate) updateData.plannedStartDate = extra.plannedStartDate;
             setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updateData } : o));
             if (selectedOrder && selectedOrder.id === orderId) {
                 setSelectedOrder(prev => prev ? { ...prev, ...updateData } : null);
             }
-        } catch (error) {
-            console.error('Error updating status:', error);
+        } catch {
+            // Status change failed — state unchanged
         }
     };
 

@@ -17,10 +17,10 @@ import { OrderAssignmentType } from '@prisma/client';
 class IsFutureDateConstraint implements ValidatorConstraintInterface {
   validate(value: string) {
     if (!value) return false;
-    const date = new Date(value);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date >= today;
+    // Compare date strings only (YYYY-MM-DD) to avoid timezone issues
+    const dateStr = value.split('T')[0];
+    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    return dateStr >= todayStr;
   }
   defaultMessage() {
     return 'A data de entrega não pode ser no passado';

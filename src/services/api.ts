@@ -72,16 +72,17 @@ api.interceptors.response.use(
             error.response.data.message = error.response.data.error.message;
         }
 
-        // Block write attempts in ViewAs mode with a clear message
+        // Block write attempts in ViewAs mode with a clear message + alert
         if (
             error.response?.status === 403 &&
             _viewAsCompanyId &&
             ['post', 'put', 'patch', 'delete'].includes(originalRequest?.method)
         ) {
-            const viewAsError = new Error('Operação não permitida no modo "Ver Como". Este modo é somente leitura.');
-            (viewAsError as any).isViewAsBlock = true;
-            (viewAsError as any).response = error.response;
-            return Promise.reject(viewAsError);
+            const msg = 'Operação não permitida no modo "Ver Como". Este modo é somente leitura.';
+            if (typeof window !== 'undefined') {
+                window.alert(msg);
+            }
+            return Promise.reject(new Error(msg));
         }
 
         // Don't retry refresh/login/register requests

@@ -132,11 +132,11 @@ const CreateOrderPage: React.FC = () => {
             if (!authUser?.companyId) return;
             const relationships = await relationshipsService.getByBrand(authUser.companyId);
             const activeIds = relationships
-                .filter((r: any) => r.status === 'ACTIVE')
-                .map((r: any) => r.supplierId);
+                .filter(r => r.status === 'ACTIVE')
+                .map(r => r.supplierId);
             setLinkedSupplierIds(activeIds);
-        } catch (error) {
-            console.error('Error loading linked suppliers:', error);
+        } catch {
+            // Failed to load linked suppliers
         }
     };
 

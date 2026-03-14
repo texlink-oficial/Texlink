@@ -208,17 +208,15 @@ const BrandKanbanDashboard: React.FC = () => {
 
     const handleStatusChange = async (orderId: string, newStatus: OrderStatus, extra?: { plannedStartDate?: string }) => {
         try {
-            // Call API to persist the status change (enum values now match backend strings)
-            await ordersService.advanceStatus(orderId, newStatus as any);
-        } catch (error) {
-            console.error('Error advancing status:', error);
-        }
-        // Update local state regardless (optimistic update)
-        const updateData: any = { status: newStatus };
-        if (extra?.plannedStartDate) updateData.plannedStartDate = extra.plannedStartDate;
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updateData } : o));
-        if (selectedOrder && selectedOrder.id === orderId) {
-            setSelectedOrder(prev => prev ? { ...prev, ...updateData } : null);
+            await ordersService.updateStatus(orderId, newStatus, undefined, extra);
+            const updateData: Partial<Order> = { status: newStatus };
+            if (extra?.plannedStartDate) updateData.plannedStartDate = extra.plannedStartDate;
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updateData } : o));
+            if (selectedOrder && selectedOrder.id === orderId) {
+                setSelectedOrder(prev => prev ? { ...prev, ...updateData } : null);
+            }
+        } catch {
+            // Status change failed — state unchanged
         }
     };
 

@@ -75,8 +75,54 @@ const Field: React.FC<{ label: string; value?: string | number | null; mono?: bo
     );
 };
 
+interface CompanyDetails {
+    legalName: string;
+    tradeName: string | null;
+    document: string;
+    email?: string | null;
+    phone?: string | null;
+    city?: string;
+    state?: string;
+    street?: string;
+    number?: string;
+    complement?: string;
+    neighborhood?: string;
+    zipCode?: string;
+    type: string;
+    status: string;
+    createdAt: string;
+    supplierProfile?: {
+        activeWorkers?: number;
+        hoursPerDay?: number | string;
+        dailyCapacity?: number;
+        currentOccupancy?: number;
+        productTypes?: string[];
+        specialties?: string[];
+        onboardingComplete?: boolean;
+        onboardingPhase?: number;
+    } | null;
+    bankAccount?: {
+        bankName?: string;
+        bankCode?: string;
+        agency?: string;
+        accountNumber?: string;
+        accountType?: string;
+        accountHolder?: string;
+        pixKeyType?: string;
+        pixKey?: string;
+    } | null;
+    companyUsers?: {
+        id: string;
+        role?: string;
+        companyRole?: string;
+        user: { id: string; name: string; email: string; role: string; isActive: boolean };
+    }[];
+    orderStats?: { status: string; count: number; totalValue: number }[];
+    avgRating?: { average: number; count: number } | null;
+}
+
 export default function CompanyDetailsModal({ company, onClose }: Props) {
-    const [details, setDetails] = useState<any>(null);
+    const [details, setDetails] = useState<CompanyDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const isSupplier = company.type === 'SUPPLIER' || !!company.supplierProfile;
@@ -87,8 +133,8 @@ export default function CompanyDetailsModal({ company, onClose }: Props) {
             try {
                 const data = await adminService.getCompanyDetails(company.id);
                 setDetails(data);
-            } catch (err) {
-                console.error('Error loading company details:', err);
+            } catch {
+                // Failed to load details
             } finally {
                 setIsLoading(false);
             }
@@ -102,8 +148,8 @@ export default function CompanyDetailsModal({ company, onClose }: Props) {
     const orderStats = details?.orderStats || [];
     const avgRating = details?.avgRating;
 
-    const totalOrders = orderStats.reduce((s: number, o: any) => s + o.count, 0);
-    const totalRevenue = orderStats.reduce((s: number, o: any) => s + o.totalValue, 0);
+    const totalOrders = orderStats.reduce((s: number, o) => s + o.count, 0);
+    const totalRevenue = orderStats.reduce((s: number, o) => s + o.totalValue, 0);
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -244,7 +290,7 @@ export default function CompanyDetailsModal({ company, onClose }: Props) {
                                 <>
                                     <SectionTitle icon={<Users className="w-4 h-4" />} title={`Equipe (${users.length})`} />
                                     <div className="space-y-2">
-                                        {users.map((cu: any) => (
+                                        {users.map((cu) => (
                                             <div key={cu.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-xl">
                                                 <div>
                                                     <p className="text-sm font-bold text-gray-900 dark:text-white">{cu.user.name}</p>
@@ -273,7 +319,7 @@ export default function CompanyDetailsModal({ company, onClose }: Props) {
                                         </div>
                                         <div className="p-3 bg-green-50 dark:bg-green-500/10 rounded-xl text-center">
                                             <p className="text-2xl font-bold text-green-700 dark:text-green-400">
-                                                {orderStats.find((o: any) => o.status === 'FINALIZADO')?.count || 0}
+                                                {orderStats.find((o) => o.status === 'FINALIZADO')?.count || 0}
                                             </p>
                                             <p className="text-[10px] font-bold text-green-500 uppercase tracking-widest">Finalizados</p>
                                         </div>
@@ -286,8 +332,8 @@ export default function CompanyDetailsModal({ company, onClose }: Props) {
                                     </div>
                                     <div className="space-y-1.5">
                                         {orderStats
-                                            .sort((a: any, b: any) => b.count - a.count)
-                                            .map((stat: any) => (
+                                            .sort((a: any, b) => b.count - a.count)
+                                            .map((stat) => (
                                             <div key={stat.status} className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-white/[0.02] rounded-lg">
                                                 <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                                                     {orderStatusLabels[stat.status] || stat.status}
