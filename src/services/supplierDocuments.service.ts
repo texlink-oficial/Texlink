@@ -121,6 +121,22 @@ class SupplierDocumentsService {
         return response.data;
     }
 
+    // Analyze document to extract expiration date via AI
+    async analyzeDocument(
+        file: File,
+        documentType: SupplierDocumentType,
+    ): Promise<{ expiresAt: string | null; confidence: string; available: boolean }> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await api.post(
+            `${this.basePath}/analyze?type=${documentType}`,
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } },
+        );
+        return response.data;
+    }
+
     // Delete document
     async delete(id: string): Promise<void> {
         await api.delete(`${this.basePath}/${id}`);
