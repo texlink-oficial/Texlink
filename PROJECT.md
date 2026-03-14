@@ -78,7 +78,9 @@
 
 ## Current Phase
 
-**QA Phase 1 Complete** — Fase 1 do plano de testes implementada em 2026-03-13. 157 novos testes adicionados (64 frontend + 93 backend), 24 testes pré-existentes corrigidos. Total: 410 testes, todos passando.
+**QA Phase 2 Week 4 Block 2 Complete** — Playwright instalado e stubs E2E criados em 2026-03-14. playwright.config.ts configurado, helper de autenticação, 2 suites de testes E2E (order-lifecycle.spec.ts e contracts.spec.ts) com 6 describes e 28 casos de teste cobrindo TC-E2E-030 a TC-E2E-042. Testes prontos para execução quando o ambiente estiver disponível.
+
+**QA Phase 1 Complete (2026-03-13)** — 157 novos testes adicionados (64 frontend + 93 backend), 24 testes pré-existentes corrigidos. Total: 410 testes, todos passando.
 
 ### Recent Work
 - Tenant isolation enforcement in notification system
@@ -113,8 +115,8 @@
 
 ## Next Steps
 
-1. Executar Fase 2 do plano de testes: chat, notifications, credentials, admin (Semanas 3-5)
-2. Configurar Playwright para testes E2E de auth e order lifecycle
+1. Executar `npx playwright install chromium` e criar usuários de seed para habilitar execução E2E
+2. Executar Fase 2 do plano de testes: chat, notifications, credentials, admin (Semana 5)
 3. Criar testes de segurança IDOR para todas as entidades críticas
 4. Executar Fases 3-4 conforme plano em `artifacts/04-qa/test-plan-comprehensive.md`
-5. Configurar GitHub Actions para CI/CD com thresholds de cobertura
+5. Configurar GitHub Actions para CI/CD com thresholds de cobertura e execução da suite E2E
