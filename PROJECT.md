@@ -48,14 +48,17 @@
 
 ## Codebase Metrics
 
-| Metric         | Count |
-|----------------|-------|
-| Source files    | 320   |
-| Components     | 145   |
-| Pages          | 105   |
-| Hooks          | 10    |
-| Services       | 38    |
-| Total commits  | 389   |
+| Metric              | Count |
+|---------------------|-------|
+| Source files         | 324   |
+| Components           | 145   |
+| Pages                | 104   |
+| Hooks                | 10    |
+| Services             | 37    |
+| Total commits        | 392   |
+| Frontend test files  | 5     |
+| Backend test files   | 17    |
+| Total tests          | 410   |
 
 ## Pipeline Status
 
@@ -65,7 +68,7 @@
 | 01-discovery       | 0     | Pending     | No      |
 | 02-design          | 10    | Done        | Yes     |
 | 03-architecture    | 3     | In Progress | No      |
-| 04-qa              | 5     | Done        | Yes     |
+| 04-qa              | 7     | Done        | Yes     |
 | 05-deploy          | 4     | Done        | Yes     |
 | 06-agentic         | 0     | Pending     | No      |
 | 07-reports         | 6     | In Progress | -       |
@@ -75,7 +78,7 @@
 
 ## Current Phase
 
-**QA Planning** — Plano de testes abrangente criado em 2026-03-13. Cobertura atual: ~15% backend, ~2% frontend. Execução da Fase 1 de testes pendente de aprovação.
+**QA Phase 1 Complete** — Fase 1 do plano de testes implementada em 2026-03-13. 157 novos testes adicionados (64 frontend + 93 backend), 24 testes pré-existentes corrigidos. Total: 410 testes, todos passando.
 
 ### Recent Work
 - Tenant isolation enforcement in notification system
@@ -110,10 +113,8 @@
 
 ## Next Steps
 
-1. **URGENT:** Aprovar e iniciar Fase 1 do plano de testes (testes P0 de segurança e multi-tenant)
-2. Configurar `vitest.config.ts` com cobertura e instalar MSW
-3. Criar `src/test/setup.ts` com mocks globais
-4. Criar `PermissionsGuard.spec.ts` (bloqueador crítico — sem testes de isolamento)
-5. Criar testes de integração de isolamento multi-tenant (2 tenants, verificar 403)
-6. Configurar Playwright para testes E2E
-7. Executar Fase 2–4 conforme plano em `artifacts/04-qa/test-plan-comprehensive.md`
+1. Executar Fase 2 do plano de testes: chat, notifications, credentials, admin (Semanas 3-5)
+2. Configurar Playwright para testes E2E de auth e order lifecycle
+3. Criar testes de segurança IDOR para todas as entidades críticas
+4. Executar Fases 3-4 conforme plano em `artifacts/04-qa/test-plan-comprehensive.md`
+5. Configurar GitHub Actions para CI/CD com thresholds de cobertura
