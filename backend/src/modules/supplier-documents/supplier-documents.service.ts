@@ -27,6 +27,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 // Documents that typically have an expiration date
 const DOCUMENTS_WITH_EXPIRY: SupplierDocumentType[] = [
+  'ABVTEX_TERMO',
   'CND_FEDERAL',
   'CRF_FGTS',
   'LICENCA_FUNCIONAMENTO',

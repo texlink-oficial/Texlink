@@ -139,6 +139,7 @@ Dicas para encontrar a data:
 
   private getDocumentLabel(type: string): string {
     const labels: Record<string, string> = {
+      ABVTEX_TERMO: 'Termo de Participação do Programa ABVTEX',
       CND_FEDERAL: 'Certidão Negativa de Débitos (CND Federal)',
       CRF_FGTS: 'Certificado de Regularidade do FGTS (CRF)',
       LICENCA_FUNCIONAMENTO: 'Licença de Funcionamento',
