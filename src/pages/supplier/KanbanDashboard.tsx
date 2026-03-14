@@ -216,7 +216,7 @@ const SupplierKanbanDashboard: React.FC = () => {
         return grouped;
     }, [filteredOrders]);
 
-    const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    const handleStatusChange = async (orderId: string, newStatus: OrderStatus, extra?: { plannedStartDate?: string }) => {
         try {
             // Rejection uses dedicated endpoint
             if (newStatus === OrderStatus.REJECTED) {
@@ -237,10 +237,12 @@ const SupplierKanbanDashboard: React.FC = () => {
             }
 
             // OrderStatus enum values are the same as API strings
-            await ordersService.updateStatus(orderId, newStatus as any);
-            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+            await ordersService.updateStatus(orderId, newStatus as any, undefined, extra);
+            const updateData: any = { status: newStatus };
+            if (extra?.plannedStartDate) updateData.plannedStartDate = extra.plannedStartDate;
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updateData } : o));
             if (selectedOrder && selectedOrder.id === orderId) {
-                setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+                setSelectedOrder(prev => prev ? { ...prev, ...updateData } : null);
             }
         } catch (error) {
             console.error('Error updating status:', error);

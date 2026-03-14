@@ -212,7 +212,7 @@ const BrandKanbanDashboard: React.FC = () => {
         return grouped;
     }, [filteredOrders]);
 
-    const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    const handleStatusChange = async (orderId: string, newStatus: OrderStatus, extra?: { plannedStartDate?: string }) => {
         try {
             // Call API to persist the status change (enum values now match backend strings)
             await ordersService.advanceStatus(orderId, newStatus as any);
@@ -220,9 +220,11 @@ const BrandKanbanDashboard: React.FC = () => {
             console.error('Error advancing status:', error);
         }
         // Update local state regardless (optimistic update)
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+        const updateData: any = { status: newStatus };
+        if (extra?.plannedStartDate) updateData.plannedStartDate = extra.plannedStartDate;
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updateData } : o));
         if (selectedOrder && selectedOrder.id === orderId) {
-            setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+            setSelectedOrder(prev => prev ? { ...prev, ...updateData } : null);
         }
     };
 

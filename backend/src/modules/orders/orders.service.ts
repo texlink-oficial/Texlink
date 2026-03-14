@@ -1126,6 +1126,7 @@ export class OrdersService {
       data: {
         status: dto.status,
         ...(dto.rejectionReason && { rejectionReason: dto.rejectionReason }),
+        ...(dto.plannedStartDate && { plannedStartDate: new Date(dto.plannedStartDate) }),
         statusHistory: {
           create: {
             previousStatus: order.status,

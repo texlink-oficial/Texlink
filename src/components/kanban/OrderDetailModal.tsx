@@ -10,7 +10,7 @@ import { X, CheckCircle, AlertOctagon, FileText, Truck, MapPin, DollarSign, Cale
 interface OrderDetailModalProps {
     order: Order;
     onClose: () => void;
-    onStatusChange: (id: string, newStatus: OrderStatus) => void;
+    onStatusChange: (id: string, newStatus: OrderStatus, extra?: { plannedStartDate?: string }) => void;
     onTimelineStepToggle?: (id: string, stepName: string) => void;
     onOrderUpdated?: (order: any) => void;
 }
@@ -146,6 +146,10 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
     // Review modal state
     const [showReviewModal, setShowReviewModal] = useState(false);
 
+    // Planned start date modal state (shown when supplier confirms receipt)
+    const [showPlannedDateModal, setShowPlannedDateModal] = useState(false);
+    const [plannedStartDate, setPlannedStartDate] = useState('');
+
     const REVIEW_RESULT_TO_STATUS: Record<string, OrderStatus> = {
         APPROVED: OrderStatus.PAYMENT_PROCESS,
         PARTIAL: OrderStatus.PARTIALLY_APPROVED,
@@ -163,6 +167,17 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
 
     const executeAction = () => {
         if (pendingAction) {
+            // Intercept: when supplier confirms receipt → show planned date modal
+            if (
+                pendingAction.targetStatus === OrderStatus.PRODUCTION_QUEUE &&
+                order.status === OrderStatus.TRANSIT_TO_SUPPLIER &&
+                userRole === 'SUPPLIER'
+            ) {
+                setPendingAction(null);
+                setShowPlannedDateModal(true);
+                return;
+            }
+
             onStatusChange(order.id, pendingAction.targetStatus);
             setPendingAction(null);
             onClose();
@@ -174,6 +189,14 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             onClose();
             return;
         }
+    };
+
+    const handlePlannedDateConfirm = () => {
+        if (!plannedStartDate) return;
+        onStatusChange(order.id, OrderStatus.PRODUCTION_QUEUE, { plannedStartDate });
+        setShowPlannedDateModal(false);
+        setPlannedStartDate('');
+        onClose();
     };
 
     const getConfirmationDetails = () => {
@@ -676,6 +699,54 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                 onClose={() => setShowReviewModal(false)}
                 onReviewComplete={handleReviewComplete}
             />
+
+            {/* Planned Start Date Modal */}
+            {showPlannedDateModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowPlannedDateModal(false)} />
+                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-sm p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center">
+                                <Calendar className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-gray-900 dark:text-white">Data prevista de início</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Quando pretende iniciar a produção?</p>
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Início previsto da produção *
+                            </label>
+                            <input
+                                type="date"
+                                value={plannedStartDate}
+                                onChange={(e) => setPlannedStartDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                className="w-full px-4 py-3 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowPlannedDateModal(false); setPlannedStartDate(''); }}
+                                className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-xl transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handlePlannedDateConfirm}
+                                disabled={!plannedStartDate}
+                                className="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
