@@ -168,7 +168,7 @@ const OnboardingCapacityPage: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-medium text-brand-300 mb-1">
-                                Costureiros Ativos
+                                Costureiros Ativos <span className="text-red-400">*</span>
                             </label>
                             <input
                                 type="number"
@@ -182,9 +182,14 @@ const OnboardingCapacityPage: React.FC = () => {
                                     })
                                 }
                                 placeholder="Ex: 12"
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
+                                    error && formData.activeWorkers < 1 ? 'border-red-500' : 'border-white/10'
+                                }`}
                                 required
                             />
+                            {error && formData.activeWorkers < 1 && (
+                                <p className="text-red-400 text-xs mt-1">Informe pelo menos 1 costureiro</p>
+                            )}
                         </div>
                         <div>
                             <label className="flex items-center gap-1 text-xs font-medium text-brand-300 mb-1">

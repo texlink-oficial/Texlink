@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -100,6 +101,19 @@ export class SuppliersService {
 
     if (!company.supplierProfile) {
       throw new NotFoundException('Perfil de facção não encontrado');
+    }
+
+    // Validate required fields before marking complete
+    const profile = company.supplierProfile;
+    if (!profile.activeWorkers || profile.activeWorkers < 1) {
+      throw new BadRequestException(
+        'Informe o número de costureiros ativos antes de concluir o cadastro',
+      );
+    }
+    if (!profile.productTypes || profile.productTypes.length === 0) {
+      throw new BadRequestException(
+        'Selecione pelo menos um tipo de produto antes de concluir o cadastro',
+      );
     }
 
     return this.prisma.supplierProfile.update({
