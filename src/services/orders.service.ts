@@ -186,7 +186,7 @@ export interface CreateOrderDto {
     materialsProvided?: boolean;
     observations?: string;
     protectTechnicalSheet?: boolean;
-    assignmentType: 'DIRECT' | 'BIDDING';
+    assignmentType: 'DIRECT' | 'BIDDING' | 'HYBRID';
     supplierId?: string;
     targetSupplierIds?: string[];
 }
