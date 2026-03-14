@@ -198,12 +198,6 @@ const BrandKanbanDashboard: React.FC = () => {
             grouped[col.id] = [];
         });
         filteredOrders.forEach(order => {
-            // When supplier provides materials (materialsProvided=false), ACCEPTED orders
-            // skip "Enviando Insumos" and go directly to "Fila de Produção"
-            if (order.status === OrderStatus.ACCEPTED && !order.materialsProvided) {
-                grouped['production_queue']?.push(order);
-                return;
-            }
             const col = KANBAN_COLUMNS.find(c => c.statuses.includes(order.status));
             if (col) {
                 grouped[col.id].push(order);
