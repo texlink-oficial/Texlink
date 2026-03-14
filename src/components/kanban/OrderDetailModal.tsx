@@ -60,9 +60,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             [OrderStatus.TRANSIT_TO_SUPPLIER]: [], // Brand waits for supplier
             [OrderStatus.RECEIVED_SUPPLIER]: [], // Brand waits for supplier
             [OrderStatus.PRODUCTION]: [], // Brand waits for supplier
-            [OrderStatus.READY_SEND]: [
-                { targetStatus: OrderStatus.TRANSIT_TO_BRAND, label: 'Marcar Despacho', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Marcar Despacho?', confirmMsg: 'Confirma que o pedido foi despachado para a marca?' },
-            ],
+            [OrderStatus.READY_SEND]: [], // Brand waits for supplier to dispatch
             [OrderStatus.TRANSIT_TO_BRAND]: [
                 { targetStatus: OrderStatus.IN_REVIEW, label: 'Confirmar Recebimento', icon: 'receipt', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Confirmar Recebimento?', confirmMsg: 'Confirma que o pedido foi recebido e deseja iniciar a revisão de qualidade?' },
             ],
@@ -118,6 +116,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
             [OrderStatus.RECEIVED_SUPPLIER]: 'Facção conferindo insumos recebidos',
             [OrderStatus.PRODUCTION_QUEUE]: 'Aguardando início da produção',
             [OrderStatus.PRODUCTION]: 'Facção em produção',
+            [OrderStatus.READY_SEND]: 'Aguardando a Facção despachar o pedido',
         },
         SUPPLIER: {
             [OrderStatus.PREPARING_BRAND]: 'Marca preparando insumos para envio',

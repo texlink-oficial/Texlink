@@ -237,7 +237,7 @@ export class OrdersService {
     [OrderStatus.PRONTO]: [
       {
         nextStatus: OrderStatus.EM_TRANSITO_PARA_MARCA,
-        allowedRoles: ['BRAND', 'SUPPLIER'],
+        allowedRoles: ['SUPPLIER'],
         label: 'Marcar Despacho',
         description: 'Confirmar que o pedido foi despachado para a marca',
         requiresConfirmation: true,
@@ -358,7 +358,7 @@ export class OrdersService {
     [OrderStatus.EM_TRANSITO_PARA_FACCAO]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção confirmar recebimento' },
     [OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO]: { waitingFor: 'SUPPLIER', label: 'Facção conferindo insumos recebidos' },
     [OrderStatus.EM_PRODUCAO]: { waitingFor: 'SUPPLIER', label: 'Facção em produção' },
-    [OrderStatus.PRONTO]: { waitingFor: 'BRAND', label: 'Pronto para despacho' },
+    [OrderStatus.PRONTO]: { waitingFor: 'SUPPLIER', label: 'Aguardando a Facção despachar o pedido' },
     [OrderStatus.EM_TRANSITO_PARA_MARCA]: { waitingFor: 'BRAND', label: 'Aguardando a Marca confirmar recebimento' },
     [OrderStatus.EM_REVISAO]: { waitingFor: 'BRAND', label: 'Marca revisando qualidade' },
     [OrderStatus.FILA_DE_PRODUCAO]: { waitingFor: 'SUPPLIER', label: 'Aguardando início da produção' },
