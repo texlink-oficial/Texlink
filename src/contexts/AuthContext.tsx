@@ -44,11 +44,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const initAuth = async () => {
             // Step 1: Check in-memory tokens
             let hasToken = !!authService.getToken();
+            const hasRefreshToken = !!authService.getRefreshToken();
 
             // Step 2: Migrate from legacy storage if needed (one-time for upgrading users)
-            if (!hasToken) {
+            if (!hasToken && !hasRefreshToken) {
                 const migrated = authService.migrateFromLegacyStorage();
                 hasToken = migrated;
+            }
+
+            // If we have a refresh token but no access token (page refresh), try refreshing
+            if (!hasToken && hasRefreshToken) {
+                const refreshResult = await authService.refreshTokens();
+                if (refreshResult) {
+                    hasToken = true;
+                }
             }
 
             if (!hasToken) {
