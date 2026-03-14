@@ -156,10 +156,10 @@ export class OrdersService {
     ],
     [OrderStatus.EM_TRANSITO_PARA_FACCAO]: [
       {
-        nextStatus: OrderStatus.EM_PREPARACAO_ENTRADA_FACCAO,
+        nextStatus: OrderStatus.FILA_DE_PRODUCAO,
         allowedRoles: ['SUPPLIER'],
         label: 'Confirmar Recebimento',
-        description: 'Confirmar que os insumos foram recebidos na facção',
+        description: 'Confirmar recebimento dos insumos e enviar para fila de produção',
         requiresConfirmation: true,
         requiresNotes: false,
         requiresReview: false,

@@ -86,8 +86,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                 { targetStatus: OrderStatus.PRODUCTION_QUEUE, label: 'Enviar para Fila de Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Fila de Produção?', confirmMsg: 'Enviar para a fila de produção sem aguardar insumos da marca?', requiresMaterials: false },
             ],
             [OrderStatus.TRANSIT_TO_SUPPLIER]: [
-                { targetStatus: OrderStatus.RECEIVED_SUPPLIER, label: 'Confirmar Recebimento', icon: 'receipt', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Confirmar Recebimento?', confirmMsg: 'Confirma que os insumos foram recebidos na facção?' },
+                { targetStatus: OrderStatus.PRODUCTION_QUEUE, label: 'Confirmar Recebimento', icon: 'receipt', color: 'bg-indigo-600 hover:bg-indigo-700', confirmTitle: 'Confirmar Recebimento?', confirmMsg: 'Confirma que os insumos foram recebidos? O pedido será enviado automaticamente para a fila de produção.' },
             ],
+            // Backward compat: orders already in RECEIVED_SUPPLIER
             [OrderStatus.RECEIVED_SUPPLIER]: [
                 { targetStatus: OrderStatus.PRODUCTION_QUEUE, label: 'Enviar para Fila de Produção', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Fila de Produção?', confirmMsg: 'Enviar para a fila de produção após conferência dos insumos?' },
             ],
