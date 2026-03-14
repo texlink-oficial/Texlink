@@ -17,7 +17,7 @@ interface OrderDetailModalProps {
 
 export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onStatusChange, onTimelineStepToggle, onOrderUpdated }) => {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, viewAs } = useAuth();
     const [isChatOpen, setIsChatOpen] = useState(false);
 
     const handleDuplicateOrder = () => {
@@ -42,8 +42,12 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
 
     if (!order) return null;
 
-    // Detect user role from auth context
-    const userRole: 'BRAND' | 'SUPPLIER' = user?.role === 'SUPPLIER' ? 'SUPPLIER' : 'BRAND';
+    // Detect user role from auth context (respect ViewAs mode for admins)
+    const effectiveRole = viewAs?.role || user?.role;
+    const userRole: 'BRAND' | 'SUPPLIER' | null =
+        effectiveRole === 'SUPPLIER' ? 'SUPPLIER'
+        : effectiveRole === 'BRAND' || effectiveRole === 'ADMIN' ? 'BRAND'
+        : null;
 
     // Transition map: what actions each role can take per status
     type ActionDef = { targetStatus: OrderStatus; label: string; icon: string; color: string; confirmTitle: string; confirmMsg: string; requiresMaterials?: boolean };
@@ -322,7 +326,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                {userRole !== 'SUPPLIER' && (
+                                {userRole === 'BRAND' && (
                                     <button
                                         onClick={handleDuplicateOrder}
                                         title="Duplicar Pedido"
