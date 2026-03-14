@@ -100,6 +100,14 @@ describe('LoginPage', () => {
     });
   });
 
+  it('should render link to forgot password page', () => {
+    render(<LoginPage />);
+
+    const link = screen.getByText('Esqueci minha senha');
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', '/esqueci-senha');
+  });
+
   it('should disable button while loading', async () => {
     const user = userEvent.setup();
     // Make login hang
