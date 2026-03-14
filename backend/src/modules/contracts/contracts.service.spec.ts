@@ -1256,4 +1256,108 @@ describe('ContractsService', () => {
       expect(result.count).toBe(0);
     });
   });
+
+  // =========================================================================
+  // Multi-tenant isolation (companyId)
+  // =========================================================================
+
+  describe('createContract (companyId isolation)', () => {
+    it('should associate contract with correct brandId and supplierId from relationship', async () => {
+      const createDto = {
+        relationshipId: 'relationship-1',
+        type: ContractType.SERVICE_AGREEMENT,
+        title: 'Isolated Contract',
+        validFrom: '2026-01-01',
+        validUntil: '2026-12-31',
+      };
+
+      const mockCreatedContract = {
+        id: 'contract-iso',
+        displayId: 'CTR-20260313-0001',
+        relationshipId: 'relationship-1',
+        supplierId: 'supplier-1',
+        brandId: 'brand-1',
+        type: ContractType.SERVICE_AGREEMENT,
+        title: 'Isolated Contract',
+        status: ContractStatus.DRAFT,
+        brand: { tradeName: 'Test Brand', legalName: 'Test Brand Legal' },
+        supplier: { tradeName: 'Test Supplier', legalName: 'Test Supplier Legal' },
+      };
+
+      mockPrisma.supplierBrandRelationship.findUnique.mockResolvedValue(
+        mockRelationship,
+      );
+      mockPrisma.supplierContract.findFirst.mockResolvedValue(null);
+      mockPrisma.supplierContract.create.mockResolvedValue(mockCreatedContract);
+
+      const result = await service.createContract(createDto, 'user-1');
+
+      // Verify the brandId and supplierId are derived from the relationship, not from the user
+      expect(result.brandId).toBe('brand-1');
+      expect(result.supplierId).toBe('supplier-1');
+
+      expect(mockPrisma.supplierContract.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          brandId: 'brand-1',
+          supplierId: 'supplier-1',
+          relationshipId: 'relationship-1',
+        }),
+        include: expect.any(Object),
+      });
+    });
+
+    it('should throw NotFoundException when relationship does not exist (prevents cross-tenant contract creation)', async () => {
+      mockPrisma.supplierBrandRelationship.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.createContract(
+          {
+            relationshipId: 'nonexistent-relationship',
+            type: ContractType.SERVICE_AGREEMENT,
+            title: 'Test',
+            validFrom: '2026-01-01',
+            validUntil: '2026-12-31',
+          },
+          'user-1',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('sendForSignature (status transition isolation)', () => {
+    it('should only allow sending DRAFT contracts for signature', async () => {
+      const signedContract = {
+        id: 'contract-1',
+        displayId: 'CTR-20260207-0001',
+        brandId: 'brand-1',
+        supplierId: 'supplier-1',
+        title: 'Test Contract',
+        status: ContractStatus.SIGNED,
+      };
+
+      mockPrisma.supplierContract.findUnique.mockResolvedValue(signedContract);
+
+      await expect(
+        service.sendForSignature('contract-1', 'user-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should not allow sending CANCELLED contracts for signature', async () => {
+      const cancelledContract = {
+        id: 'contract-1',
+        displayId: 'CTR-20260207-0001',
+        brandId: 'brand-1',
+        supplierId: 'supplier-1',
+        title: 'Test Contract',
+        status: ContractStatus.CANCELLED,
+      };
+
+      mockPrisma.supplierContract.findUnique.mockResolvedValue(cancelledContract);
+
+      await expect(
+        service.sendForSignature('contract-1', 'user-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
 });
