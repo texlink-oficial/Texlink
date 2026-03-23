@@ -16,6 +16,7 @@ import { CreateRelationshipDto } from './dto/create-relationship.dto';
 import { UpdateRelationshipDto } from './dto/update-relationship.dto';
 import { RelationshipActionDto } from './dto/relationship-action.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { ActiveCompanyGuard } from '../../common/guards/active-company.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole } from '@prisma/client';
 
@@ -31,7 +32,7 @@ interface AuthUser {
 @ApiTags('Relacionamentos')
 @ApiBearerAuth()
 @Controller('relationships')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, ActiveCompanyGuard)
 export class RelationshipsController {
   constructor(
     private readonly relationshipsService: RelationshipsService,

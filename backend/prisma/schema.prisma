@@ -339,6 +339,18 @@ enum BrandDocumentStatus {
   ARCHIVED
 }
 
+// ==================== SUPPLIER VISIBILITY ENUMS ====================
+
+enum SupplierOrigin {
+  SELF_REGISTERED // Facção se registrou por conta própria
+  INVITED // Facção foi convidada por uma marca
+}
+
+enum PoolVisibility {
+  PUBLIC // Visível para todas as marcas no pool
+  EXCLUSIVE // Visível apenas para a marca que convidou
+}
+
 // ==================== PARTNERSHIP REQUEST ENUMS ====================
 
 enum PartnershipRequestStatus {
@@ -551,6 +563,9 @@ model Company {
   contractsAsSupplier   SupplierContract[]          @relation("SupplierContracts")
   contractsAsBrand      SupplierContract[]          @relation("BrandContracts")
 
+  // Suppliers invited by this brand (visibility control)
+  invitedSuppliers SupplierProfile[] @relation("InvitedSuppliers")
+
   // Supplier documents (compliance/fiscal)
   supplierDocuments SupplierDocument[] @relation("SupplierDocuments")
 
@@ -633,6 +648,11 @@ model SupplierProfile {
   onboardingPhase    Int     @default(1) // 1, 2, or 3
   onboardingComplete Boolean @default(false)
 
+  // Visibility & Origin
+  origin             SupplierOrigin @default(SELF_REGISTERED)
+  poolVisibility     PoolVisibility @default(PUBLIC)
+  invitedByCompanyId String? // FK to Company (brand that invited this supplier)
+
   // Phase 2: Business Qualification
   businessQualification Json? // { interesse, faturamentoDesejado, maturidadeGestao, qtdColaboradores }
 
@@ -650,8 +670,11 @@ model SupplierProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invitedByCompany Company? @relation("InvitedSuppliers", fields: [invitedByCompanyId], references: [id])
 
+  @@index([poolVisibility])
+  @@index([invitedByCompanyId])
   @@map("supplier_profiles")
 }
 

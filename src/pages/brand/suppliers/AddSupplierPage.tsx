@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
+import PendingCompanyGate from '../../../components/brand/PendingCompanyGate';
 import {
     ArrowLeft,
     Plus,
@@ -389,6 +390,7 @@ const AddSupplierPage: React.FC = () => {
     };
 
     return (
+        <PendingCompanyGate>
         <div className="p-6 lg:p-8 space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -1129,6 +1131,7 @@ const AddSupplierPage: React.FC = () => {
                 }}
             />
         </div>
+        </PendingCompanyGate>
     );
 };
 

@@ -13,6 +13,7 @@ interface AuthContextType {
     token: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
+    companyStatus: string | null;
     viewAs: ViewAsState | null;
     login: (email: string, password: string) => Promise<void>;
     register: (email: string, password: string, name: string, role: 'BRAND' | 'SUPPLIER', extra?: { legalName?: string; tradeName?: string; document?: string; phone?: string; city?: string; state?: string; invitationToken?: string }) => Promise<void>;
@@ -144,6 +145,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setViewAsCompanyId(null);
     }, []);
 
+    const companyStatus = user?.companyUsers?.[0]?.company?.status ?? null;
+
     return (
         <AuthContext.Provider
             value={{
@@ -151,6 +154,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 token,
                 isLoading,
                 isAuthenticated: !!user,
+                companyStatus,
                 viewAs,
                 login,
                 register,

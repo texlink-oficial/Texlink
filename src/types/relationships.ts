@@ -64,6 +64,9 @@ export interface SupplierProfile {
     dailyCapacity: number;
     currentOccupancy: number;
     avgRating?: number;
+    origin?: 'SELF_REGISTERED' | 'INVITED';
+    poolVisibility?: 'PUBLIC' | 'EXCLUSIVE';
+    invitedByCompanyId?: string | null;
 }
 
 export interface SupplierOnboarding {
