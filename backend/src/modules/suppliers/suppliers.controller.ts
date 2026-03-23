@@ -25,12 +25,14 @@ import {
 } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { ActiveCompanyGuard } from '../../common/guards/active-company.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole } from '@prisma/client';
 
 interface AuthUser {
   id: string;
+  role: string;
   companyId: string;
 }
 
@@ -204,7 +206,7 @@ export class SuppliersController {
    * Validate CNPJ via Brasil API
    */
   @Get('validate-cnpj/:cnpj')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActiveCompanyGuard)
   @Roles(UserRole.BRAND, UserRole.ADMIN)
   async validateCnpj(@Param('cnpj') cnpj: string) {
     return this.suppliersService.validateCnpj(cnpj);
@@ -214,7 +216,7 @@ export class SuppliersController {
    * Invite a new supplier
    */
   @Post('invite')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActiveCompanyGuard)
   @Roles(UserRole.BRAND)
   async inviteSupplier(
     @Body() dto: InviteSupplierDto,
@@ -227,7 +229,7 @@ export class SuppliersController {
    * List all invitations for current brand
    */
   @Get('invitations')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActiveCompanyGuard)
   @Roles(UserRole.BRAND)
   async getInvitations(@CurrentUser() user: AuthUser) {
     return this.suppliersService.getInvitations(user.companyId);
@@ -237,7 +239,7 @@ export class SuppliersController {
    * Resend an invitation
    */
   @Post('invitations/:id/resend')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActiveCompanyGuard)
   @Roles(UserRole.BRAND)
   async resendInvitation(
     @Param('id', ParseUUIDPipe) id: string,
@@ -250,17 +252,40 @@ export class SuppliersController {
   // ========== BRAND/ADMIN SEARCH ENDPOINTS ==========
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActiveCompanyGuard)
   @Roles(UserRole.BRAND, UserRole.ADMIN)
-  async search(@Query() filters: SupplierFilterDto) {
-    return this.suppliersService.search(filters);
+  async search(
+    @Query() filters: SupplierFilterDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.suppliersService.search(filters, user);
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActiveCompanyGuard)
   @Roles(UserRole.BRAND, UserRole.ADMIN)
-  async getById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.suppliersService.getById(id);
+  async getById(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.suppliersService.getById(id, user);
+  }
+
+  // ========== VISIBILITY ENDPOINTS (Brand only) ==========
+
+  /**
+   * Toggle pool visibility for an exclusive supplier
+   * Only the brand that invited the supplier can change this
+   */
+  @Patch(':id/visibility')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActiveCompanyGuard)
+  @Roles(UserRole.BRAND, UserRole.ADMIN)
+  async updatePoolVisibility(
+    @Param('id', ParseUUIDPipe) supplierId: string,
+    @Body() dto: { poolVisibility: 'PUBLIC' | 'EXCLUSIVE' },
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.suppliersService.updatePoolVisibility(supplierId, dto.poolVisibility, user);
   }
 
   // ========== CONSENT ENDPOINTS (Supplier only) ==========

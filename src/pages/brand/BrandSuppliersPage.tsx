@@ -19,9 +19,13 @@ import {
     Send,
     Users,
     Handshake,
+    Lock,
+    Globe,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import PendingCompanyGate from '../../components/brand/PendingCompanyGate';
 import { relationshipsService } from '../../services';
+import { suppliersService } from '../../services/suppliers.service';
 import type {
     SupplierBrandRelationship,
     RelationshipStatus,
@@ -264,6 +268,7 @@ const BrandSuppliersPage: React.FC = () => {
     );
 
     return (
+        <PendingCompanyGate>
         <div className="p-6 lg:p-8 space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -525,10 +530,19 @@ const BrandSuppliersPage: React.FC = () => {
                                                 <Factory className="w-6 h-6 text-white" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                                                    {relationship.supplier?.tradeName ||
-                                                        relationship.supplier?.legalName}
-                                                </h3>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                                                        {relationship.supplier?.tradeName ||
+                                                            relationship.supplier?.legalName}
+                                                    </h3>
+                                                    {relationship.supplier?.supplierProfile?.poolVisibility === 'EXCLUSIVE' &&
+                                                        relationship.supplier?.supplierProfile?.invitedByCompanyId === brandId && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 whitespace-nowrap">
+                                                                <Lock className="w-3 h-3" />
+                                                                Exclusiva
+                                                            </span>
+                                                        )}
+                                                </div>
                                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                                     CNPJ: {relationship.supplier?.document}
                                                 </p>
@@ -583,6 +597,53 @@ const BrandSuppliersPage: React.FC = () => {
                                                             Reativar
                                                         </button>
                                                     )}
+
+                                                    {/* Visibility toggle — only for suppliers invited by this brand */}
+                                                    {relationship.supplier?.supplierProfile?.origin === 'INVITED' &&
+                                                        relationship.supplier?.supplierProfile?.invitedByCompanyId === brandId && (
+                                                            <button
+                                                                onClick={async () => {
+                                                                    const current = relationship.supplier?.supplierProfile?.poolVisibility;
+                                                                    const newVisibility = current === 'EXCLUSIVE' ? 'PUBLIC' : 'EXCLUSIVE';
+                                                                    try {
+                                                                        await suppliersService.updatePoolVisibility(relationship.supplierId, newVisibility);
+                                                                        // Refresh data
+                                                                        setRelationships(prev =>
+                                                                            prev.map(r =>
+                                                                                r.id === relationship.id && r.supplier?.supplierProfile
+                                                                                    ? {
+                                                                                        ...r,
+                                                                                        supplier: {
+                                                                                            ...r.supplier,
+                                                                                            supplierProfile: {
+                                                                                                ...r.supplier.supplierProfile,
+                                                                                                poolVisibility: newVisibility,
+                                                                                            },
+                                                                                        },
+                                                                                    }
+                                                                                    : r
+                                                                            )
+                                                                        );
+                                                                        setActionMenuOpen(null);
+                                                                    } catch {
+                                                                        alert('Erro ao alterar visibilidade');
+                                                                    }
+                                                                }}
+                                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                            >
+                                                                {relationship.supplier?.supplierProfile?.poolVisibility === 'EXCLUSIVE' ? (
+                                                                    <>
+                                                                        <Globe className="w-4 h-4" />
+                                                                        Tornar Pública
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Lock className="w-4 h-4" />
+                                                                        Tornar Exclusiva
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        )}
 
                                                     {relationship.status !== 'TERMINATED' && (
                                                         <button
@@ -668,6 +729,7 @@ const BrandSuppliersPage: React.FC = () => {
                 </>
             )}
         </div>
+        </PendingCompanyGate>
     );
 };
 

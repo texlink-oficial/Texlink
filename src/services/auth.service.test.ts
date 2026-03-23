@@ -257,6 +257,29 @@ describe('authService', () => {
     });
   });
 
+  describe('forgotPassword', () => {
+    it('should call POST /auth/forgot-password with the email', async () => {
+      mockApi.post.mockResolvedValue({ data: {} });
+
+      await authService.forgotPassword('user@test.com');
+
+      expect(mockApi.post).toHaveBeenCalledWith('/auth/forgot-password', { email: 'user@test.com' });
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should send token and new password to POST /auth/reset-password', async () => {
+      mockApi.post.mockResolvedValue({ data: {} });
+
+      await authService.resetPassword('reset-token-abc', 'newPassword123');
+
+      expect(mockApi.post).toHaveBeenCalledWith('/auth/reset-password', {
+        token: 'reset-token-abc',
+        password: 'newPassword123',
+      });
+    });
+  });
+
   describe('getToken', () => {
     it('should return token from memory', () => {
       authService.setTokens('my-token', null);

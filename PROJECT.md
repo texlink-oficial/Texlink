@@ -48,14 +48,17 @@
 
 ## Codebase Metrics
 
-| Metric         | Count |
-|----------------|-------|
-| Source files    | 303   |
-| Components     | 145   |
-| Pages          | 98    |
-| Hooks          | 10    |
-| Services       | 37    |
-| Total commits  | 272   |
+| Metric              | Count |
+|---------------------|-------|
+| Source files         | 324   |
+| Components           | 145   |
+| Pages                | 104   |
+| Hooks                | 10    |
+| Services             | 37    |
+| Total commits        | 392   |
+| Frontend test files  | 5     |
+| Backend test files   | 17    |
+| Total tests          | 410   |
 
 ## Pipeline Status
 
@@ -64,18 +67,20 @@
 | 00-audit           | 5     | Done        | Yes     |
 | 01-discovery       | 0     | Pending     | No      |
 | 02-design          | 10    | Done        | Yes     |
-| 03-architecture    | 2     | In Progress | No      |
-| 04-qa              | 0     | Pending     | No      |
-| 05-deploy          | 3     | Done        | Yes     |
+| 03-architecture    | 3     | In Progress | No      |
+| 04-qa              | 7     | Done        | Yes     |
+| 05-deploy          | 4     | Done        | Yes     |
 | 06-agentic         | 0     | Pending     | No      |
 | 07-reports         | 6     | In Progress | -       |
-| 08-reviews         | 3     | In Progress | -       |
-| 09-security        | 4     | In Progress | -       |
+| 08-reviews         | 19    | In Progress | -       |
+| 09-security        | 8     | Done        | Yes     |
 | 10-data            | 0     | Pending     | -       |
 
 ## Current Phase
 
-**Development** — Active bug-fix and feature polish cycle on `main` branch.
+**QA Phase 2 Week 4 Block 2 Complete** — Playwright instalado e stubs E2E criados em 2026-03-14. playwright.config.ts configurado, helper de autenticação, 2 suites de testes E2E (order-lifecycle.spec.ts e contracts.spec.ts) com 6 describes e 28 casos de teste cobrindo TC-E2E-030 a TC-E2E-042. Testes prontos para execução quando o ambiente estiver disponível.
+
+**QA Phase 1 Complete (2026-03-13)** — 157 novos testes adicionados (64 frontend + 93 backend), 24 testes pré-existentes corrigidos. Total: 410 testes, todos passando.
 
 ### Recent Work
 - Tenant isolation enforcement in notification system
@@ -84,7 +89,14 @@
 - Admin action menus for brands/suppliers
 - Nginx API proxy configuration
 - Removal of mock mode / seed data from production
-- Bug fixes from user testing session
+- Bug fixes from user testing session (all 37 items addressed, 5 sprints)
+- Gemini Vision API for document expiration extraction
+- Forgot password full-stack flow (PasswordReset model, 24h token, email)
+- Settings page 3-tab redesign (Perfil / Equipe / Empresa)
+- SuperAdmin ViewAs role-gated route access
+- Refresh token persistence in sessionStorage
+- Inline editing of document expiration dates (admin)
+- Capacity module with working days utility
 
 ## Key Decisions
 
@@ -103,8 +115,8 @@
 
 ## Next Steps
 
-1. **URGENT:** Execute Quick Wins 1-9 (security fixes, ~2 days)
-2. Execute Quick Wins 10-15 (performance + validation, ~1 day)
-3. Rotate all secrets found in git history
-4. Set up frontend testing (Vitest + Testing Library)
-5. Enable strict TypeScript + CI pipeline
+1. Executar `npx playwright install chromium` e criar usuários de seed para habilitar execução E2E
+2. Executar Fase 2 do plano de testes: chat, notifications, credentials, admin (Semana 5)
+3. Criar testes de segurança IDOR para todas as entidades críticas
+4. Executar Fases 3-4 conforme plano em `artifacts/04-qa/test-plan-comprehensive.md`
+5. Configurar GitHub Actions para CI/CD com thresholds de cobertura e execução da suite E2E

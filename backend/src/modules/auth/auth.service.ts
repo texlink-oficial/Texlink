@@ -120,11 +120,26 @@ export class AuthService {
           },
         });
 
+        // Determine if supplier was invited by a brand
+        let invitedByCompanyId: string | undefined;
+        if (dto.invitationToken) {
+          const inv = await tx.credentialInvitation.findFirst({
+            where: { token: dto.invitationToken, response: 'ACCEPTED' },
+            include: { credential: { select: { brandId: true } } },
+          });
+          if (inv?.credential?.brandId) {
+            invitedByCompanyId = inv.credential.brandId;
+          }
+        }
+
         await tx.supplierProfile.create({
           data: {
             companyId: company.id,
             onboardingPhase: 1,
             onboardingComplete: false,
+            origin: invitedByCompanyId ? 'INVITED' : 'SELF_REGISTERED',
+            poolVisibility: invitedByCompanyId ? 'EXCLUSIVE' : 'PUBLIC',
+            invitedByCompanyId: invitedByCompanyId || null,
           },
         });
       } else if (dto.role === 'BRAND') {

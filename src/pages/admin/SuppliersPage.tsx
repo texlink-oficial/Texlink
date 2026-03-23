@@ -409,10 +409,10 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     const { label, bg, text, dot } = config[status] || config.PENDING;
 
     return (
-        <div className={`px-2.5 py-1 ${bg} ${text} rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm border border-black/5`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${dot} animate-pulse`} />
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 ${bg} ${text} rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border border-black/5 w-fit`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${dot} animate-pulse flex-shrink-0`} />
             {label}
-        </div>
+        </span>
     );
 };
 

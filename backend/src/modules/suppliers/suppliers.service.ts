@@ -13,7 +13,7 @@ import {
   OnboardingPhase3Dto,
   SupplierFilterDto,
 } from './dto';
-import { CompanyType, CompanyStatus, OrderStatus, OrderTargetStatus } from '@prisma/client';
+import { CompanyType, CompanyStatus, OrderStatus, OrderTargetStatus, PoolVisibility } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { InvitationNotificationService } from './services/invitation-notification.service';
 import { SUPPLIER_INTEREST_EXPRESSED } from '../notifications/events/notification.events';
@@ -30,6 +30,18 @@ export class SuppliersService {
     private invitationNotificationService: InvitationNotificationService,
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) { }
+
+  /**
+   * Mascara dados de contato sensíveis de um fornecedor.
+   * Marcas sem vínculo ativo não devem ver telefone/email para evitar negociação fora da plataforma.
+   */
+  private maskContactFields<T extends Record<string, unknown>>(supplier: T): T {
+    return {
+      ...supplier,
+      phone: null,
+      email: null,
+    };
+  }
 
   // Get supplier profile for current user
   async getMyProfile(userId: string) {
@@ -617,21 +629,32 @@ export class SuppliersService {
   }
 
   // Search suppliers (for brands and admins)
-  async search(filters: SupplierFilterDto) {
+  async search(filters: SupplierFilterDto, user?: { id: string; role?: string; companyId?: string }) {
+    const isAdmin = user?.role === 'ADMIN';
+    const brandId = user?.companyId;
+
     const where: Prisma.CompanyWhereInput = {
       type: CompanyType.SUPPLIER,
       status: CompanyStatus.ACTIVE,
-      OR: [
+      AND: [
+        // Onboarding filter
         {
-          supplierProfile: {
-            onboardingComplete: true,
-          },
+          OR: [
+            { supplierProfile: { onboardingComplete: true } },
+            { onboarding: { isCompleted: true } },
+          ],
         },
-        {
-          onboarding: {
-            isCompleted: true,
-          },
-        },
+        // Visibility filter: brands only see PUBLIC or their own EXCLUSIVE suppliers
+        ...(!isAdmin && brandId
+          ? [
+              {
+                OR: [
+                  { supplierProfile: { poolVisibility: PoolVisibility.PUBLIC } },
+                  { supplierProfile: { invitedByCompanyId: brandId } },
+                ],
+              },
+            ]
+          : []),
       ],
     };
 
@@ -671,7 +694,7 @@ export class SuppliersService {
       };
     }
 
-    return this.prisma.company.findMany({
+    const suppliers = await this.prisma.company.findMany({
       where,
       include: {
         supplierProfile: true,
@@ -681,10 +704,50 @@ export class SuppliersService {
       },
       orderBy: { avgRating: 'desc' },
     });
+
+    // Brands see masked contact data in pool/search (must use platform to communicate)
+    if (!isAdmin) {
+      return suppliers.map((s) => this.maskContactFields(s));
+    }
+
+    return suppliers;
   }
 
-  // Get supplier by ID (public profile)
-  async getById(id: string) {
+  // Toggle pool visibility for a supplier (brand-only)
+  async updatePoolVisibility(
+    supplierId: string,
+    poolVisibility: 'PUBLIC' | 'EXCLUSIVE',
+    user: { id: string; role?: string; companyId?: string },
+  ) {
+    const profile = await this.prisma.supplierProfile.findFirst({
+      where: { companyId: supplierId },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Perfil do fornecedor não encontrado');
+    }
+
+    if (profile.origin !== 'INVITED') {
+      throw new BadRequestException(
+        'Apenas fornecedores convidados podem ter visibilidade alterada',
+      );
+    }
+
+    // Only the brand that invited the supplier (or admin) can change visibility
+    if (user.role !== 'ADMIN' && profile.invitedByCompanyId !== user.companyId) {
+      throw new ForbiddenException(
+        'Apenas a marca que convidou este fornecedor pode alterar sua visibilidade',
+      );
+    }
+
+    return this.prisma.supplierProfile.update({
+      where: { id: profile.id },
+      data: { poolVisibility },
+    });
+  }
+
+  // Get supplier by ID — masks contact info unless brand has active relationship
+  async getById(id: string, user?: { id: string; role?: string; companyId?: string }) {
     const supplier = await this.prisma.company.findFirst({
       where: {
         id,
@@ -716,7 +779,28 @@ export class SuppliersService {
       throw new NotFoundException('Facção não encontrada');
     }
 
-    return supplier;
+    // Admin sees everything
+    if (!user || user.role === 'ADMIN') {
+      return supplier;
+    }
+
+    // Check if the brand has an active relationship with this supplier
+    if (user.role === 'BRAND' && user.companyId) {
+      const relationship = await this.prisma.supplierBrandRelationship.findFirst({
+        where: {
+          brandId: user.companyId,
+          supplierId: id,
+          status: { in: ['ACTIVE', 'PENDING'] },
+        },
+      });
+
+      if (relationship) {
+        return supplier;
+      }
+    }
+
+    // No active relationship — mask contact data
+    return this.maskContactFields(supplier);
   }
 
   // ==================== INVITATION METHODS ====================

@@ -33,6 +33,9 @@ export interface SupplierSearchFilters {
     minRating?: number;
 }
 
+export type SupplierOrigin = 'SELF_REGISTERED' | 'INVITED';
+export type PoolVisibility = 'PUBLIC' | 'EXCLUSIVE';
+
 export interface Supplier {
     id: string;
     tradeName: string;
@@ -52,6 +55,11 @@ export interface Supplier {
     status: string;
     minOrderQuantity?: number;
     avgLeadTime?: number;
+    supplierProfile?: {
+        origin?: SupplierOrigin;
+        poolVisibility?: PoolVisibility;
+        invitedByCompanyId?: string | null;
+    };
     profile?: {
         description?: string;
         equipment?: string[];
@@ -195,6 +203,16 @@ export const suppliersService = {
         const response = await api.get<SupplierDocument[]>(
             `/supplier-documents/brand/suppliers/${supplierId}`
         );
+        return response.data;
+    },
+
+    // ==================== VISIBILITY METHODS ====================
+
+    /**
+     * Update pool visibility for an exclusive supplier
+     */
+    async updatePoolVisibility(supplierId: string, poolVisibility: PoolVisibility): Promise<{ poolVisibility: PoolVisibility }> {
+        const response = await api.patch(`/suppliers/${supplierId}/visibility`, { poolVisibility });
         return response.data;
     },
 

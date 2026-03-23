@@ -12,6 +12,7 @@ import {
   UserRole,
   CompanyType,
   CompanyStatus,
+  PoolVisibility,
   Prisma,
 } from '@prisma/client';
 import { CreateRelationshipDto } from './dto/create-relationship.dto';
@@ -247,26 +248,31 @@ export class RelationshipsService {
     const existingSupplierIds = existingRelationships.map((r) => r.supplierId);
 
     // Buscar suppliers com onboarding completo (via SupplierProfile OU SupplierOnboarding),
-    // excluindo os já credenciados
-    return this.prisma.company.findMany({
+    // excluindo os já credenciados e respeitando regras de visibilidade
+    const isAdmin = user.role === UserRole.ADMIN;
+
+    const onboardingFilter: Prisma.CompanyWhereInput = {
+      OR: [
+        { supplierProfile: { onboardingComplete: true } },
+        { onboarding: { isCompleted: true } },
+      ],
+    };
+
+    const visibilityFilter: Prisma.CompanyWhereInput = isAdmin
+      ? {} // Admin vê todos
+      : {
+          OR: [
+            { supplierProfile: { poolVisibility: PoolVisibility.PUBLIC } },
+            { supplierProfile: { invitedByCompanyId: brandId } },
+          ],
+        };
+
+    const suppliers = await this.prisma.company.findMany({
       where: {
         type: CompanyType.SUPPLIER,
         status: CompanyStatus.ACTIVE,
-        id: {
-          notIn: existingSupplierIds,
-        },
-        OR: [
-          {
-            supplierProfile: {
-              onboardingComplete: true,
-            },
-          },
-          {
-            onboarding: {
-              isCompleted: true,
-            },
-          },
-        ],
+        id: { notIn: existingSupplierIds },
+        AND: [onboardingFilter, visibilityFilter],
       },
       include: {
         supplierProfile: true,
@@ -278,6 +284,13 @@ export class RelationshipsService {
       },
       orderBy: { tradeName: 'asc' },
     });
+
+    // Mask contact data — these suppliers have no relationship with the brand yet
+    if (!isAdmin) {
+      return suppliers.map((s) => ({ ...s, phone: null, email: null }));
+    }
+
+    return suppliers;
   }
 
   /**

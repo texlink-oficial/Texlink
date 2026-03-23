@@ -266,7 +266,11 @@ describe('RelationshipsService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             type: CompanyType.SUPPLIER,
-            onboarding: { isCompleted: true },
+            status: 'ACTIVE',
+            OR: [
+              { supplierProfile: { onboardingComplete: true } },
+              { onboarding: { isCompleted: true } },
+            ],
           }),
         }),
       );

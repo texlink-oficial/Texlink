@@ -21,6 +21,7 @@ import {
     Mail,
     History,
 } from 'lucide-react';
+import PendingCompanyGate from '../../../components/brand/PendingCompanyGate';
 import { relationshipsService } from '../../../services';
 import type {
     SupplierBrandRelationship,
@@ -173,6 +174,7 @@ const RelationshipDetailsPage: React.FC = () => {
     const StatusIcon = statusConfig.icon;
 
     return (
+        <PendingCompanyGate>
         <div className="p-6 lg:p-8 space-y-6">
             {/* Header */}
             <div className="flex items-center gap-4">
@@ -548,6 +550,7 @@ const RelationshipDetailsPage: React.FC = () => {
                 </div>
             </div>
         </div>
+        </PendingCompanyGate>
     );
 };
 

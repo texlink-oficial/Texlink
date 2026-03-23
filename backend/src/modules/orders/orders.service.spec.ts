@@ -384,7 +384,7 @@ describe('OrdersService', () => {
       );
     });
 
-    it('should allow valid transition: ACEITO_PELA_FACCAO to EM_PREPARACAO_SAIDA_MARCA (by brand, materialsProvided=true)', async () => {
+    it('should allow valid transition: ACEITO_PELA_FACCAO to EM_TRANSITO_PARA_FACCAO (by brand, materialsProvided=true)', async () => {
       const acceptedOrder = {
         ...mockOrder,
         status: OrderStatus.ACEITO_PELA_FACCAO,
@@ -398,15 +398,15 @@ describe('OrdersService', () => {
 
       const updatedOrder = {
         ...acceptedOrder,
-        status: OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
+        status: OrderStatus.EM_TRANSITO_PARA_FACCAO,
       };
       mockPrisma.order.update.mockResolvedValue(updatedOrder);
 
       const result = await service.updateStatus('order-1', 'user-1', {
-        status: OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
+        status: OrderStatus.EM_TRANSITO_PARA_FACCAO,
       });
 
-      expect(result.status).toBe(OrderStatus.EM_PREPARACAO_SAIDA_MARCA);
+      expect(result.status).toBe(OrderStatus.EM_TRANSITO_PARA_FACCAO);
     });
 
     it('should allow valid transition: ACEITO_PELA_FACCAO to FILA_DE_PRODUCAO (by supplier, materialsProvided=false)', async () => {
@@ -532,7 +532,7 @@ describe('OrdersService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should throw ForbiddenException when supplier tries to prepare materials', async () => {
+    it('should throw ForbiddenException when supplier tries to dispatch materials', async () => {
       const acceptedOrder = {
         ...mockOrder,
         status: OrderStatus.ACEITO_PELA_FACCAO,
@@ -550,7 +550,7 @@ describe('OrdersService', () => {
 
       await expect(
         service.updateStatus('order-1', 'user-2', {
-          status: OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
+          status: OrderStatus.EM_TRANSITO_PARA_FACCAO,
         }),
       ).rejects.toThrow(ForbiddenException);
     });
@@ -951,6 +951,249 @@ describe('OrdersService', () => {
     });
   });
 
+  // =========================================================================
+  // Multi-tenant isolation (companyId)
+  // =========================================================================
+
+  describe('getMyOrders (Multi-tenant isolation)', () => {
+    it('should return only orders for the users brand companyId', async () => {
+      const brandCompanyUser = {
+        userId: 'user-1',
+        companyId: 'brand-1',
+        company: { type: CompanyType.BRAND },
+      };
+
+      const brandOrders = [
+        { id: 'order-1', brandId: 'brand-1', status: OrderStatus.LANCADO_PELA_MARCA, brand: { logoUrl: null }, supplier: null },
+        { id: 'order-2', brandId: 'brand-1', status: OrderStatus.EM_PRODUCAO, brand: { logoUrl: null }, supplier: { logoUrl: null } },
+      ];
+
+      mockPrisma.companyUser.findFirst.mockResolvedValue(brandCompanyUser);
+      mockPrisma.order.findMany.mockResolvedValue(brandOrders);
+
+      const result = await service.getMyOrders('user-1', 'BRAND');
+
+      expect(result).toHaveLength(2);
+      expect(mockPrisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            brandId: 'brand-1',
+          }),
+        }),
+      );
+    });
+
+    it('should return only orders for the users supplier companyId', async () => {
+      const supplierCompanyUser = {
+        userId: 'user-2',
+        companyId: 'supplier-1',
+        company: { type: CompanyType.SUPPLIER },
+      };
+
+      const supplierOrders = [
+        {
+          id: 'order-3',
+          supplierId: 'supplier-1',
+          status: OrderStatus.EM_PRODUCAO,
+          brand: { logoUrl: null },
+          supplier: { logoUrl: null },
+          totalValue: 5000,
+          netValue: 4500,
+          platformFee: 500,
+          protectTechnicalSheet: false,
+          attachments: [],
+        },
+      ];
+
+      mockPrisma.companyUser.findFirst.mockResolvedValue(supplierCompanyUser);
+      mockPrisma.order.findMany.mockResolvedValue(supplierOrders);
+
+      const result = await service.getMyOrders('user-2', 'SUPPLIER');
+
+      expect(result).toHaveLength(1);
+      expect(mockPrisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: expect.arrayContaining([
+              expect.objectContaining({ supplierId: 'supplier-1' }),
+            ]),
+          }),
+        }),
+      );
+    });
+
+    it('should throw NotFoundException when user has no company', async () => {
+      mockPrisma.companyUser.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.getMyOrders('orphan-user', 'BRAND'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should mask financial data (platformFee) for SUPPLIER role', async () => {
+      const supplierCompanyUser = {
+        userId: 'user-2',
+        companyId: 'supplier-1',
+        company: { type: CompanyType.SUPPLIER },
+      };
+
+      const orders = [
+        {
+          id: 'order-1',
+          supplierId: 'supplier-1',
+          totalValue: 5000,
+          netValue: 4500,
+          platformFee: 500,
+          status: OrderStatus.EM_PRODUCAO,
+          protectTechnicalSheet: false,
+          attachments: [],
+          brand: { logoUrl: null },
+          supplier: { logoUrl: null },
+        },
+      ];
+
+      mockPrisma.companyUser.findFirst.mockResolvedValue(supplierCompanyUser);
+      mockPrisma.order.findMany.mockResolvedValue(orders);
+
+      const result = await service.getMyOrders('user-2', 'SUPPLIER');
+
+      // totalValue should be netValue for supplier
+      expect(result[0].totalValue).toBe(4500);
+      // platformFee should be undefined
+      expect(result[0].platformFee).toBeUndefined();
+    });
+  });
+
+  describe('getById (Cross-company access denial)', () => {
+    it('should throw NotFoundException when order does not exist', async () => {
+      mockPrisma.order.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getById('nonexistent-order', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when user does not belong to brand or supplier company', async () => {
+      const order = {
+        id: 'order-1',
+        brandId: 'brand-1',
+        supplierId: 'supplier-1',
+        status: OrderStatus.EM_PRODUCAO,
+        assignmentType: OrderAssignmentType.DIRECT,
+        targetSuppliers: [],
+        brand: { id: 'brand-1', companyUsers: [{ userId: 'brand-user' }] },
+        supplier: { id: 'supplier-1', companyUsers: [{ userId: 'supplier-user' }] },
+      };
+
+      mockPrisma.order.findUnique.mockResolvedValue(order);
+      // User is not in brand company
+      mockPrisma.companyUser.findFirst
+        .mockResolvedValueOnce(null) // Not brand
+        .mockResolvedValueOnce(null) // Not supplier
+        .mockResolvedValueOnce(null); // Not target supplier
+
+      await expect(
+        service.getById('order-1', 'unauthorized-user'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('create (companyId isolation)', () => {
+    it('should set brandId from the users company', async () => {
+      const brandUser = {
+        userId: 'user-1',
+        companyId: 'brand-1',
+        company: { id: 'brand-1', type: CompanyType.BRAND, tradeName: 'My Brand' },
+      };
+
+      mockPrisma.companyUser.findFirst.mockResolvedValue(brandUser);
+      mockPrisma.credentialSettings.findUnique.mockResolvedValue(null);
+      mockPrisma.order.create.mockResolvedValue({
+        id: 'order-1',
+        displayId: 'TX-20260313-ABCD',
+        brandId: 'brand-1',
+        status: OrderStatus.LANCADO_PELA_MARCA,
+        brand: { id: 'brand-1', tradeName: 'My Brand', logoUrl: null },
+        supplier: null,
+        targetSuppliers: [],
+        statusHistory: [],
+      });
+
+      await service.create(
+        {
+          assignmentType: OrderAssignmentType.DIRECT,
+          supplierId: 'supplier-1',
+          productType: 'Clothing',
+          productCategory: 'T-Shirt',
+          productName: 'Basic Tee',
+          quantity: 100,
+          pricePerUnit: 50,
+          deliveryDeadline: '2026-03-01',
+          paymentTerms: '30 days',
+        },
+        'user-1',
+      );
+
+      expect(mockPrisma.order.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          brandId: 'brand-1',
+        }),
+        include: expect.any(Object),
+      });
+    });
+
+    it('should not allow a user without brand company to create orders', async () => {
+      mockPrisma.companyUser.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.create(
+          {
+            assignmentType: OrderAssignmentType.DIRECT,
+            supplierId: 'supplier-1',
+            productType: 'Clothing',
+            productCategory: 'T-Shirt',
+            productName: 'Basic Tee',
+            quantity: 100,
+            pricePerUnit: 50,
+            deliveryDeadline: '2026-03-01',
+            paymentTerms: '30 days',
+          },
+          'supplier-user',
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('updateStatus (Cross-company access denial)', () => {
+    it('should throw ForbiddenException when user from different company tries to update status', async () => {
+      const order = {
+        id: 'order-1',
+        displayId: 'TX-20260207-ABCD',
+        brandId: 'brand-1',
+        supplierId: 'supplier-1',
+        status: OrderStatus.LANCADO_PELA_MARCA,
+        materialsProvided: false,
+        brand: { id: 'brand-1' },
+        supplier: { id: 'supplier-1' },
+        targetSuppliers: [],
+        statusHistory: [],
+      };
+
+      mockPrisma.order.findUnique.mockResolvedValue(order);
+      // User belongs to a different company entirely
+      mockPrisma.companyUser.findFirst
+        .mockResolvedValueOnce(null) // Not brand
+        .mockResolvedValueOnce(null) // Not supplier
+        .mockResolvedValueOnce(null); // Not target supplier
+
+      await expect(
+        service.updateStatus('order-1', 'other-company-user', {
+          status: OrderStatus.ACEITO_PELA_FACCAO,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
   describe('getAvailableTransitions (Available transitions)', () => {
     it('should return correct transitions for brand with materialsProvided=true', async () => {
       const order = {
@@ -974,12 +1217,12 @@ describe('OrdersService', () => {
       const result = await service.getAvailableTransitions('order-1', 'user-1');
 
       expect(result.canAdvance).toBe(true);
-      // Brand gets: Preparar Insumos + Cancelar Pedido
+      // Brand gets: Despachar Insumos + Cancelar Pedido
       expect(result.transitions).toHaveLength(2);
       expect(result.transitions[0].nextStatus).toBe(
-        OrderStatus.EM_PREPARACAO_SAIDA_MARCA,
+        OrderStatus.EM_TRANSITO_PARA_FACCAO,
       );
-      expect(result.transitions[0].label).toBe('Preparar Insumos');
+      expect(result.transitions[0].label).toBe('Despachar Insumos');
       expect(result.transitions[1].nextStatus).toBe(OrderStatus.CANCELADO);
     });
 
@@ -1009,7 +1252,7 @@ describe('OrdersService', () => {
       expect(result.canAdvance).toBe(true);
       // Supplier gets: Produção Concluída + Cancelar Pedido
       expect(result.transitions).toHaveLength(2);
-      expect(result.transitions[0].nextStatus).toBe(OrderStatus.PRONTO);
+      expect(result.transitions[0].nextStatus).toBe(OrderStatus.EM_TRANSITO_PARA_MARCA);
       expect(result.transitions[0].label).toBe('Produção Concluída');
       expect(result.transitions[1].nextStatus).toBe(OrderStatus.CANCELADO);
     });

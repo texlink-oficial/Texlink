@@ -175,7 +175,7 @@ describe('PaymentsService', () => {
 
       await expect(
         service.create('nonexistent-order', 'brand-user-1', mockCreateDto),
-      ).rejects.toThrow(new NotFoundException('Order not found'));
+      ).rejects.toThrow(new NotFoundException('Pedido não encontrado'));
 
       expect(mockPrisma.payment.create).not.toHaveBeenCalled();
     });
@@ -186,7 +186,7 @@ describe('PaymentsService', () => {
       await expect(
         service.create('order-1', 'unauthorized-user', mockCreateDto),
       ).rejects.toThrow(
-        new ForbiddenException('Only brand can create payments'),
+        new ForbiddenException('Apenas marcas podem criar pagamentos'),
       );
 
       expect(mockPrisma.payment.create).not.toHaveBeenCalled();
@@ -351,7 +351,7 @@ describe('PaymentsService', () => {
         service.update('nonexistent-payment', 'brand-user-1', {
           status: PaymentStatus.PAGO,
         }),
-      ).rejects.toThrow(new NotFoundException('Payment not found'));
+      ).rejects.toThrow(new NotFoundException('Pagamento não encontrado'));
 
       expect(mockPrisma.payment.update).not.toHaveBeenCalled();
     });
@@ -566,7 +566,7 @@ describe('PaymentsService', () => {
 
       await expect(
         service.getOrderPayments('nonexistent-order', 'brand-user-1'),
-      ).rejects.toThrow(new NotFoundException('Order not found'));
+      ).rejects.toThrow(new NotFoundException('Pedido não encontrado'));
 
       expect(mockPrisma.payment.findMany).not.toHaveBeenCalled();
     });
@@ -632,7 +632,7 @@ describe('PaymentsService', () => {
       await expect(
         service.getSupplierFinancialSummary('non-supplier-user'),
       ).rejects.toThrow(
-        new NotFoundException('Supplier company not found'),
+        new NotFoundException('Empresa da facção não encontrada'),
       );
 
       expect(mockPrisma.companyUser.findFirst).toHaveBeenCalledWith({
@@ -802,6 +802,224 @@ describe('PaymentsService', () => {
         },
         _sum: { amount: true },
       });
+    });
+  });
+
+  // =========================================================================
+  // Multi-tenant isolation (companyId)
+  // =========================================================================
+
+  describe('create (companyId isolation)', () => {
+    it('should only allow brand company members to create payments', async () => {
+      const orderWithDifferentBrand = {
+        id: 'order-1',
+        displayId: 'TX-20260207-ABCD',
+        brandId: 'brand-1',
+        supplierId: 'supplier-1',
+        brand: {
+          id: 'brand-1',
+          companyUsers: [{ userId: 'brand-user-1' }],
+        },
+      };
+
+      mockPrisma.order.findUnique.mockResolvedValue(orderWithDifferentBrand);
+
+      // User from supplier company (not brand) should not be able to create payments
+      await expect(
+        service.create('order-1', 'supplier-user-1', {
+          amount: 5000,
+          dueDate: '2026-03-15',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should set payment status to PENDENTE regardless of input', async () => {
+      const mockOrder = {
+        id: 'order-1',
+        displayId: 'TX-20260207-ABCD',
+        brandId: 'brand-1',
+        supplierId: null,
+        brand: {
+          id: 'brand-1',
+          companyUsers: [{ userId: 'brand-user-1' }],
+        },
+      };
+
+      mockPrisma.order.findUnique.mockResolvedValue(mockOrder);
+      mockPrisma.payment.create.mockResolvedValue({
+        id: 'payment-1',
+        status: PaymentStatus.PENDENTE,
+        amount: 5000,
+      });
+
+      await service.create('order-1', 'brand-user-1', {
+        amount: 5000,
+        dueDate: '2026-03-15',
+      });
+
+      expect(mockPrisma.payment.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          status: PaymentStatus.PENDENTE,
+        }),
+      });
+    });
+  });
+
+  describe('update (companyId isolation)', () => {
+    it('should reject payment update from user not in brand or supplier company', async () => {
+      const payment = {
+        id: 'payment-1',
+        orderId: 'order-1',
+        amount: 5000,
+        status: PaymentStatus.PENDENTE,
+        order: {
+          id: 'order-1',
+          displayId: 'TX-20260207-ABCD',
+          brandId: 'brand-1',
+          supplierId: 'supplier-1',
+          brand: {
+            companyUsers: [{ userId: 'brand-user-1' }],
+          },
+          supplier: {
+            companyUsers: [{ userId: 'supplier-user-1' }],
+          },
+        },
+      };
+
+      mockPrisma.payment.findUnique.mockResolvedValue(payment);
+
+      // User from a completely different company
+      await expect(
+        service.update('payment-1', 'user-from-other-company', {
+          status: PaymentStatus.PAGO,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(mockPrisma.payment.update).not.toHaveBeenCalled();
+    });
+
+    it('should allow brand member to update payment status', async () => {
+      const payment = {
+        id: 'payment-1',
+        orderId: 'order-1',
+        amount: 5000,
+        status: PaymentStatus.PENDENTE,
+        order: {
+          id: 'order-1',
+          displayId: 'TX-20260207-ABCD',
+          brandId: 'brand-1',
+          supplierId: 'supplier-1',
+          brand: {
+            companyUsers: [{ userId: 'brand-user-1' }],
+          },
+          supplier: {
+            companyUsers: [{ userId: 'supplier-user-1' }],
+          },
+        },
+      };
+
+      mockPrisma.payment.findUnique.mockResolvedValue(payment);
+      mockPrisma.payment.update.mockResolvedValue({
+        ...payment,
+        status: PaymentStatus.PAGO,
+      });
+
+      const result = await service.update('payment-1', 'brand-user-1', {
+        status: PaymentStatus.PAGO,
+      });
+
+      expect(mockPrisma.payment.update).toHaveBeenCalled();
+    });
+
+    it('should allow supplier member to update payment (e.g. upload proof)', async () => {
+      const payment = {
+        id: 'payment-1',
+        orderId: 'order-1',
+        amount: 5000,
+        status: PaymentStatus.PENDENTE,
+        order: {
+          id: 'order-1',
+          displayId: 'TX-20260207-ABCD',
+          brandId: 'brand-1',
+          supplierId: 'supplier-1',
+          brand: {
+            companyUsers: [{ userId: 'brand-user-1' }],
+          },
+          supplier: {
+            companyUsers: [{ userId: 'supplier-user-1' }],
+          },
+        },
+      };
+
+      mockPrisma.payment.findUnique.mockResolvedValue(payment);
+      mockPrisma.payment.update.mockResolvedValue({
+        ...payment,
+        proofUrl: 'https://example.com/proof.pdf',
+      });
+
+      const result = await service.update('payment-1', 'supplier-user-1', {
+        proofUrl: 'https://example.com/proof.pdf',
+      });
+
+      expect(mockPrisma.payment.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('getOrderPayments (companyId isolation)', () => {
+    it('should deny access to payments from user not in brand or supplier company', async () => {
+      const order = {
+        id: 'order-1',
+        brand: {
+          companyUsers: [{ userId: 'brand-user-1' }],
+        },
+        supplier: {
+          companyUsers: [{ userId: 'supplier-user-1' }],
+        },
+      };
+
+      mockPrisma.order.findUnique.mockResolvedValue(order);
+
+      await expect(
+        service.getOrderPayments('order-1', 'user-from-other-company'),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(mockPrisma.payment.findMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getSupplierFinancialSummary (companyId isolation)', () => {
+    it('should only return financial data for the users supplier company', async () => {
+      mockPrisma.companyUser.findFirst.mockResolvedValue({
+        userId: 'supplier-user-1',
+        companyId: 'supplier-1',
+      });
+
+      mockPrisma.payment.aggregate
+        .mockResolvedValueOnce({ _sum: { amount: 5000 } })
+        .mockResolvedValueOnce({ _sum: { amount: 3000 } })
+        .mockResolvedValueOnce({ _sum: { amount: 1000 } })
+        .mockResolvedValueOnce({ _sum: { amount: 9000 } });
+      mockPrisma.payment.findMany
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+
+      await service.getSupplierFinancialSummary('supplier-user-1');
+
+      // All aggregate queries must filter by the users supplierId
+      for (const call of mockPrisma.payment.aggregate.mock.calls) {
+        expect(call[0].where.order.supplierId).toBe('supplier-1');
+      }
+    });
+
+    it('should not return financial data for a different suppliers company', async () => {
+      // User has no supplier company
+      mockPrisma.companyUser.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.getSupplierFinancialSummary('brand-user-1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

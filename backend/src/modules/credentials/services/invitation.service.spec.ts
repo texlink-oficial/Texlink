@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InvitationService } from './invitation.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { IntegrationService } from '../../integrations/services/integration.service';
+import { STORAGE_PROVIDER } from '../../upload/storage.provider';
 import { SupplierCredentialStatus, InvitationType } from '@prisma/client';
 import { InvitationChannel } from '../dto';
 
@@ -36,6 +38,15 @@ describe('InvitationService', () => {
     sendWhatsApp: jest.fn(),
   };
 
+  const mockConfigService = {
+    get: jest.fn().mockReturnValue('http://localhost:5173'),
+    getOrThrow: jest.fn().mockReturnValue('http://localhost:5173'),
+  };
+
+  const mockStorage = {
+    resolveUrl: jest.fn((url: string | null | undefined) => Promise.resolve(url ?? null)),
+  };
+
   const mockUser = {
     id: 'user-123',
     companyId: 'brand-123',
@@ -53,6 +64,14 @@ describe('InvitationService', () => {
         {
           provide: IntegrationService,
           useValue: mockIntegrationService,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
+        },
+        {
+          provide: STORAGE_PROVIDER,
+          useValue: mockStorage,
         },
       ],
     }).compile();

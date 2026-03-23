@@ -7,10 +7,6 @@ echo "DATABASE_URL is set: ${DATABASE_URL:+yes}"
 
 echo "Running Prisma migrations..."
 if [ "$NODE_ENV" = "production" ] || [ "$NODE_ENV" = "staging" ]; then
-  # Resolve any previously failed migrations before deploying
-  echo "Resolving any failed migrations..."
-  npx prisma migrate resolve --rolled-back 20260313000000_backfill_active_workers --schema=./prisma/schema.prisma 2>/dev/null || true
-
   # Try migrate deploy; if it fails with P3005 (non-empty schema), baseline first
   if ! npx prisma migrate deploy --schema=./prisma/schema.prisma >/tmp/migrate_err.log 2>&1; then
     if grep -q "P3005" /tmp/migrate_err.log; then

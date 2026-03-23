@@ -13,6 +13,7 @@ interface AuthContextType {
     token: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
+    companyStatus: string | null;
     viewAs: ViewAsState | null;
     login: (email: string, password: string) => Promise<void>;
     register: (email: string, password: string, name: string, role: 'BRAND' | 'SUPPLIER', extra?: { legalName?: string; tradeName?: string; document?: string; phone?: string; city?: string; state?: string; invitationToken?: string }) => Promise<void>;
@@ -44,11 +45,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const initAuth = async () => {
             // Step 1: Check in-memory tokens
             let hasToken = !!authService.getToken();
+            const hasRefreshToken = !!authService.getRefreshToken();
 
             // Step 2: Migrate from legacy storage if needed (one-time for upgrading users)
-            if (!hasToken) {
+            if (!hasToken && !hasRefreshToken) {
                 const migrated = authService.migrateFromLegacyStorage();
                 hasToken = migrated;
+            }
+
+            // If we have a refresh token but no access token (page refresh), try refreshing
+            if (!hasToken && hasRefreshToken) {
+                const refreshResult = await authService.refreshTokens();
+                if (refreshResult) {
+                    hasToken = true;
+                }
             }
 
             if (!hasToken) {
@@ -135,6 +145,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setViewAsCompanyId(null);
     }, []);
 
+    const companyStatus = user?.companyUsers?.[0]?.company?.status ?? null;
+
     return (
         <AuthContext.Provider
             value={{
@@ -142,6 +154,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 token,
                 isLoading,
                 isAuthenticated: !!user,
+                companyStatus,
                 viewAs,
                 login,
                 register,

@@ -3,14 +3,32 @@ jest.mock('bcrypt', () => ({
   compare: jest.fn(),
 }));
 
+// Partial mock: only override what we test, keep native crypto intact for AWS SDK
+const actualCrypto = jest.requireActual('crypto');
+jest.mock('crypto', () => ({
+  ...actualCrypto,
+  randomBytes: jest.fn().mockReturnValue({
+    toString: jest.fn().mockReturnValue('mock-raw-token-hex-value-32bytes'),
+  }),
+  createHash: jest.fn().mockReturnValue({
+    update: jest.fn().mockReturnThis(),
+    digest: jest.fn().mockReturnValue('mock-hashed-token'),
+  }),
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
+import { IntegrationService } from '../integrations/services/integration.service';
 import { STORAGE_PROVIDER } from '../upload/storage.provider';
 
 // ---------------------------------------------------------------------------
@@ -38,6 +56,11 @@ const mockPrisma = {
   brandProfile: {
     create: jest.fn(),
   },
+  passwordReset: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    updateMany: jest.fn(),
+  },
   $transaction: jest.fn(),
 };
 
@@ -48,6 +71,12 @@ const mockJwtService = {
 
 const mockConfigService = {
   get: jest.fn(),
+  getOrThrow: jest.fn(),
+};
+
+const mockIntegrationService = {
+  sendEmail: jest.fn(),
+  validateCNPJ: jest.fn(),
 };
 
 const mockCacheService = {
@@ -65,13 +94,17 @@ const mockStorage = {
 // ---------------------------------------------------------------------------
 
 function setupConfigDefaults() {
-  mockConfigService.get.mockImplementation((key: string) => {
-    const config: Record<string, string> = {
-      'jwt.refreshSecret': 'test-refresh-secret',
-      'jwt.secret': 'test-secret',
-      'jwt.refreshExpiresIn': '7d',
-    };
-    return config[key];
+  const config: Record<string, string> = {
+    'jwt.refreshSecret': 'test-refresh-secret',
+    'jwt.secret': 'test-secret',
+    'jwt.refreshExpiresIn': '7d',
+    frontendUrl: 'http://localhost:5173',
+  };
+  mockConfigService.get.mockImplementation((key: string) => config[key]);
+  mockConfigService.getOrThrow.mockImplementation((key: string) => {
+    const value = config[key];
+    if (!value) throw new Error(`Missing config: ${key}`);
+    return value;
   });
 }
 
@@ -132,6 +165,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: CacheService, useValue: mockCacheService },
+        { provide: IntegrationService, useValue: mockIntegrationService },
         { provide: STORAGE_PROVIDER, useValue: mockStorage },
       ],
     }).compile();
@@ -248,7 +282,7 @@ describe('AuthService', () => {
         ConflictException,
       );
       await expect(service.register(baseSupplierDto)).rejects.toThrow(
-        'Email already registered',
+        'Este e-mail já está cadastrado',
       );
     });
 
@@ -324,6 +358,7 @@ describe('AuthService', () => {
       isActive: true,
       companyUsers: [
         {
+          isActive: true,
           company: {
             id: 'company-1',
             tradeName: 'Test Company',
@@ -373,7 +408,7 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
       await expect(service.login(loginDto)).rejects.toThrow(
-        'Invalid credentials',
+        'E-mail ou senha incorretos',
       );
     });
 
@@ -385,7 +420,7 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
       await expect(service.login(loginDto)).rejects.toThrow(
-        'Invalid credentials',
+        'E-mail ou senha incorretos',
       );
     });
 
@@ -398,7 +433,7 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
       await expect(service.login(loginDto)).rejects.toThrow(
-        'Account is inactive',
+        'Conta inativa',
       );
     });
 
@@ -537,7 +572,7 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
       await expect(service.refreshTokens('bad-token')).rejects.toThrow(
-        'Invalid refresh token',
+        'Sessão inválida. Faça login novamente.',
       );
     });
 
@@ -549,7 +584,7 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
       await expect(service.refreshTokens(oldRefreshToken)).rejects.toThrow(
-        'Token has been revoked',
+        'Sessão expirada. Faça login novamente.',
       );
     });
 
@@ -563,7 +598,7 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
       await expect(service.refreshTokens(oldRefreshToken)).rejects.toThrow(
-        'User not found or inactive',
+        'Usuário não encontrado ou inativo',
       );
     });
 
@@ -574,7 +609,7 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
       await expect(service.refreshTokens(oldRefreshToken)).rejects.toThrow(
-        'User not found or inactive',
+        'Usuário não encontrado ou inativo',
       );
     });
 
@@ -651,6 +686,7 @@ describe('AuthService', () => {
       createdAt: new Date('2025-01-01'),
       companyUsers: [
         {
+          isActive: true,
           company: {
             id: 'company-1',
             tradeName: 'Test Company',
@@ -695,7 +731,7 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
       await expect(service.getProfile('nonexistent')).rejects.toThrow(
-        'User not found',
+        'Usuário não encontrado',
       );
     });
   });
@@ -714,6 +750,7 @@ describe('AuthService', () => {
       createdAt: new Date('2025-01-01'),
       companyUsers: [
         {
+          isActive: true,
           company: {
             id: 'company-1',
             tradeName: 'Test Company',
@@ -839,8 +876,14 @@ describe('AuthService', () => {
           'jwt.refreshSecret': undefined,
           'jwt.secret': 'fallback-secret',
           'jwt.refreshExpiresIn': '7d',
+          frontendUrl: 'http://localhost:5173',
         };
         return config[key];
+      });
+      mockConfigService.getOrThrow.mockImplementation((key: string) => {
+        if (key === 'jwt.refreshSecret') return 'fallback-secret-refresh';
+        if (key === 'frontendUrl') return 'http://localhost:5173';
+        throw new Error(`Missing config: ${key}`);
       });
 
       const module: TestingModule = await Test.createTestingModule({
@@ -850,6 +893,7 @@ describe('AuthService', () => {
           { provide: JwtService, useValue: mockJwtService },
           { provide: ConfigService, useValue: mockConfigService },
           { provide: CacheService, useValue: mockCacheService },
+          { provide: IntegrationService, useValue: mockIntegrationService },
           { provide: STORAGE_PROVIDER, useValue: mockStorage },
         ],
       }).compile();
@@ -910,6 +954,247 @@ describe('AuthService', () => {
           expiresIn: '7d',
         },
       );
+    });
+  });
+
+  // =========================================================================
+  // forgotPassword()
+  // =========================================================================
+
+  describe('forgotPassword()', () => {
+    const forgotDto = { email: 'user@example.com' };
+
+    const mockUser = {
+      id: 'user-1',
+      name: 'Test User',
+      email: 'user@example.com',
+      isActive: true,
+    };
+
+    it('should return success message when user exists and email is sent', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.passwordReset.create.mockResolvedValue({});
+      mockIntegrationService.sendEmail.mockResolvedValue({ success: true });
+
+      const result = await service.forgotPassword(forgotDto);
+
+      expect(result.message).toContain('e-mail estiver cadastrado');
+      expect(mockPrisma.passwordReset.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          token: 'mock-hashed-token',
+          userId: 'user-1',
+          expiresAt: expect.any(Date),
+        }),
+      });
+      expect(mockIntegrationService.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'user@example.com',
+          subject: expect.stringContaining('Redefinir'),
+        }),
+      );
+    });
+
+    it('should return the same success message when user does NOT exist (prevent email enumeration)', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      const result = await service.forgotPassword(forgotDto);
+
+      expect(result.message).toContain('e-mail estiver cadastrado');
+      // Should NOT create a password reset or send email
+      expect(mockPrisma.passwordReset.create).not.toHaveBeenCalled();
+      expect(mockIntegrationService.sendEmail).not.toHaveBeenCalled();
+    });
+
+    it('should return the same success message when user is inactive', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        isActive: false,
+      });
+
+      const result = await service.forgotPassword(forgotDto);
+
+      expect(result.message).toContain('e-mail estiver cadastrado');
+      expect(mockPrisma.passwordReset.create).not.toHaveBeenCalled();
+      expect(mockIntegrationService.sendEmail).not.toHaveBeenCalled();
+    });
+
+    it('should still return success when email sending fails (no user-facing error)', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.passwordReset.create.mockResolvedValue({});
+      mockIntegrationService.sendEmail.mockResolvedValue({
+        success: false,
+        error: 'SMTP connection failed',
+      });
+
+      const result = await service.forgotPassword(forgotDto);
+
+      expect(result.message).toContain('e-mail estiver cadastrado');
+    });
+
+    it('should normalize email to lowercase', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      await service.forgotPassword({ email: 'USER@EXAMPLE.COM' });
+
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'user@example.com' },
+        select: expect.any(Object),
+      });
+    });
+
+    it('should set token expiry to 24 hours from now', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.passwordReset.create.mockResolvedValue({});
+      mockIntegrationService.sendEmail.mockResolvedValue({ success: true });
+
+      const before = new Date();
+      await service.forgotPassword(forgotDto);
+
+      const createCall = mockPrisma.passwordReset.create.mock.calls[0][0];
+      const expiresAt = createCall.data.expiresAt as Date;
+
+      // Should expire approximately 24 hours from now
+      const diffHours =
+        (expiresAt.getTime() - before.getTime()) / (1000 * 60 * 60);
+      expect(diffHours).toBeGreaterThanOrEqual(23.9);
+      expect(diffHours).toBeLessThanOrEqual(24.1);
+    });
+  });
+
+  // =========================================================================
+  // resetPassword()
+  // =========================================================================
+
+  describe('resetPassword()', () => {
+    const resetDto = {
+      token: 'raw-token-from-url',
+      password: 'NewPassword1',
+    };
+
+    const futureDate = new Date();
+    futureDate.setHours(futureDate.getHours() + 12);
+
+    const mockPasswordReset = {
+      id: 'reset-1',
+      token: 'mock-hashed-token',
+      userId: 'user-1',
+      expiresAt: futureDate,
+      usedAt: null,
+      user: { id: 'user-1', isActive: true },
+    };
+
+    beforeEach(() => {
+      mockPrisma.$transaction.mockImplementation(async (callback) =>
+        callback(mockPrisma),
+      );
+    });
+
+    it('should reset password successfully with a valid token', async () => {
+      mockPrisma.passwordReset.findUnique.mockResolvedValue(mockPasswordReset);
+      mockPrisma.user.update.mockResolvedValue({});
+      mockPrisma.passwordReset.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await service.resetPassword(resetDto);
+
+      expect(result.message).toContain('Senha redefinida com sucesso');
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'user-1' },
+          data: expect.objectContaining({
+            passwordHash: '$2b$12$hashedpassword',
+            passwordChangedAt: expect.any(Date),
+          }),
+        }),
+      );
+    });
+
+    it('should invalidate ALL tokens for the user after reset', async () => {
+      mockPrisma.passwordReset.findUnique.mockResolvedValue(mockPasswordReset);
+      mockPrisma.user.update.mockResolvedValue({});
+      mockPrisma.passwordReset.updateMany.mockResolvedValue({ count: 2 });
+
+      await service.resetPassword(resetDto);
+
+      expect(mockPrisma.passwordReset.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', usedAt: null },
+        data: { usedAt: expect.any(Date) },
+      });
+    });
+
+    it('should throw BadRequestException when token is not found', async () => {
+      mockPrisma.passwordReset.findUnique.mockResolvedValue(null);
+
+      await expect(service.resetPassword(resetDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.resetPassword(resetDto)).rejects.toThrow(
+        'Token inválido ou expirado',
+      );
+    });
+
+    it('should throw BadRequestException when token was already used', async () => {
+      mockPrisma.passwordReset.findUnique.mockResolvedValue({
+        ...mockPasswordReset,
+        usedAt: new Date('2026-01-01'),
+      });
+
+      await expect(service.resetPassword(resetDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.resetPassword(resetDto)).rejects.toThrow(
+        'Este link já foi utilizado',
+      );
+    });
+
+    it('should throw BadRequestException when token has expired (24h past)', async () => {
+      const pastDate = new Date();
+      pastDate.setHours(pastDate.getHours() - 1); // 1 hour ago
+
+      mockPrisma.passwordReset.findUnique.mockResolvedValue({
+        ...mockPasswordReset,
+        expiresAt: pastDate,
+      });
+
+      await expect(service.resetPassword(resetDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.resetPassword(resetDto)).rejects.toThrow(
+        'Este link expirou',
+      );
+    });
+
+    it('should throw BadRequestException when user account is inactive', async () => {
+      mockPrisma.passwordReset.findUnique.mockResolvedValue({
+        ...mockPasswordReset,
+        user: { id: 'user-1', isActive: false },
+      });
+
+      await expect(service.resetPassword(resetDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.resetPassword(resetDto)).rejects.toThrow(
+        'Conta inativa',
+      );
+    });
+
+    it('should hash the new password with bcrypt using 12 rounds', async () => {
+      mockPrisma.passwordReset.findUnique.mockResolvedValue(mockPasswordReset);
+      mockPrisma.user.update.mockResolvedValue({});
+      mockPrisma.passwordReset.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.resetPassword(resetDto);
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('NewPassword1', 12);
+    });
+
+    it('should invalidate JWT user cache after password reset', async () => {
+      mockPrisma.passwordReset.findUnique.mockResolvedValue(mockPasswordReset);
+      mockPrisma.user.update.mockResolvedValue({});
+      mockPrisma.passwordReset.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.resetPassword(resetDto);
+
+      expect(mockCacheService.del).toHaveBeenCalledWith('jwt:user:user-1');
     });
   });
 });
