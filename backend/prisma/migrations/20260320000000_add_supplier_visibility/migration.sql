@@ -30,4 +30,4 @@ SET
   "invitedByCompanyId" = sc."brandId"
 FROM "supplier_credentials" sc
 WHERE sc."supplierId" = sp."companyId"
-  AND sc."status" IN ('ACTIVE', 'ONBOARDING_STARTED', 'ONBOARDING_COMPLETE');
+  AND sc."status" IN ('ACTIVE', 'ONBOARDING_STARTED', 'ONBOARDING_IN_PROGRESS', 'CONTRACT_PENDING', 'CONTRACT_SIGNED');
