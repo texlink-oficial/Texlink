@@ -15,6 +15,7 @@ import {
     getGreeting,
 } from '../../components/dashboard';
 import type { OrderTableItem, QuickActionItem } from '../../components/dashboard';
+import { logger } from '../../utils/logger';
 import {
     Package, DollarSign, Factory, Building2, Users,
     Clock, CheckCircle, AlertCircle, ChevronRight,
@@ -84,7 +85,7 @@ const AdminDashboard: React.FC = () => {
             setDashboard(data);
             setRevenueHistory(revenue);
         } catch (error) {
-            console.error('[AdminDashboard] Error loading dashboard:', error);
+            logger.error('[AdminDashboard] Error loading dashboard:', error);
         } finally {
             setIsLoading(false);
         }

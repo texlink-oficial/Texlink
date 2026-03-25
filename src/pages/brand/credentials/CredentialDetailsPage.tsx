@@ -25,6 +25,7 @@ import { ComplianceAnalysisCard } from '../../../components/credentials/Complian
 import { ApproveRejectModal } from '../../../components/credentials/ApproveRejectModal';
 import { SendInviteModal } from '../../../components/credentials/SendInviteModal';
 import { StatusBadge } from '../../../components/shared/StatusBadge';
+import { logger } from '../../../utils/logger';
 
 const CredentialDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -75,7 +76,7 @@ const CredentialDetailsPage: React.FC = () => {
             const data = await credentialsService.getById(id!);
             setCredential(data);
         } catch (error) {
-            console.error('Error loading credential:', error);
+            logger.error('Error loading credential:', error);
         } finally {
             if (showLoader) setIsLoading(false);
         }
@@ -86,7 +87,7 @@ const CredentialDetailsPage: React.FC = () => {
             const history = await credentialsService.getHistory(id!);
             setStatusHistory(history);
         } catch (error) {
-            console.error('Error loading history:', error);
+            logger.error('Error loading history:', error);
         }
     };
 
@@ -97,7 +98,7 @@ const CredentialDetailsPage: React.FC = () => {
             await loadCredential();
             await loadHistory();
         } catch (error) {
-            console.error('Error validating credential:', error);
+            logger.error('Error validating credential:', error);
         } finally {
             setIsValidating(false);
         }
@@ -108,7 +109,7 @@ const CredentialDetailsPage: React.FC = () => {
             await credentialsService.delete(id!);
             navigate('/brand/credenciamento');
         } catch (error) {
-            console.error('Error deleting credential:', error);
+            logger.error('Error deleting credential:', error);
         }
     };
 
@@ -124,7 +125,7 @@ const CredentialDetailsPage: React.FC = () => {
             await loadCredential();
             await loadHistory();
         } catch (error) {
-            console.error('Error sending invite:', error);
+            logger.error('Error sending invite:', error);
             throw error;
         }
     };
@@ -137,7 +138,7 @@ const CredentialDetailsPage: React.FC = () => {
             await loadCredential();
             await loadHistory();
         } catch (error) {
-            console.error('Error approving credential:', error);
+            logger.error('Error approving credential:', error);
             throw error;
         }
     };
@@ -150,7 +151,7 @@ const CredentialDetailsPage: React.FC = () => {
             await loadCredential();
             await loadHistory();
         } catch (error) {
-            console.error('Error rejecting credential:', error);
+            logger.error('Error rejecting credential:', error);
             throw error;
         }
     };
@@ -162,7 +163,7 @@ const CredentialDetailsPage: React.FC = () => {
             await loadCredential();
             await loadHistory();
         } catch (error) {
-            console.error('Error resending invite:', error);
+            logger.error('Error resending invite:', error);
         } finally {
             setIsSendingInvite(false);
         }

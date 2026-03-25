@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { AppNotification, WebSocketNotificationPayload } from '../types/notification.types';
+import { logger } from '../utils/logger';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
 
@@ -65,11 +66,11 @@ export function useNotificationSocket(options: UseNotificationSocketOptions): Us
         });
 
         socket.on('connect_error', (error) => {
-            console.error('[NotificationSocket] Connection error:', error.message);
+            logger.error('[NotificationSocket] Connection error:', error.message);
             reconnectAttempts.current++;
 
             if (reconnectAttempts.current >= maxReconnectAttempts) {
-                console.error('[NotificationSocket] Max reconnection attempts reached');
+                logger.error('[NotificationSocket] Max reconnection attempts reached');
                 socket.disconnect();
             }
         });
@@ -102,7 +103,7 @@ export function useNotificationSocket(options: UseNotificationSocketOptions): Us
 
         // Error handling
         socket.on('error', (error: { message: string; code?: string }) => {
-            console.error('[NotificationSocket] Error:', error);
+            logger.error('[NotificationSocket] Error:', error);
         });
 
         return () => {

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/auth.service';
 import { useMessageQueue } from './useMessageQueue';
 import { useNetworkStatus } from './useNetworkStatus';
+import { logger } from '../utils/logger';
 
 export interface ChatMessage {
     id: string;
@@ -122,7 +123,7 @@ export function useChatSocket(
             setMessages(prev => prev.filter(m => m.id !== msg.id));
         },
         onSendError: (error) => {
-            console.error('Failed to send queued message:', error);
+            logger.error('Failed to send queued message:', error);
             options.onError?.(error);
         },
     });
@@ -159,7 +160,7 @@ export function useChatSocket(
 
         const token = getToken();
         if (!token) {
-            console.error('No auth token available');
+            logger.error('No auth token available');
             setIsLoading(false);
             return;
         }
@@ -194,7 +195,7 @@ export function useChatSocket(
                 if (response.success) {
                     setUnreadCount(response.unreadCount || 0);
                 } else {
-                    console.error('Failed to join order:', response.error);
+                    logger.error('Failed to join order:', response.error);
                     onErrorRef.current?.(response.error);
                 }
             });
@@ -220,7 +221,7 @@ export function useChatSocket(
         });
 
         socket.on('connect_error', (error) => {
-            console.error('Chat socket connection error:', error.message);
+            logger.error('Chat socket connection error:', error.message);
             setIsLoading(false);
             onErrorRef.current?.(error.message);
         });
@@ -232,12 +233,12 @@ export function useChatSocket(
 
         // Handle failed reconnection
         socket.io.on('reconnect_failed', () => {
-            console.error('[Chat] All reconnection attempts failed');
+            logger.error('[Chat] All reconnection attempts failed');
             onErrorRef.current?.('Não foi possível reconectar ao servidor. Por favor, recarregue a página.');
         });
 
         socket.on('error', (error: { message: string; code?: string; retryAfter?: string }) => {
-            console.error('Chat socket error:', error.message);
+            logger.error('Chat socket error:', error.message);
             setIsLoading(false);
 
             // Handle rate limit errors

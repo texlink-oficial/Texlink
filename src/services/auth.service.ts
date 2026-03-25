@@ -56,12 +56,11 @@ export interface User {
     }[];
 }
 
-// SEC-F001: Access token in memory, refresh token in sessionStorage
-// Access token is short-lived (1h) and stays in memory for XSS protection.
-// Refresh token is persisted in sessionStorage so sessions survive page refresh.
-const RT_KEY = '__rt';
+// SEC-F001 + SEC-REM-004: Both tokens live in memory only.
+// Access token is short-lived (1h). Refresh token is also memory-only
+// so it cannot be exfiltrated via XSS. Trade-off: page refresh logs users out.
 let _accessToken: string | null = null;
-let _refreshToken: string | null = sessionStorage.getItem(RT_KEY);
+let _refreshToken: string | null = null;
 
 export const authService = {
     async login(data: LoginDto): Promise<AuthResponse> {
@@ -69,20 +68,17 @@ export const authService = {
         const { accessToken, refreshToken } = response.data;
         _accessToken = accessToken;
         _refreshToken = refreshToken ?? null;
-        if (_refreshToken) sessionStorage.setItem(RT_KEY, _refreshToken);
         return response.data;
     },
 
     async register(data: RegisterDto): Promise<AuthResponse> {
         _accessToken = null;
         _refreshToken = null;
-        sessionStorage.removeItem(RT_KEY);
 
         const response = await api.post<AuthResponse>('/auth/register', data);
         const { accessToken, refreshToken } = response.data;
         _accessToken = accessToken;
         _refreshToken = refreshToken ?? null;
-        if (_refreshToken) sessionStorage.setItem(RT_KEY, _refreshToken);
         return response.data;
     },
 
@@ -100,12 +96,10 @@ export const authService = {
             );
             _accessToken = response.data.accessToken;
             _refreshToken = response.data.refreshToken;
-            if (_refreshToken) sessionStorage.setItem(RT_KEY, _refreshToken);
             return response.data;
         } catch {
             _accessToken = null;
             _refreshToken = null;
-            sessionStorage.removeItem(RT_KEY);
             return null;
         }
     },
@@ -116,7 +110,6 @@ export const authService = {
         }
         _accessToken = null;
         _refreshToken = null;
-        sessionStorage.removeItem(RT_KEY);
         // Clear IndexedDB to prevent data leaking between accounts
         if (typeof indexedDB !== 'undefined') {
             indexedDB.deleteDatabase('ChatDB');
@@ -140,14 +133,11 @@ export const authService = {
     setTokens(accessToken: string, refreshToken: string | null) {
         _accessToken = accessToken;
         _refreshToken = refreshToken;
-        if (refreshToken) sessionStorage.setItem(RT_KEY, refreshToken);
-        else sessionStorage.removeItem(RT_KEY);
     },
 
     clearTokens() {
         _accessToken = null;
         _refreshToken = null;
-        sessionStorage.removeItem(RT_KEY);
     },
 
     isAuthenticated(): boolean {
