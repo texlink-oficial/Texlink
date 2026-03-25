@@ -7,7 +7,7 @@ echo "DATABASE_URL is set: ${DATABASE_URL:+yes}"
 
 echo "Running Prisma migrations..."
 if [ "$NODE_ENV" = "production" ] || [ "$NODE_ENV" = "staging" ]; then
-  # Try migrate deploy; if it fails with P3005 (non-empty schema), baseline first
+  # Try migrate deploy; handle known errors
   if ! npx prisma migrate deploy --schema=./prisma/schema.prisma >/tmp/migrate_err.log 2>&1; then
     if grep -q "P3005" /tmp/migrate_err.log; then
       echo "Database needs baselining (P3005). Marking existing migrations as applied..."
@@ -19,6 +19,20 @@ if [ "$NODE_ENV" = "production" ] || [ "$NODE_ENV" = "staging" ]; then
         fi
       done
       echo "Baseline complete."
+    elif grep -q "P3009" /tmp/migrate_err.log; then
+      echo "Found failed migrations (P3009). Resolving and retrying..."
+      # Extract the failed migration name and mark it as rolled back, then re-apply
+      failed_migration=$(grep -o '[0-9]\{14\}_[a-z_]*' /tmp/migrate_err.log | head -1)
+      if [ -n "$failed_migration" ]; then
+        echo "  Resolving failed migration: $failed_migration"
+        npx prisma migrate resolve --rolled-back "$failed_migration" --schema=./prisma/schema.prisma
+        echo "  Retrying migrate deploy..."
+        npx prisma migrate deploy --schema=./prisma/schema.prisma
+      else
+        echo "Could not identify failed migration name."
+        cat /tmp/migrate_err.log
+        exit 1
+      fi
     else
       echo "Migration failed with unexpected error:"
       cat /tmp/migrate_err.log

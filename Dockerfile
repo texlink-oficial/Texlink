@@ -53,7 +53,8 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Set proper ownership and switch to non-root user
 RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx && \
-    touch /var/run/nginx.pid && chown nginx:nginx /var/run/nginx.pid
+    touch /var/run/nginx.pid && chown nginx:nginx /var/run/nginx.pid && \
+    chown nginx:nginx /etc/nginx/nginx.conf
 
 # Create startup script that substitutes PORT/BACKEND_URL and starts nginx
 RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
