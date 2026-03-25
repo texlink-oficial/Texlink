@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
 
 async function main() {
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    const adapter = new PrismaPg(pool);
+    const adapter = new PrismaPg(pool as unknown as ConstructorParameters<typeof PrismaPg>[0]);
     const prisma = new PrismaClient({ adapter });
 
     console.log('🌱 Creating demo users and orders for chat testing...\n');

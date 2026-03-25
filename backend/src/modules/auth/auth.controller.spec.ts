@@ -7,6 +7,7 @@ import {
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { IntegrationService } from '../integrations/services/integration.service';
+import { AuditService } from '../audit/audit.service';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -29,6 +30,15 @@ const mockIntegrationService = {
   sendEmail: jest.fn(),
 };
 
+const mockAuditService = {
+  log: jest.fn(),
+};
+
+const mockReq = {
+  ip: '127.0.0.1',
+  headers: { 'user-agent': 'test-agent' },
+} as unknown as import('express').Request;
+
 // ---------------------------------------------------------------------------
 // Test Suite
 // ---------------------------------------------------------------------------
@@ -44,6 +54,7 @@ describe('AuthController', () => {
       providers: [
         { provide: AuthService, useValue: mockAuthService },
         { provide: IntegrationService, useValue: mockIntegrationService },
+        { provide: AuditService, useValue: mockAuditService },
       ],
     }).compile();
 
@@ -76,7 +87,7 @@ describe('AuthController', () => {
 
       mockAuthService.login.mockResolvedValue(loginResponse);
 
-      const result = await controller.login(loginDto);
+      const result = await controller.login(loginDto, mockReq);
 
       expect(result).toEqual(loginResponse);
       expect(mockAuthService.login).toHaveBeenCalledWith(loginDto);
@@ -87,7 +98,7 @@ describe('AuthController', () => {
         new UnauthorizedException('E-mail ou senha incorretos'),
       );
 
-      await expect(controller.login(loginDto)).rejects.toThrow(
+      await expect(controller.login(loginDto, mockReq)).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -99,7 +110,7 @@ describe('AuthController', () => {
         refreshToken: 'refresh',
       });
 
-      await controller.login(loginDto);
+      await controller.login(loginDto, mockReq);
 
       expect(mockAuthService.login).toHaveBeenCalledTimes(1);
     });
@@ -181,7 +192,7 @@ describe('AuthController', () => {
 
       mockAuthService.forgotPassword.mockResolvedValue(response);
 
-      const result = await controller.forgotPassword(forgotDto);
+      const result = await controller.forgotPassword(forgotDto, mockReq);
 
       expect(result.message).toContain('e-mail estiver cadastrado');
       expect(mockAuthService.forgotPassword).toHaveBeenCalledWith(forgotDto);
@@ -190,7 +201,7 @@ describe('AuthController', () => {
     it('should call authService.forgotPassword with the DTO', async () => {
       mockAuthService.forgotPassword.mockResolvedValue({ message: 'ok' });
 
-      await controller.forgotPassword(forgotDto);
+      await controller.forgotPassword(forgotDto, mockReq);
 
       expect(mockAuthService.forgotPassword).toHaveBeenCalledTimes(1);
       expect(mockAuthService.forgotPassword).toHaveBeenCalledWith(forgotDto);
@@ -212,7 +223,7 @@ describe('AuthController', () => {
 
       mockAuthService.resetPassword.mockResolvedValue(response);
 
-      const result = await controller.resetPassword(resetDto);
+      const result = await controller.resetPassword(resetDto, mockReq);
 
       expect(result.message).toContain('Senha redefinida');
       expect(mockAuthService.resetPassword).toHaveBeenCalledWith(resetDto);
@@ -223,7 +234,7 @@ describe('AuthController', () => {
         new BadRequestException('Token invalido ou expirado'),
       );
 
-      await expect(controller.resetPassword(resetDto)).rejects.toThrow(
+      await expect(controller.resetPassword(resetDto, mockReq)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -233,7 +244,7 @@ describe('AuthController', () => {
         new BadRequestException('Este link expirou'),
       );
 
-      await expect(controller.resetPassword(resetDto)).rejects.toThrow(
+      await expect(controller.resetPassword(resetDto, mockReq)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -243,7 +254,7 @@ describe('AuthController', () => {
         new BadRequestException('Este link ja foi utilizado'),
       );
 
-      await expect(controller.resetPassword(resetDto)).rejects.toThrow(
+      await expect(controller.resetPassword(resetDto, mockReq)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -374,7 +385,7 @@ describe('AuthController', () => {
     it('should return success message on logout', async () => {
       mockAuthService.logout.mockResolvedValue(undefined);
 
-      const result = await controller.logout('some-refresh-token');
+      const result = await controller.logout('some-refresh-token', 'user-1', mockReq);
 
       expect(result.message).toBe('Logged out successfully');
       expect(mockAuthService.logout).toHaveBeenCalledWith(
@@ -383,7 +394,7 @@ describe('AuthController', () => {
     });
 
     it('should not call authService.logout when no refreshToken is provided', async () => {
-      const result = await controller.logout(undefined as unknown as string);
+      const result = await controller.logout(undefined as unknown as string, 'user-1', mockReq);
 
       expect(result.message).toBe('Logged out successfully');
       expect(mockAuthService.logout).not.toHaveBeenCalled();
