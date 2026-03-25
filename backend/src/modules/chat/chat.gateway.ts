@@ -13,6 +13,7 @@ import { ChatService } from './chat.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RateLimiterService } from '../../common/services/rate-limiter.service';
+import { getCorsOrigins } from '../../common/config/cors.config';
 
 interface JwtPayload {
   sub: string;
@@ -42,10 +43,7 @@ interface TypingPayload {
 @WebSocketGateway({
   namespace: 'chat',
   cors: {
-    origin: process.env.CORS_ORIGINS?.split(',') || [
-      'http://localhost:5173',
-      'http://localhost:3001',
-    ],
+    origin: getCorsOrigins(),
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {

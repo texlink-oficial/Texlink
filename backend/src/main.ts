@@ -8,6 +8,7 @@ import * as bodyParser from 'body-parser';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { getCorsOrigins } from './common/config/cors.config';
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -49,9 +50,7 @@ async function bootstrap() {
   );
 
   // Enable CORS with configurable origins
-  const corsOrigins = configService.get<string[]>('cors.origins') || [
-    'http://localhost:5173',
-  ];
+  const corsOrigins = getCorsOrigins();
   if (process.env.NODE_ENV === 'production') {
     logger.log(`CORS origins configured: ${corsOrigins.length} origin(s)`);
   } else {

@@ -12,6 +12,7 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RateLimiterService } from '../../common/services/rate-limiter.service';
+import { getCorsOrigins } from '../../common/config/cors.config';
 
 interface AuthenticatedSocket extends Socket {
   userId: string;
@@ -28,10 +29,7 @@ interface MarkReadPayload {
 @WebSocketGateway({
   namespace: 'notifications',
   cors: {
-    origin: process.env.CORS_ORIGINS?.split(',') || [
-      'http://localhost:5173',
-      'http://localhost:3001',
-    ],
+    origin: getCorsOrigins(),
   },
 })
 export class NotificationsGateway
