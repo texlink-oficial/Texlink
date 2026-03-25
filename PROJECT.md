@@ -62,12 +62,12 @@
 
 ## Squad Status
 
-| Campo             | Valor                                    |
-|-------------------|------------------------------------------|
-| **Fase Atual**    | Onda 1 completa (Sprints 1-3)                  |
+| Campo             | Valor                                          |
+|-------------------|------------------------------------------------|
+| **Fase Atual**    | Onda 1 completa (Sprints 1-4) + deploy fixes   |
 | **Agente Ativo**  | —                                              |
 | **Última Atualiz.**| 2026-03-25                                    |
-| **Progresso**     | 15/18 security issues resolvidos (3 P1 remain) |
+| **Progresso**     | 18/18 security issues resolvidos + staging live |
 
 ## Pipeline (AI Dev Squad)
 
@@ -77,13 +77,13 @@
 | 01   | product-strategist  | ⏭️     | Pulado (brownfield)                 | —          |
 | 02   | ux-designer         | ✅     | Legado: 14 files, design completo   | 2026-02-03 |
 | 03   | architect           | 🟡     | Legado: parcial (falta API spec)    | 2026-02-18 |
-| 04   | frontend-dev        | ✅     | Sprint 1-3: tokens, logger, deps   | 2026-03-25 |
-| 05   | backend-dev         | ✅     | Sprint 1-3: 12 fixes + CORS unify  | 2026-03-25 |
+| 04   | frontend-dev        | ✅     | Sprint 1-4: tokens, logger, deps, CSP | 2026-03-25 |
+| 05   | backend-dev         | ✅     | Sprint 1-4: all fixes + LGPD + audit  | 2026-03-25 |
 | 06   | ai-engineer         | 🟡     | Legado: Gemini Vision integrado     | —          |
 | 07   | data-engineer       | ⏭️     | Pulado (Prisma schema estável)      | —          |
 | 08   | qa-engineer         | 🟡     | Legado: 410 testes, E2E stubs       | 2026-03-14 |
-| 09   | security-analyst    | ✅     | Remediation plan produzido (18 open) | 2026-03-25 |
-| 10   | devops              | 🟡     | Legado: playbook pronto, sem CI/CD  | 2026-02-20 |
+| 09   | security-analyst    | ✅     | 18/18 remediados, 0 P0, 0 P1        | 2026-03-25 |
+| 10   | devops              | 🟡     | Staging deploy fixes + sem CI/CD    | 2026-03-25 |
 | 11   | code-reviewer       | 🟡     | Legado: 5 blockers abertos          | 2026-02-23 |
 | 12   | tech-writer         | ⏳     | Onda 3                              | —          |
 | 13   | project-reporter    | 🟡     | Legado: reports até W12             | 2026-03-20 |
@@ -110,13 +110,13 @@
 
 Detalhes completos em `artifacts/00-management/execution-plan.md`.
 
-### Onda 1 — Estabilização (URGENTE)
-| Agente | Tarefa | Prioridade |
-|--------|--------|------------|
-| security-analyst | Remediar 13 P0 (IDOR, tokens, sessions, Redis) | P0 |
-| backend-dev | Implementar fixes de segurança | P0 |
-| frontend-dev | Resolver 5 code review blockers (sprints 5-6) | P0 |
-| qa-engineer | Testes IDOR para entidades críticas | P1 |
+### Onda 1 — Estabilização (CONCLUÍDA 2026-03-25)
+| Agente | Tarefa | Status |
+|--------|--------|--------|
+| security-analyst | Remediation plan (18 issues mapeados) | ✅ |
+| backend-dev | Sprint 1-4: 14 fixes + LGPD + audit trail | ✅ |
+| frontend-dev | Sprint 1-3: token memory, logger, deps | ✅ |
+| devops | Staging deploy: Prisma, CSP, CORS, Docker | ✅ |
 
 ### Onda 2 — Qualidade
 | Agente | Tarefa | Prioridade |
@@ -132,8 +132,8 @@ Detalhes completos em `artifacts/00-management/execution-plan.md`.
 | frontend-dev | Design improvements (22 áreas mapeadas) | P2 |
 | tech-writer | Documentação técnica | P3 |
 
-### Gate G4 (entre Onda 1 → Onda 2)
-> Humano aprova: 0 P0 security issues, 0 code review blockers
+### Gate G4 (Onda 1 → Onda 2): APROVADO
+> 0 P0 security issues, 0 P1 security issues. Staging deployed.
 
 ## Histórico de Trabalho
 
@@ -165,33 +165,60 @@ Detalhes completos em `artifacts/00-management/execution-plan.md`.
 | 2026-03-25 | Pular fase 07-data                               | Prisma schema estável              | squad-manager |
 | 2026-03-25 | Priorizar segurança (Onda 1) sobre features      | Audit 45/100, 13 P0 issues        | squad-manager |
 | 2026-03-25 | Execução por Ondas (não sequencial)              | Brownfield precisa estabilizar     | squad-manager |
+| 2026-03-25 | Refresh token memory-only (sem sessionStorage)   | XSS protection; page refresh = re-login | frontend-dev |
+| 2026-03-25 | Prisma @types/pg cast em PrismaPg constructors   | Version mismatch adapter-pg 8.11 vs root 8.15 | backend-dev |
+| 2026-03-25 | CSP permite Google Fonts, Tailwind CDN, Railway  | Recursos externos necessários para frontend | devops |
+| 2026-03-25 | Failed migration → mark --applied (não --rolled-back) | Coluna já existe no DB via db push anterior | devops |
 | 2026-01-13 | Multi-tenant com `companyId` isolation           | Segurança de dados B2B             | architect     |
 | 2026-01-13 | AWS S3 com presigned URLs                        | Armazenamento seguro               | architect     |
 | 2026-01-13 | NestJS + Prisma + PostgreSQL                     | Stack backend padronizada          | architect     |
 | 2026-01-13 | Redis para cache + Socket.io adapter             | Realtime multi-instance            | architect     |
 | 2026-01-13 | Bull queues para jobs async                      | Email, notificações                | backend-dev   |
 
-## Audit Results (2026-02-12)
+## Audit Results
 
+### Original (2026-02-12)
 - **Score:** 45/100 (RED) — Verdict: **STABILIZE**
 - **Issues Found:** 68 total (13 P0, 18 P1, 25 P2, 12 P3)
-- **Critical:** 7 IDOR/access control vulnerabilities, JWT 7d expiry, zero frontend tests
 - **Reports:** See `artifacts/00-audit/` for full details
+
+### Post-Remediation (2026-03-25)
+- **P0 resolvidos:** 13/13 (100%)
+- **P1 resolvidos:** 18/18 (100%)
+- **npm vulnerabilities (frontend):** 8 → 0
+- **Novos módulos:** LGPD data-deletion, security audit trail
+- **Remediation plan:** `artifacts/09-security/remediation-plan.md`
+
+## Staging Environment
+
+| Serviço | URL |
+|---------|-----|
+| Frontend | `https://texlink-frontend-staging.up.railway.app` |
+| Backend | `https://texlink-backend-staging.up.railway.app` |
+| API | `https://texlink-backend-staging.up.railway.app/api` |
+
+### Railway Env Vars (Backend)
+
+| Variable | Descrição |
+|----------|-----------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `NODE_ENV` | `production` |
+| `JWT_SECRET` | Min 32 chars |
+| `JWT_REFRESH_SECRET` | Min 32 chars, diferente do JWT_SECRET |
+| `CORS_ORIGINS` | Frontend URL(s) separados por vírgula |
+| `FRONTEND_URL` | URL do frontend (para emails, redirects) |
+| `REDIS_URL` | Redis connection (opcional — Bull queues disabled se ausente) |
+
+### Railway Env Vars (Frontend)
+
+| Variable | Descrição |
+|----------|-----------|
+| `VITE_API_URL` | Backend API URL (ex: `https://texlink-backend-staging.up.railway.app/api`) |
+| `BACKEND_URL` | Backend base URL (para nginx proxy) |
 
 ## Próximo Passo
 
-**Onda 1 em andamento.** Security-analyst concluiu análise.
-
-### Delegação ativa: backend-dev + frontend-dev (em paralelo)
-
-**backend-dev (05):**
-- Input: `artifacts/09-security/remediation-plan.md`
-- Sprint 1 (dias 1-2): SEC-REM-001, 003, 006, 007, 008, 014, 015, 018
-- Sprint 2 (dias 3-4): SEC-REM-002, 005
-
-**frontend-dev (04):**
-- Input: `artifacts/09-security/remediation-plan.md`
-- SEC-REM-004: Mover refresh token de sessionStorage para memória
-- SEC-REM-011: Remover console.error ungated em produção
-
-**qa-engineer (08):** Preparar test cases do qa_test_plan no handoff.
+**Onda 2 — Qualidade.** Próximos agentes:
+- **qa-engineer (08):** Completar E2E (Playwright + seed users) + Phase 2 testes
+- **devops (10):** GitHub Actions CI/CD com coverage thresholds
+- **code-reviewer (11):** Validar todos os fixes da Onda 1
