@@ -5,12 +5,14 @@ import {
   Patch,
   Param,
   Body,
+  Req,
   UseGuards,
   HttpCode,
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, UpdateProfileDto, ForgotPasswordDto, ResetPasswordDto, ToggleSuperAdminDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -22,6 +24,8 @@ import {
   ThrottleRead,
 } from '../../common/decorators/throttle.decorator';
 import { IntegrationService } from '../integrations/services/integration.service';
+import { AuditService } from '../audit/audit.service';
+import { AuditAction } from '../audit/audit-actions.enum';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -29,6 +33,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly integrationService: IntegrationService,
+    private readonly auditService: AuditService,
   ) {}
 
   @Get('cnpj-lookup/:cnpj')
@@ -61,22 +66,65 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ThrottleAuth() // 5 requests per minute - prevent brute force
-  async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(@Body() dto: LoginDto, @Req() req: Request) {
+    const ipAddress = req.ip;
+    const userAgent = req.headers['user-agent'];
+
+    try {
+      const result = await this.authService.login(dto);
+
+      this.auditService.log({
+        action: AuditAction.LOGIN_SUCCESS,
+        userId: result.user.id,
+        companyId: result.user.companyId,
+        ipAddress,
+        userAgent,
+        metadata: { email: dto.email },
+      });
+
+      return result;
+    } catch (error) {
+      this.auditService.log({
+        action: AuditAction.LOGIN_FAILED,
+        ipAddress,
+        userAgent,
+        metadata: { email: dto.email, reason: error.message },
+      });
+
+      throw error;
+    }
   }
 
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ThrottleAuth() // 5 requests per minute - prevent abuse
-  async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(dto);
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
+    const result = await this.authService.forgotPassword(dto);
+
+    this.auditService.log({
+      action: AuditAction.PASSWORD_RESET_REQUESTED,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      metadata: { email: dto.email },
+    });
+
+    return result;
   }
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ThrottleAuth() // 5 requests per minute - prevent brute force
-  async resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.authService.resetPassword(dto);
+  async resetPassword(@Body() dto: ResetPasswordDto, @Req() req: Request) {
+    const result = await this.authService.resetPassword(dto);
+
+    this.auditService.log({
+      action: AuditAction.PASSWORD_CHANGED,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      metadata: { method: 'reset' },
+    });
+
+    return result;
   }
 
   @Get('me')
@@ -121,10 +169,22 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
-  async logout(@Body('refreshToken') refreshToken: string) {
+  async logout(
+    @Body('refreshToken') refreshToken: string,
+    @CurrentUser('id') userId: string,
+    @Req() req: Request,
+  ) {
     if (refreshToken) {
       await this.authService.logout(refreshToken);
     }
+
+    this.auditService.log({
+      action: AuditAction.LOGOUT,
+      userId,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
     return { message: 'Logged out successfully' };
   }
 }

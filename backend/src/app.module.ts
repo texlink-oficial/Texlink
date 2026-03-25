@@ -44,6 +44,8 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { BrandDocumentsModule } from './modules/brand-documents/brand-documents.module';
 import { CapacityModule } from './modules/capacity/capacity.module';
 import { BrandsModule } from './modules/brands/brands.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { DataDeletionModule } from './modules/data-deletion/data-deletion.module';
 import configuration from './config/configuration';
 import { BullConfigService, QUEUE_NAMES } from './config/bull.config';
 
@@ -143,6 +145,8 @@ if (process.env.REDIS_URL) {
     BrandDocumentsModule,
     CapacityModule,
     BrandsModule,
+    AuditModule,
+    DataDeletionModule,
   ],
   providers: [
     // Global rate limiting guard
