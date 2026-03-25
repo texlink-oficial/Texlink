@@ -7,7 +7,7 @@ describe('Document Validators', () => {
       expect(validateCPF('52998224725')).toBe(true);
       expect(validateCPF('529.982.247-25')).toBe(true); // formatted
       expect(validateCPF('11144477735')).toBe(true);
-      expect(validateCPF('45532945060')).toBe(true);
+      expect(validateCPF('81187859559')).toBe(true);
     });
 
     it('should return false for invalid CPFs (wrong check digits)', () => {
