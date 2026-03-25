@@ -158,6 +158,19 @@ export class AdminController {
     return this.adminService.getCompanyDetails(id);
   }
 
+  @Get('companies/:id/audit-log')
+  async getCompanyAuditLog(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getCompanyAuditLog(
+      id,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
+  }
+
   // ========== Company CRUD ==========
 
   @Post('companies')

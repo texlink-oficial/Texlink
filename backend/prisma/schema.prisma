@@ -411,6 +411,7 @@ enum NotificationType {
   CONTRACT_CANCELLED
   SUPPLIER_STATUS_CHANGED
   SUPPLIER_INTEREST_EXPRESSED
+  COMPANY_NOTE_ALERT
 }
 
 enum NotificationPriority {
@@ -499,6 +500,11 @@ model User {
 
   // LGPD data deletion requests
   deletionRequests DataDeletionRequest[]
+
+  // Company notes & audit
+  authoredNotes    CompanyNote[]     @relation("NoteAuthor")
+  deletedNotes     CompanyNote[]     @relation("NoteDeletedBy")
+  companyAuditLogs CompanyAuditLog[] @relation("CompanyAuditAuthor")
 
   // Performance indexes
   @@index([email])
@@ -590,6 +596,10 @@ model Company {
   bankAccount          BankAccount?
   notificationSettings NotificationSettings?
   suggestions          Suggestion[]
+
+  // Company notes & audit
+  notes     CompanyNote[]     @relation("CompanyNotes")
+  auditLogs CompanyAuditLog[] @relation("CompanyAuditLogs")
 
   @@map("companies")
 }
@@ -2077,4 +2087,55 @@ model AuditLog {
   @@index([companyId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ==================== COMPANY NOTES ====================
+
+model CompanyNote {
+  id          String              @id @default(uuid())
+  companyId   String
+  company     Company             @relation("CompanyNotes", fields: [companyId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User                @relation("NoteAuthor", fields: [authorId], references: [id])
+  content     String              @db.Text
+  category    String              @default("GERAL")
+  attachments CompanyNoteAttachment[]
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?               @relation("NoteDeletedBy", fields: [deletedById], references: [id])
+  createdAt   DateTime            @default(now())
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([companyId, category])
+  @@map("company_notes")
+}
+
+model CompanyNoteAttachment {
+  id          String      @id @default(uuid())
+  noteId      String
+  note        CompanyNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  filePath    String
+  createdAt   DateTime    @default(now())
+
+  @@index([noteId])
+  @@map("company_note_attachments")
+}
+
+// ==================== COMPANY AUDIT LOG ====================
+
+model CompanyAuditLog {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation("CompanyAuditLogs", fields: [companyId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("CompanyAuditAuthor", fields: [userId], references: [id])
+  action      String
+  changes     Json
+  createdAt   DateTime @default(now())
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@map("company_audit_logs")
 }

@@ -643,6 +643,42 @@ export class AdminService {
     };
   }
 
+  // ========== Company Audit Log ==========
+
+  private async createCompanyAuditLog(
+    companyId: string,
+    userId: string,
+    action: string,
+    oldData: Record<string, any>,
+    newData: Record<string, any>,
+  ) {
+    const changes: Record<string, { from: any; to: any }> = {};
+    for (const key of Object.keys(newData)) {
+      if (newData[key] !== undefined && JSON.stringify(oldData[key]) !== JSON.stringify(newData[key])) {
+        changes[key] = { from: oldData[key] ?? null, to: newData[key] };
+      }
+    }
+    if (Object.keys(changes).length > 0) {
+      await this.prisma.companyAuditLog.create({
+        data: { companyId, userId, action, changes },
+      });
+    }
+  }
+
+  async getCompanyAuditLog(companyId: string, page = 1, limit = 20) {
+    const [data, total] = await Promise.all([
+      this.prisma.companyAuditLog.findMany({
+        where: { companyId },
+        include: { user: { select: { id: true, name: true, email: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.companyAuditLog.count({ where: { companyId } }),
+    ]);
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
   // ========== Company Details ==========
 
   async getCompanyDetails(companyId: string) {
@@ -770,6 +806,19 @@ export class AdminService {
       },
     });
 
+    // Audit log for creation
+    await this.createCompanyAuditLog(company.id, adminId, 'CREATED', {}, {
+      legalName: dto.legalName,
+      tradeName: dto.tradeName,
+      document: dto.document,
+      type: dto.type,
+      city: dto.city,
+      state: dto.state,
+      phone: dto.phone,
+      email: dto.email,
+      status: CompanyStatus.ACTIVE,
+    });
+
     return company;
   }
 
@@ -787,6 +836,17 @@ export class AdminService {
         throw new ConflictException('Já existe uma empresa com este CNPJ');
       }
     }
+
+    // Capture old data for audit log
+    const oldData = {
+      legalName: company.legalName,
+      tradeName: company.tradeName,
+      document: company.document,
+      city: company.city,
+      state: company.state,
+      phone: company.phone,
+      email: company.email,
+    };
 
     const updated = await this.prisma.company.update({
       where: { id },
@@ -814,6 +874,18 @@ export class AdminService {
         action: 'UPDATED',
       },
     });
+
+    // Audit log for update
+    const newData: Record<string, any> = {};
+    if (dto.legalName !== undefined) newData.legalName = dto.legalName;
+    if (dto.tradeName !== undefined) newData.tradeName = dto.tradeName;
+    if (dto.document !== undefined) newData.document = dto.document;
+    if (dto.city !== undefined) newData.city = dto.city;
+    if (dto.state !== undefined) newData.state = dto.state;
+    if (dto.phone !== undefined) newData.phone = dto.phone;
+    if (dto.email !== undefined) newData.email = dto.email;
+
+    await this.createCompanyAuditLog(id, adminId, 'UPDATE', oldData, newData);
 
     return updated;
   }
@@ -857,6 +929,15 @@ export class AdminService {
         newStatus: status,
       },
     });
+
+    // Audit log for status change
+    await this.createCompanyAuditLog(
+      companyId,
+      adminId,
+      'STATUS_CHANGE',
+      { status: previousStatus },
+      { status, reason: reason || null },
+    );
 
     this.logger.log(
       `Company ${companyId} status changed from ${previousStatus} to ${status} by admin ${adminId}`,
