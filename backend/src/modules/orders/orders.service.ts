@@ -445,6 +445,28 @@ export class OrdersService {
     return `${parentDisplayId}-R${revisionNumber}`;
   }
 
+  // Calculate platform fee percentage based on supplier origin
+  // 0% fee when the brand invited the supplier, 10% otherwise
+  private async calculatePlatformFeePercentage(
+    brandId: string,
+    supplierId: string,
+  ): Promise<number> {
+    const supplierProfile = await this.prisma.supplierProfile.findUnique({
+      where: { companyId: supplierId },
+      select: { origin: true, invitedByCompanyId: true },
+    });
+
+    if (
+      supplierProfile &&
+      supplierProfile.origin === 'INVITED' &&
+      supplierProfile.invitedByCompanyId === brandId
+    ) {
+      return 0;
+    }
+
+    return 0.1; // 10% default
+  }
+
   // Create order (Brand only)
   async create(dto: CreateOrderDto, userId: string) {
     // Get brand company for this user
@@ -463,7 +485,13 @@ export class OrdersService {
     }
 
     const totalValue = dto.quantity * dto.pricePerUnit;
-    const platformFeePercentage = 0.1; // 10%
+
+    // Dynamic fee: 0% for brand-invited suppliers, 10% default
+    const supplierId =
+      dto.supplierId || (dto.targetSupplierIds?.length === 1 ? dto.targetSupplierIds[0] : null);
+    const platformFeePercentage = supplierId
+      ? await this.calculatePlatformFeePercentage(companyUser.companyId, supplierId)
+      : 0.1; // Default 10% when supplier is not yet determined
     const platformFee = totalValue * platformFeePercentage;
     const netValue = totalValue - platformFee;
 
@@ -494,6 +522,7 @@ export class OrdersService {
       pricePerUnit: dto.pricePerUnit,
       totalValue,
       platformFee,
+      platformFeePercentage,
       netValue,
       deliveryDeadline: new Date(dto.deliveryDeadline),
       paymentTerms: dto.paymentTerms,
@@ -846,6 +875,15 @@ export class OrdersService {
         throw new ForbiddenException('Este pedido já foi aceito por outra facção');
       }
 
+      // Recalculate platform fee based on accepting supplier's origin
+      const feePercentage = await this.calculatePlatformFeePercentage(
+        order.brandId,
+        companyUser.companyId,
+      );
+      const totalValue = Number(order.totalValue);
+      const recalculatedPlatformFee = totalValue * feePercentage;
+      const recalculatedNetValue = totalValue - recalculatedPlatformFee;
+
       // Update order
       const result = await tx.order.update({
         where: { id: orderId },
@@ -854,6 +892,9 @@ export class OrdersService {
           supplierId: companyUser.companyId,
           acceptedAt: new Date(),
           acceptedById: userId,
+          platformFeePercentage: feePercentage,
+          platformFee: recalculatedPlatformFee,
+          netValue: recalculatedNetValue,
           statusHistory: {
             create: {
               previousStatus: order.status,

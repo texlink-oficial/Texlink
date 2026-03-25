@@ -748,8 +748,9 @@ model Order {
   quantity     Int
   pricePerUnit Decimal  @db.Decimal(10, 2)
   totalValue   Decimal  @db.Decimal(12, 2)
-  platformFee  Decimal? @db.Decimal(10, 2) // Taxa de serviço
-  netValue     Decimal? @db.Decimal(12, 2) // Valor líquido para a facção
+  platformFee           Decimal? @db.Decimal(10, 2) // Taxa de serviço
+  platformFeePercentage Decimal? @db.Decimal(5, 4) // e.g., 0.1000 for 10%, 0.0000 for 0%
+  netValue              Decimal? @db.Decimal(12, 2) // Valor líquido para a facção
 
   deliveryDeadline  DateTime
   paymentTerms      String? // e.g., "50% adiantado, 50% na entrega"

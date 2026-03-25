@@ -59,6 +59,9 @@ describe('OrdersService', () => {
       createMany: jest.fn(),
       findMany: jest.fn(),
     },
+    supplierProfile: {
+      findUnique: jest.fn(),
+    },
     credentialSettings: {
       findUnique: jest.fn(),
     },
@@ -130,6 +133,7 @@ describe('OrdersService', () => {
 
     it('should create a DIRECT order with required fields', async () => {
       mockPrisma.companyUser.findFirst.mockResolvedValue(mockCompanyUser);
+      mockPrisma.supplierProfile.findUnique.mockResolvedValue(null);
       mockPrisma.credentialSettings.findUnique.mockResolvedValue({
         defaultProtectTechnicalSheet: false,
       });
@@ -161,6 +165,7 @@ describe('OrdersService', () => {
           pricePerUnit: 50,
           totalValue: 5000,
           platformFee: 500,
+          platformFeePercentage: 0.1,
           netValue: 4500,
         }),
         include: expect.any(Object),
@@ -292,6 +297,7 @@ describe('OrdersService', () => {
 
     it('should emit ORDER_CREATED event', async () => {
       mockPrisma.companyUser.findFirst.mockResolvedValue(mockCompanyUser);
+      mockPrisma.supplierProfile.findUnique.mockResolvedValue(null);
       mockPrisma.credentialSettings.findUnique.mockResolvedValue(null);
       mockPrisma.order.create.mockResolvedValue(mockOrder);
 
@@ -1107,6 +1113,7 @@ describe('OrdersService', () => {
       };
 
       mockPrisma.companyUser.findFirst.mockResolvedValue(brandUser);
+      mockPrisma.supplierProfile.findUnique.mockResolvedValue(null);
       mockPrisma.credentialSettings.findUnique.mockResolvedValue(null);
       mockPrisma.order.create.mockResolvedValue({
         id: 'order-1',
