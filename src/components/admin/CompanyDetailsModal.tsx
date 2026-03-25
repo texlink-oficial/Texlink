@@ -5,6 +5,7 @@ import {
     TrendingUp, DollarSign
 } from 'lucide-react';
 import { adminService } from '../../services/admin.service';
+import { formatDocument as formatDoc, detectDocumentType, getDocumentLabel } from '../../utils/document';
 
 interface CompanyBasic {
     id: string;
@@ -25,12 +26,9 @@ interface Props {
     onClose: () => void;
 }
 
-const formatDocument = (doc: string) => {
+const formatDocumentLocal = (doc: string | undefined | null) => {
     if (!doc) return '-';
-    if (doc.length === 14) {
-        return doc.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-    }
-    return doc;
+    return formatDoc(doc, detectDocumentType(doc));
 };
 
 const statusLabels: Record<string, { label: string; color: string }> = {
@@ -199,7 +197,7 @@ export default function CompanyDetailsModal({ company, onClose }: Props) {
                             <div className="grid grid-cols-2 gap-4">
                                 <Field label="Razão Social" value={details?.legalName} />
                                 <Field label="Nome Fantasia" value={details?.tradeName} />
-                                <Field label="CNPJ" value={formatDocument(details?.document)} mono />
+                                <Field label={getDocumentLabel(details?.document ? detectDocumentType(details.document) : undefined)} value={formatDocumentLocal(details?.document)} mono />
                                 <Field label="Email" value={details?.email} />
                                 <Field label="Telefone" value={details?.phone} />
                                 <Field label="Cadastrada em" value={new Date(details?.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} />

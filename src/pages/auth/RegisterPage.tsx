@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import AuthLayout from '../../components/auth/AuthLayout';
 import { UserPlus, Mail, Lock, User, Building2, Factory, Loader2, Eye, EyeOff, Phone, ArrowLeft, ArrowRight, Check, Search } from 'lucide-react';
 import { formatCNPJ, validateCNPJ, stripCNPJ } from '../../utils/cnpj';
+import { formatCPF, validateCPF } from '../../utils/cpf';
 import api from '../../services/api';
 
 const formatPhone = (value: string): string => {
@@ -37,6 +38,7 @@ const RegisterPage: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
 
     // Step 2 fields - force SUPPLIER when coming from invitation
+    const [documentType, setDocumentType] = useState<'CNPJ' | 'CPF'>('CNPJ');
     const [role, setRole] = useState<'BRAND' | 'SUPPLIER'>('SUPPLIER');
     const [legalName, setLegalName] = useState(searchParams.get('legalName') || '');
     const [tradeName, setTradeName] = useState(searchParams.get('tradeName') || '');
@@ -58,7 +60,7 @@ const RegisterPage: React.FC = () => {
 
     // Auto-fetch CNPJ data on mount when pre-filled from invitation
     useEffect(() => {
-        if (isFromInvitation && cnpj) {
+        if (isFromInvitation && cnpj && documentType === 'CNPJ') {
             const digits = stripCNPJ(cnpj);
             if (digits.length === 14 && validateCNPJ(digits)) {
                 handleCnpjBlur();
@@ -82,19 +84,30 @@ const RegisterPage: React.FC = () => {
     };
 
     const handleCnpjBlur = async () => {
-        const digits = stripCNPJ(cnpj);
-        if (digits.length === 0) {
+        const raw = cnpj.replace(/\D/g, '');
+        if (raw.length === 0) {
             setCnpjError('');
             return;
         }
-        if (digits.length !== 14 || !validateCNPJ(digits)) {
+
+        if (documentType === 'CPF') {
+            if (raw.length !== 11 || !validateCPF(raw)) {
+                setCnpjError('CPF inválido. Verifique o número informado.');
+                return;
+            }
+            setCnpjError('');
+            return;
+        }
+
+        // CNPJ flow
+        if (raw.length !== 14 || !validateCNPJ(raw)) {
             setCnpjError('CNPJ inválido. Verifique o número informado.');
             return;
         }
         setCnpjError('');
         setCnpjLoading(true);
         try {
-            const { data } = await api.get(`/auth/cnpj-lookup/${digits}`);
+            const { data } = await api.get(`/auth/cnpj-lookup/${raw}`);
             if (data.found) {
                 setLegalName(data.razaoSocial);
                 if (data.nomeFantasia) setTradeName(data.nomeFantasia);
@@ -157,10 +170,19 @@ const RegisterPage: React.FC = () => {
             return;
         }
 
-        if (!validateCNPJ(cnpj)) {
-            setError('CNPJ inválido. Verifique o número informado.');
-            setCnpjError('CNPJ inválido. Verifique o número informado.');
-            return;
+        const docDigits = cnpj.replace(/\D/g, '');
+        if (documentType === 'CPF') {
+            if (!validateCPF(docDigits)) {
+                setError('CPF inválido. Verifique o número informado.');
+                setCnpjError('CPF inválido. Verifique o número informado.');
+                return;
+            }
+        } else {
+            if (!validateCNPJ(cnpj)) {
+                setError('CNPJ inválido. Verifique o número informado.');
+                setCnpjError('CNPJ inválido. Verifique o número informado.');
+                return;
+            }
         }
 
         if (!isValidPhone(phone)) {
@@ -181,6 +203,7 @@ const RegisterPage: React.FC = () => {
                 legalName,
                 tradeName: tradeName || undefined,
                 document: cnpj.replace(/\D/g, ''),
+                documentType,
                 phone: phone.replace(/\D/g, ''),
                 city: cidade || undefined,
                 state: estado || undefined,
@@ -419,10 +442,51 @@ const RegisterPage: React.FC = () => {
                         </div>
                         )}
 
-                        {/* CNPJ */}
+                        {/* Document Type Toggle */}
                         <div>
                             <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
-                                CNPJ
+                                Tipo de Documento
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (documentType !== 'CNPJ') {
+                                            setDocumentType('CNPJ');
+                                            setCnpj('');
+                                            setCnpjError('');
+                                        }
+                                    }}
+                                    className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${documentType === 'CNPJ'
+                                        ? 'bg-brand-500/20 border-brand-500 text-white lg:text-brand-600 lg:dark:text-brand-400'
+                                        : 'bg-white/5 border-white/10 text-brand-300 hover:border-white/30 lg:bg-gray-50 lg:border-gray-200 lg:text-gray-600 lg:dark:bg-gray-900 lg:dark:border-gray-700 lg:dark:text-gray-400'
+                                    }`}
+                                >
+                                    Pessoa Juridica (CNPJ)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (documentType !== 'CPF') {
+                                            setDocumentType('CPF');
+                                            setCnpj('');
+                                            setCnpjError('');
+                                        }
+                                    }}
+                                    className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${documentType === 'CPF'
+                                        ? 'bg-brand-500/20 border-brand-500 text-white lg:text-brand-600 lg:dark:text-brand-400'
+                                        : 'bg-white/5 border-white/10 text-brand-300 hover:border-white/30 lg:bg-gray-50 lg:border-gray-200 lg:text-gray-600 lg:dark:bg-gray-900 lg:dark:border-gray-700 lg:dark:text-gray-400'
+                                    }`}
+                                >
+                                    Pessoa Fisica (CPF)
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Document (CNPJ/CPF) */}
+                        <div>
+                            <label className="block text-sm font-medium text-brand-200 lg:text-gray-700 lg:dark:text-gray-300 mb-2">
+                                {documentType === 'CPF' ? 'CPF' : 'CNPJ'}
                             </label>
                             <div className="relative">
                                 {cnpjLoading ? (
@@ -435,13 +499,13 @@ const RegisterPage: React.FC = () => {
                                     value={cnpj}
                                     onChange={(e) => {
                                         if (isFromInvitation) return;
-                                        setCnpj(formatCNPJ(e.target.value));
+                                        setCnpj(documentType === 'CPF' ? formatCPF(e.target.value) : formatCNPJ(e.target.value));
                                         if (cnpjError) setCnpjError('');
                                     }}
                                     onBlur={handleCnpjBlur}
                                     readOnly={isFromInvitation}
                                     className={`w-full pl-11 pr-4 py-3 bg-white/5 border text-white placeholder-brand-400 lg:bg-gray-50 lg:dark:bg-gray-900 lg:border-gray-200 lg:dark:border-gray-700 lg:text-gray-900 lg:dark:text-white lg:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all ${cnpjError ? 'border-red-500' : 'border-white/10'} ${isFromInvitation ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                    placeholder="XX.XXX.XXX/XXXX-XX"
+                                    placeholder={documentType === 'CPF' ? 'XXX.XXX.XXX-XX' : 'XX.XXX.XXX/XXXX-XX'}
                                     required
                                     aria-invalid={!!cnpjError}
                                     aria-describedby={cnpjError ? 'cnpj-error' : undefined}
@@ -453,7 +517,11 @@ const RegisterPage: React.FC = () => {
                                 </p>
                             ) : (
                                 <p className="text-xs text-brand-400 lg:text-gray-400 mt-1">
-                                    {cnpjLoading ? 'Buscando dados da empresa...' : 'Ao informar o CNPJ os dados da empresa serão preenchidos automaticamente.'}
+                                    {cnpjLoading
+                                        ? 'Buscando dados da empresa...'
+                                        : documentType === 'CPF'
+                                            ? 'Informe o CPF do responsavel.'
+                                            : 'Ao informar o CNPJ os dados da empresa serao preenchidos automaticamente.'}
                                 </p>
                             )}
                         </div>

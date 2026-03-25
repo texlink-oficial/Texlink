@@ -5,6 +5,7 @@ import {
     MoreVertical, Eye, Edit3, Power, Trash2, UserPlus, FileSpreadsheet
 } from 'lucide-react';
 import { adminService } from '../../services/admin.service';
+import { formatDocument, detectDocumentType } from '../../utils/document';
 import { useToast } from '../../contexts/ToastContext';
 import CompanyDetailsModal from '../../components/admin/CompanyDetailsModal';
 import EditCompanyModal from '../../components/admin/EditCompanyModal';
@@ -209,7 +210,7 @@ const SuppliersPage: React.FC = () => {
                                 <thead>
                                     <tr className="border-b border-gray-100 dark:border-white/[0.06]">
                                         <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Razão Social</th>
-                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">CNPJ</th>
+                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Documento</th>
                                         <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                         <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cidade</th>
                                         <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Especialidades</th>
@@ -236,7 +237,7 @@ const SuppliersPage: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">{supplier.document || '-'}</span>
+                                                <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">{supplier.document ? formatDocument(supplier.document, detectDocumentType(supplier.document)) : '-'}</span>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <StatusBadge status={supplier.status} />

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Edit3 } from 'lucide-react';
 import { adminService } from '../../services/admin.service';
 import { useToast } from '../../contexts/ToastContext';
+import { formatDocument, detectDocumentType, getDocumentLabel } from '../../utils/document';
 
 interface Company {
     id: string;
@@ -100,14 +101,12 @@ export default function EditCompanyModal({ company, onClose, onSuccess }: Props)
                             </div>
                         )}
 
-                        {/* CNPJ (read-only) */}
+                        {/* Document (read-only) */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">CNPJ</label>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{getDocumentLabel(detectDocumentType(company.document))}</label>
                             <input
                                 type="text"
-                                value={company.document.length === 14
-                                    ? company.document.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
-                                    : company.document}
+                                value={formatDocument(company.document, detectDocumentType(company.document))}
                                 disabled
                                 className="w-full h-10 px-4 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400 font-mono cursor-not-allowed"
                             />

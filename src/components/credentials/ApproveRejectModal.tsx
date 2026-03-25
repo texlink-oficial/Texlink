@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { X, CheckCircle, XCircle, AlertTriangle, Loader2, Building2 } from 'lucide-react';
 import type { SupplierCredential } from '../../types/credentials';
+import { formatDocument, detectDocumentType, getDocumentLabel } from '../../utils/document';
 
 interface ApproveRejectModalProps {
     isOpen: boolean;
@@ -69,10 +70,6 @@ export const ApproveRejectModal: React.FC<ApproveRejectModalProps> = ({
         }
     };
 
-    const formatCNPJ = (cnpj: string) => {
-        return cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
-    };
-
     if (!isOpen || !credential) return null;
 
     const isApprove = type === 'approve';
@@ -136,7 +133,7 @@ export const ApproveRejectModal: React.FC<ApproveRejectModalProps> = ({
                                     {credential.tradeName || credential.legalName || credential.contactName}
                                 </h3>
                                 <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">
-                                    CNPJ: {formatCNPJ(credential.cnpj)}
+                                    {getDocumentLabel(credential.documentType || detectDocumentType(credential.cnpj))}: {formatDocument(credential.cnpj, credential.documentType || detectDocumentType(credential.cnpj))}
                                 </p>
                                 {credential.contactEmail && (
                                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">

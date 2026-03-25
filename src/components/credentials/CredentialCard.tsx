@@ -1,6 +1,7 @@
 import React from 'react';
 import { Building2, Calendar, MoreVertical, FileText } from 'lucide-react';
 import { StatusBadge } from '../shared/StatusBadge';
+import { formatDocument, detectDocumentType, getDocumentLabel } from '../../utils/document';
 
 export type CredentialStatus =
   | 'DRAFT'
@@ -25,6 +26,7 @@ export type CredentialStatus =
 interface Credential {
   id: string;
   cnpj: string;
+  documentType?: 'CNPJ' | 'CPF';
   tradeName?: string;
   legalName?: string;
   status: CredentialStatus;
@@ -68,12 +70,6 @@ const statusConfig: Record<CredentialStatus, { label: string; variant: 'default'
   BLOCKED: { label: 'Bloqueado', variant: 'error' },
 };
 
-const formatCNPJ = (cnpj: string): string => {
-  const cleaned = cnpj.replace(/\D/g, '');
-  if (cleaned.length !== 14) return cnpj;
-  return cleaned.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
-};
-
 const formatDate = (date: string | Date): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -106,7 +102,7 @@ export const CredentialCard: React.FC<CredentialCardProps> = ({
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               {credential.tradeName || credential.legalName || 'Nome não informado'}
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{formatCNPJ(credential.cnpj)}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{formatDocument(credential.cnpj, credential.documentType || detectDocumentType(credential.cnpj))}</p>
           </div>
         </div>
 

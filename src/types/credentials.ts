@@ -30,6 +30,7 @@ export type CredentialCategory =
 export interface SupplierCredential {
     id: string;
     cnpj: string;
+    documentType?: 'CNPJ' | 'CPF';
     tradeName?: string;
     legalName?: string;
     contactName: string;
@@ -190,6 +191,7 @@ export interface CredentialStats {
 
 export interface CreateCredentialDto {
     cnpj: string;
+    documentType?: 'CNPJ' | 'CPF';
     contactName: string;
     contactEmail: string;
     contactPhone: string;

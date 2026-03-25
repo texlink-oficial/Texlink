@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, CheckCircle, Loader2 } from 'lucide-react';
 import { credentialsService } from '../../../services';
 import type { CreateCredentialDto, CredentialCategory } from '../../../types/credentials';
+import { formatCPF, validateCPF } from '../../../utils/cpf';
 
 const NewCredentialPage: React.FC = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [documentType, setDocumentType] = useState<'CNPJ' | 'CPF'>('CNPJ');
     const [formData, setFormData] = useState<CreateCredentialDto>({
         cnpj: '',
         contactName: '',
@@ -45,7 +47,7 @@ const NewCredentialPage: React.FC = () => {
         let processedValue = value;
 
         if (field === 'cnpj') {
-            processedValue = applyCNPJMask(value);
+            processedValue = documentType === 'CPF' ? formatCPF(value) : applyCNPJMask(value);
         } else if (field === 'contactPhone' || field === 'contactWhatsapp') {
             processedValue = applyPhoneMask(value);
         }
@@ -68,10 +70,16 @@ const NewCredentialPage: React.FC = () => {
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
 
-        // CNPJ validation
+        // Document validation (CNPJ or CPF)
         const cnpjDigits = formData.cnpj.replace(/\D/g, '');
         if (!cnpjDigits) {
-            newErrors.cnpj = 'CNPJ é obrigatório';
+            newErrors.cnpj = `${documentType} é obrigatório`;
+        } else if (documentType === 'CPF') {
+            if (cnpjDigits.length !== 11) {
+                newErrors.cnpj = 'CPF deve ter 11 dígitos';
+            } else if (!validateCPF(cnpjDigits)) {
+                newErrors.cnpj = 'CPF inválido';
+            }
         } else if (cnpjDigits.length !== 14) {
             newErrors.cnpj = 'CNPJ deve ter 14 dígitos';
         }
@@ -120,6 +128,7 @@ const NewCredentialPage: React.FC = () => {
 
             const submitData: CreateCredentialDto = {
                 ...formData,
+                documentType,
                 status: shouldValidate ? 'PENDING_VALIDATION' : 'DRAFT',
             };
 
@@ -178,17 +187,60 @@ const NewCredentialPage: React.FC = () => {
             {/* Form */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
                 <div className="space-y-6">
-                    {/* CNPJ */}
+                    {/* Document Type Toggle */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            CNPJ <span className="text-red-500">*</span>
+                            Tipo de Documento
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (documentType !== 'CNPJ') {
+                                        setDocumentType('CNPJ');
+                                        setFormData(prev => ({ ...prev, cnpj: '' }));
+                                        setErrors(prev => { const n = { ...prev }; delete n.cnpj; return n; });
+                                    }
+                                }}
+                                className={`p-2.5 rounded-lg border-2 transition-all text-sm font-medium ${
+                                    documentType === 'CNPJ'
+                                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
+                                        : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                                }`}
+                            >
+                                Pessoa Juridica (CNPJ)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (documentType !== 'CPF') {
+                                        setDocumentType('CPF');
+                                        setFormData(prev => ({ ...prev, cnpj: '' }));
+                                        setErrors(prev => { const n = { ...prev }; delete n.cnpj; return n; });
+                                    }
+                                }}
+                                className={`p-2.5 rounded-lg border-2 transition-all text-sm font-medium ${
+                                    documentType === 'CPF'
+                                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
+                                        : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                                }`}
+                            >
+                                Pessoa Fisica (CPF)
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Document (CNPJ/CPF) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {documentType} <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
                             value={formData.cnpj}
                             onChange={(e) => handleChange('cnpj', e.target.value)}
-                            placeholder="00.000.000/0000-00"
-                            maxLength={18}
+                            placeholder={documentType === 'CPF' ? '000.000.000-00' : '00.000.000/0000-00'}
+                            maxLength={documentType === 'CPF' ? 14 : 18}
                             className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border ${
                                 errors.cnpj
                                     ? 'border-red-500'

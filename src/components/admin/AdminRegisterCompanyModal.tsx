@@ -4,6 +4,7 @@ import { adminService } from '../../services/admin.service';
 import { useToast } from '../../contexts/ToastContext';
 import { PRODUCT_TYPE_OPTIONS, MACHINE_OPTIONS } from '../../constants/supplierOptions';
 import { formatCNPJ, validateCNPJ, stripCNPJ } from '../../utils/cnpj';
+import { formatCPF, validateCPF } from '../../utils/cpf';
 import api from '../../services/api';
 
 interface Props {
@@ -46,6 +47,7 @@ export default function AdminRegisterCompanyModal({ type, onClose, onSuccess }: 
     const [isLoading, setIsLoading] = useState(false);
     const [cnpjLoading, setCnpjLoading] = useState(false);
     const [error, setError] = useState('');
+    const [documentType, setDocumentType] = useState<'CNPJ' | 'CPF'>('CNPJ');
 
     // Step 1 - Owner + Company
     const [userName, setUserName] = useState('');
@@ -72,6 +74,7 @@ export default function AdminRegisterCompanyModal({ type, onClose, onSuccess }: 
     const typeLabel = isSupplier ? 'Facção' : 'Marca';
 
     const handleCnpjBlur = async () => {
+        if (documentType === 'CPF') return; // No API lookup for CPF
         const digits = stripCNPJ(document);
         if (digits.length !== 14 || !validateCNPJ(digits)) return;
         setCnpjLoading(true);
@@ -95,7 +98,11 @@ export default function AdminRegisterCompanyModal({ type, onClose, onSuccess }: 
         if (!email.trim() || !email.includes('@')) return 'E-mail inválido.';
         if (!password || password.length < 6) return 'Senha deve ter pelo menos 6 caracteres.';
         if (!legalName.trim() || legalName.trim().length < 3) return 'Razão Social deve ter pelo menos 3 caracteres.';
-        if (!validateCNPJ(document)) return 'CNPJ inválido. Verifique o número informado.';
+        if (documentType === 'CPF') {
+            if (!validateCPF(document)) return 'CPF inválido. Verifique o número informado.';
+        } else {
+            if (!validateCNPJ(document)) return 'CNPJ inválido. Verifique o número informado.';
+        }
         if (!city.trim()) return 'Cidade é obrigatória.';
         if (!state) return 'Estado é obrigatório.';
         return null;
@@ -128,6 +135,7 @@ export default function AdminRegisterCompanyModal({ type, onClose, onSuccess }: 
                 legalName: legalName.trim(),
                 tradeName: tradeName.trim() || undefined,
                 document: document.replace(/\D/g, ''),
+                documentType,
                 type,
                 city: city.trim(),
                 state,
@@ -224,13 +232,63 @@ export default function AdminRegisterCompanyModal({ type, onClose, onSuccess }: 
                             <div className="border-t border-gray-100 dark:border-gray-700 my-2" />
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Dados da Empresa</p>
 
+                            {/* Document Type Toggle */}
                             <div>
-                                <label className={labelClass}>CNPJ *</label>
+                                <label className={labelClass}>Tipo de Documento</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (documentType !== 'CNPJ') {
+                                                setDocumentType('CNPJ');
+                                                setDocument('');
+                                            }
+                                        }}
+                                        className={`p-2 rounded-lg border-2 transition-all text-xs font-bold ${
+                                            documentType === 'CNPJ'
+                                                ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300'
+                                                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        Pessoa Juridica (CNPJ)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (documentType !== 'CPF') {
+                                                setDocumentType('CPF');
+                                                setDocument('');
+                                            }
+                                        }}
+                                        className={`p-2 rounded-lg border-2 transition-all text-xs font-bold ${
+                                            documentType === 'CPF'
+                                                ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300'
+                                                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        Pessoa Fisica (CPF)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className={labelClass}>{documentType} *</label>
                                 <div className="relative">
                                     {cnpjLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sky-500 animate-spin" />}
-                                    <input type="text" value={document} onChange={(e) => setDocument(formatCNPJ(e.target.value))} onBlur={handleCnpjBlur} placeholder="00.000.000/0000-00" className={inputClass} />
+                                    <input
+                                        type="text"
+                                        value={document}
+                                        onChange={(e) => setDocument(documentType === 'CPF' ? formatCPF(e.target.value) : formatCNPJ(e.target.value))}
+                                        onBlur={handleCnpjBlur}
+                                        placeholder={documentType === 'CPF' ? '000.000.000-00' : '00.000.000/0000-00'}
+                                        className={inputClass}
+                                    />
                                 </div>
-                                <p className="text-xs text-gray-400 mt-1">Ao informar o CNPJ os dados serao preenchidos automaticamente.</p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                    {documentType === 'CPF'
+                                        ? 'Informe o CPF do responsavel.'
+                                        : 'Ao informar o CNPJ os dados serao preenchidos automaticamente.'}
+                                </p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

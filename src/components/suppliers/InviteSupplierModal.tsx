@@ -15,6 +15,7 @@ import {
     AlertCircle,
 } from 'lucide-react';
 import { suppliersService, type CNPJValidationResult, type InvitationChannel } from '../../services/suppliers.service';
+import { formatCPF, validateCPF } from '../../utils/cpf';
 
 interface InviteSupplierModalProps {
     isOpen: boolean;
@@ -71,6 +72,7 @@ export const InviteSupplierModal: React.FC<InviteSupplierModalProps> = ({
     onSuccess,
 }) => {
     const [formData, setFormData] = useState<FormData>(initialFormData);
+    const [documentType, setDocumentType] = useState<'CNPJ' | 'CPF'>('CNPJ');
     const [cnpjValidation, setCnpjValidation] = useState<CNPJValidationResult | null>(null);
     const [isValidatingCnpj, setIsValidatingCnpj] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -121,8 +123,12 @@ export const InviteSupplierModal: React.FC<InviteSupplierModalProps> = ({
         }
     }, []);
 
-    // Validate CNPJ when it changes (with debounce)
+    // Validate CNPJ when it changes (with debounce) - skip for CPF
     useEffect(() => {
+        if (documentType === 'CPF') {
+            setCnpjValidation(null);
+            return;
+        }
         const cleaned = formData.cnpj.replace(/\D/g, '');
         if (cleaned.length === 14) {
             const timer = setTimeout(() => {
@@ -132,12 +138,12 @@ export const InviteSupplierModal: React.FC<InviteSupplierModalProps> = ({
         } else {
             setCnpjValidation(null);
         }
-    }, [formData.cnpj, validateCnpj]);
+    }, [formData.cnpj, validateCnpj, documentType]);
 
     const handleInputChange = (field: keyof FormData, value: string) => {
         setError(null);
         if (field === 'cnpj') {
-            setFormData(prev => ({ ...prev, [field]: formatCnpj(value) }));
+            setFormData(prev => ({ ...prev, [field]: documentType === 'CPF' ? formatCPF(value) : formatCnpj(value) }));
         } else if (field === 'contactPhone' || field === 'contactWhatsapp') {
             setFormData(prev => ({ ...prev, [field]: formatPhone(value) }));
         } else {
@@ -146,9 +152,17 @@ export const InviteSupplierModal: React.FC<InviteSupplierModalProps> = ({
     };
 
     const validateForm = (): boolean => {
-        if (!formData.cnpj || formData.cnpj.replace(/\D/g, '').length !== 14) {
-            setError('CNPJ inválido');
-            return false;
+        const docDigits = formData.cnpj.replace(/\D/g, '');
+        if (documentType === 'CPF') {
+            if (!docDigits || docDigits.length !== 11 || !validateCPF(docDigits)) {
+                setError('CPF inválido');
+                return false;
+            }
+        } else {
+            if (!docDigits || docDigits.length !== 14) {
+                setError('CNPJ inválido');
+                return false;
+            }
         }
         if (!formData.contactName.trim()) {
             setError('Nome do contato é obrigatório');
@@ -179,6 +193,7 @@ export const InviteSupplierModal: React.FC<InviteSupplierModalProps> = ({
         try {
             await suppliersService.inviteSupplier({
                 cnpj: formData.cnpj.replace(/\D/g, ''),
+                documentType,
                 contactName: formData.contactName,
                 contactEmail: formData.contactEmail,
                 contactPhone: formData.contactPhone.replace(/\D/g, ''),
@@ -200,6 +215,7 @@ export const InviteSupplierModal: React.FC<InviteSupplierModalProps> = ({
 
     const handleClose = () => {
         setFormData(initialFormData);
+        setDocumentType('CNPJ');
         setCnpjValidation(null);
         setError(null);
         setSendEmail(true);
@@ -243,17 +259,60 @@ export const InviteSupplierModal: React.FC<InviteSupplierModalProps> = ({
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
                         {/* Left Column - Form */}
                         <div className="space-y-5">
-                            {/* CNPJ Field */}
+                            {/* Document Type Toggle */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                    CNPJ *
+                                    Tipo de Documento
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (documentType !== 'CNPJ') {
+                                                setDocumentType('CNPJ');
+                                                setFormData(prev => ({ ...prev, cnpj: '' }));
+                                                setCnpjValidation(null);
+                                            }
+                                        }}
+                                        className={`p-2 rounded-lg border-2 transition-all text-sm font-medium ${
+                                            documentType === 'CNPJ'
+                                                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
+                                                : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        Pessoa Juridica (CNPJ)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (documentType !== 'CPF') {
+                                                setDocumentType('CPF');
+                                                setFormData(prev => ({ ...prev, cnpj: '' }));
+                                                setCnpjValidation(null);
+                                            }
+                                        }}
+                                        className={`p-2 rounded-lg border-2 transition-all text-sm font-medium ${
+                                            documentType === 'CPF'
+                                                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
+                                                : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        Pessoa Fisica (CPF)
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Document Field */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                    {documentType} *
                                 </label>
                                 <div className="relative">
                                     <input
                                         type="text"
                                         value={formData.cnpj}
                                         onChange={(e) => handleInputChange('cnpj', e.target.value)}
-                                        placeholder="00.000.000/0000-00"
+                                        placeholder={documentType === 'CPF' ? '000.000.000-00' : '00.000.000/0000-00'}
                                         className={`w-full px-4 py-2.5 pr-10 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all ${cnpjValidation?.isValid === false
                                                 ? 'border-red-300 dark:border-red-500'
                                                 : cnpjValidation?.isValid
@@ -414,7 +473,11 @@ export const InviteSupplierModal: React.FC<InviteSupplierModalProps> = ({
                                 {!cnpjValidation && !isValidatingCnpj && (
                                     <div className="text-center py-8 text-gray-400">
                                         <Building2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                        <p className="text-sm">Digite o CNPJ para visualizar os dados da empresa</p>
+                                        <p className="text-sm">
+                                            {documentType === 'CPF'
+                                                ? 'Para CPF, preencha os dados manualmente'
+                                                : 'Digite o CNPJ para visualizar os dados da empresa'}
+                                        </p>
                                     </div>
                                 )}
 
