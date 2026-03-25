@@ -26,15 +26,14 @@ if [ "$NODE_ENV" = "production" ] || [ "$NODE_ENV" = "staging" ]; then
     fi
   fi
 
-  # Sync schema to ensure DB matches schema.prisma
-  echo "Syncing database schema..."
-  npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma
 else
-  npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma
+  npx prisma db push --schema=./prisma/schema.prisma
 fi
 
-echo "Running database seed..."
-npx prisma db seed || echo "Seed completed or skipped"
+if [ "$NODE_ENV" != "production" ] && [ "$NODE_ENV" != "staging" ]; then
+  echo "Running database seed..."
+  npx prisma db seed || echo "Seed completed or skipped"
+fi
 
 echo "Starting NestJS application..."
 exec node dist/src/main.js

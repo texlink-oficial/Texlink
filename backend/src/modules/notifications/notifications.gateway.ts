@@ -32,7 +32,6 @@ interface MarkReadPayload {
       'http://localhost:5173',
       'http://localhost:3001',
     ],
-    credentials: true,
   },
 })
 export class NotificationsGateway
@@ -91,7 +90,8 @@ export class NotificationsGateway
       // Check for mock token (development mode only)
       if (
         (token as string).startsWith('mock-token-') &&
-        process.env.NODE_ENV === 'development'
+        process.env.NODE_ENV === 'development' &&
+        process.env.ENABLE_MOCK_TOKENS === 'true'
       ) {
         const tokenParts = (token as string).split('-');
         const role = tokenParts[2]?.toLowerCase();

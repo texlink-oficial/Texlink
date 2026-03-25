@@ -44,11 +44,16 @@ FROM nginx:alpine AS runner
 # Install envsubst for environment variable substitution
 RUN apk add --no-cache gettext
 
-# Copy custom nginx config template
+# Copy custom nginx config template and security headers
 COPY nginx/nginx.conf /etc/nginx/nginx.conf.template
+COPY nginx/security-headers.conf /etc/nginx/security-headers.conf
 
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Set proper ownership and switch to non-root user
+RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx && \
+    touch /var/run/nginx.pid && chown nginx:nginx /var/run/nginx.pid
 
 # Create startup script that substitutes PORT/BACKEND_URL and starts nginx
 RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
@@ -58,6 +63,8 @@ RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
     echo 'envsubst "\$PORT \$BACKEND_URL" < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf' >> /docker-entrypoint.sh && \
     echo 'exec nginx -g "daemon off;"' >> /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh
+
+USER nginx
 
 # Expose port (Railway will override with PORT env var)
 EXPOSE 8080

@@ -32,8 +32,18 @@ async function bootstrap() {
   // Security headers
   app.use(
     helmet({
-      contentSecurityPolicy:
-        process.env.NODE_ENV === 'production' ? undefined : false,
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https://*.amazonaws.com"],
+          connectSrc: ["'self'", "https://*.amazonaws.com"],
+          fontSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'self'"],
+        },
+      },
       crossOriginEmbedderPolicy: false,
     }),
   );
@@ -42,10 +52,13 @@ async function bootstrap() {
   const corsOrigins = configService.get<string[]>('cors.origins') || [
     'http://localhost:5173',
   ];
-  logger.log(`CORS origins configured: ${JSON.stringify(corsOrigins)}`);
+  if (process.env.NODE_ENV === 'production') {
+    logger.log(`CORS origins configured: ${corsOrigins.length} origin(s)`);
+  } else {
+    logger.log(`CORS origins configured: ${JSON.stringify(corsOrigins)}`);
+  }
   app.enableCors({
     origin: corsOrigins,
-    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-View-As-Company'],
   });
@@ -73,8 +86,8 @@ async function bootstrap() {
   // API prefix
   app.setGlobalPrefix('api');
 
-  // Swagger / OpenAPI documentation (disabled in production)
-  if (process.env.NODE_ENV !== 'production') {
+  // Swagger / OpenAPI documentation
+  if (process.env.NODE_ENV === 'development' || process.env.ENABLE_SWAGGER === 'true') {
     const config = new DocumentBuilder()
       .setTitle('Texlink API')
       .setDescription('B2B textile supply chain management platform')

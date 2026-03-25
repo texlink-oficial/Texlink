@@ -46,7 +46,6 @@ interface TypingPayload {
       'http://localhost:5173',
       'http://localhost:3001',
     ],
-    credentials: true,
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -108,7 +107,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Check for mock token (development mode only)
       if (
         (token as string).startsWith('mock-token-') &&
-        process.env.NODE_ENV === 'development'
+        process.env.NODE_ENV === 'development' &&
+        process.env.ENABLE_MOCK_TOKENS === 'true'
       ) {
         // In development mode with mock tokens, use demo user IDs
         const tokenParts = (token as string).split('-');

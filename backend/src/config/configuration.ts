@@ -32,6 +32,17 @@ export default () => {
         'JWT_SECRET must be changed from default value in production',
       );
     }
+
+    if ((process.env.JWT_SECRET || '').length < 32) {
+      throw new Error(
+        'JWT_SECRET must be at least 32 characters in production',
+      );
+    }
+    if ((process.env.JWT_REFRESH_SECRET || '').length < 32) {
+      throw new Error(
+        'JWT_REFRESH_SECRET must be at least 32 characters in production',
+      );
+    }
   }
 
   return {
