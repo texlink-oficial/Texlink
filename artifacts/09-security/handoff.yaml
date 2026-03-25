@@ -1,0 +1,165 @@
+handoff:
+  from: security-analyst
+  to: [backend-dev, frontend-dev, qa-engineer]
+  date: 2026-03-25
+  supersedes: "handoff.yaml from 2026-02-22"
+
+summary: |
+  Comprehensive remediation plan produced for all P0 and P1 security issues.
+  Cross-referenced 3 audit reports (2026-02-07, 2026-02-12, 2026-02-22) against
+  current codebase state. Of the original 31 P0/P1 issues, 13 are now resolved.
+  18 issues remain open: 8 P0 and 10 P1. Estimated total effort: 10-12 days.
+
+deliverables:
+  - path: artifacts/09-security/remediation-plan.md
+    description: "Full remediation plan with 18 open P0/P1 issues, file paths, code diffs, assignees, and test requirements"
+  - path: artifacts/09-security/security-audit.md
+    description: "Original audit (2026-02-07) - 19 findings, all resolved"
+  - path: artifacts/09-security/security-audit-2026-02-12.md
+    description: "Second audit (2026-02-12) - 16 findings, IDOR issues identified"
+  - path: artifacts/09-security/security-assessment.md
+    description: "Pre-launch audit (2026-02-22) - 15 findings including frontend"
+  - path: artifacts/09-security/threat-model.md
+    description: "Threat model with assets, actors, and attack vectors"
+  - path: artifacts/09-security/compliance-checklist.md
+    description: "OWASP Top 10 and LGPD compliance status"
+
+resolved_since_last_handoff:
+  - SEC-001: "Refresh secret fallback removed - now uses getOrThrow (auth.service.ts:41)"
+  - SEC-002: "passwordChangedAt check added to jwt.strategy.ts:79-85"
+  - SEC-003: "Upload endpoint has verifyOrderAccess (upload.service.ts:79-100)"
+  - SEC-P0-003: "Companies findById checks membership (companies.service.ts:89-96)"
+  - SEC-P0-004: "Contracts findById checks companyUser (contracts.service.ts:784-798)"
+  - SEC-P0-005: "Payments getOrderPayments has RolesGuard + userId (payments.controller.ts:47-54)"
+  - SEC-P0-006: "Ratings checks membership or relationship (ratings.service.ts:88-108)"
+  - BE-P0-001: "Registration wrapped in $transaction (auth.service.ts:61)"
+  - BE-P0-002: "Payment update checks brand/supplier membership (payments.service.ts:102-112)"
+  - BE-P0-003: "Order reviews use verifyOrderAccess (orders.service.ts:1328)"
+  - BE-P0-004: "Second-quality uses verifyOrderAccess (orders.service.ts:1555)"
+  - FE-P0-003: "Demo credentials gated behind import.meta.env.DEV (mockMode.ts:6)"
+  - VULN-002: "Docker compose files use env var references (${POSTGRES_PASSWORD})"
+
+open_p0_issues:
+  - SEC-REM-001:
+      title: "start.sh uses --accept-data-loss in production"
+      file: "backend/start.sh:31"
+      assignee: backend-dev
+      effort: XS
+  - SEC-REM-002:
+      title: "Nginx security headers dropped in location blocks"
+      file: "nginx/nginx.conf:66-69,93-95"
+      assignee: backend-dev
+      effort: S
+  - SEC-REM-003:
+      title: "Mock token guard needs explicit ENABLE_MOCK_TOKENS flag"
+      files: ["backend/src/modules/chat/chat.gateway.ts:111", "backend/src/modules/notifications/notifications.gateway.ts:94"]
+      assignee: backend-dev
+      effort: XS
+  - SEC-REM-004:
+      title: "Refresh token persisted in sessionStorage (XSS risk)"
+      file: "src/services/auth.service.ts:64"
+      assignee: frontend-dev
+      effort: S
+  - SEC-REM-005:
+      title: "Docker frontend container runs as root"
+      file: "Dockerfile:42-70"
+      assignee: backend-dev
+      effort: S
+  - SEC-REM-006:
+      title: "Seed script runs unconditionally in start.sh"
+      file: "backend/start.sh:37"
+      assignee: backend-dev
+      effort: XS
+  - SEC-REM-007:
+      title: "CORS origins logged in production"
+      file: "backend/src/main.ts:45"
+      assignee: backend-dev
+      effort: XS
+  - SEC-REM-008:
+      title: "Helmet CSP disabled in non-production"
+      file: "backend/src/main.ts:36"
+      assignee: backend-dev
+      effort: S
+
+open_p1_issues:
+  - SEC-REM-009:
+      title: "WebSocket CORS reads env directly, diverges from main app"
+      files: ["backend/src/modules/chat/chat.gateway.ts:45", "backend/src/modules/notifications/notifications.gateway.ts:31"]
+      assignee: backend-dev
+      effort: S
+  - SEC-REM-011:
+      title: "Ungated console.error in production frontend (~15 instances)"
+      files: ["src/pages/brand/credentials/CredentialDetailsPage.tsx", "src/hooks/useChatSocket.ts", "src/hooks/useNotificationSocket.ts"]
+      assignee: frontend-dev
+      effort: S
+  - SEC-REM-012:
+      title: "22 @Param decorators missing ParseUUIDPipe"
+      files: "Multiple backend controllers"
+      assignee: backend-dev
+      effort: S
+  - SEC-REM-013:
+      title: "npm dependency vulnerabilities (axios DoS, socket.io-parser, qs)"
+      files: ["package.json", "backend/package.json"]
+      assignee: both
+      effort: S-M
+  - SEC-REM-014:
+      title: "No JWT secret minimum length validation"
+      file: "backend/src/config/configuration.ts"
+      assignee: backend-dev
+      effort: XS
+  - SEC-REM-015:
+      title: "Swagger accessible in staging"
+      file: "backend/src/main.ts:77"
+      assignee: backend-dev
+      effort: XS
+  - SEC-REM-016:
+      title: "LGPD right-to-deletion not implemented"
+      files: "New module needed"
+      assignee: backend-dev
+      effort: L
+  - SEC-REM-017:
+      title: "No security audit trail for sensitive operations"
+      files: "New module needed"
+      assignee: backend-dev
+      effort: M
+  - SEC-REM-018:
+      title: "credentials:true in CORS without cookie auth"
+      files: ["backend/src/main.ts:48", "chat.gateway.ts:49", "notifications.gateway.ts:35"]
+      assignee: backend-dev
+      effort: XS
+
+sprint_plan:
+  sprint_1:
+    days: "1-2"
+    target: "All XS/S backend P0 fixes"
+    items: [SEC-REM-001, SEC-REM-003, SEC-REM-006, SEC-REM-007, SEC-REM-008, SEC-REM-014, SEC-REM-015, SEC-REM-018]
+  sprint_2:
+    days: "3-4"
+    target: "Remaining P0 fixes"
+    items: [SEC-REM-002, SEC-REM-004, SEC-REM-005]
+  sprint_3:
+    days: "5-7"
+    target: "P1 quick fixes"
+    items: [SEC-REM-009, SEC-REM-011, SEC-REM-012, SEC-REM-013]
+  sprint_4:
+    days: "8-12"
+    target: "P1 larger items"
+    items: [SEC-REM-016, SEC-REM-017]
+
+qa_test_plan:
+  - "Verify all parameterized endpoints reject malformed UUIDs with 400"
+  - "Verify mock tokens rejected in staging and production"
+  - "Verify no tokens appear in browser storage after login"
+  - "Verify security headers present on static assets, HTML, and API responses"
+  - "Verify Swagger inaccessible in staging without opt-in flag"
+  - "Verify npm audit shows 0 critical/high runtime vulnerabilities"
+  - "Verify production logs do not contain CORS origins or sensitive data"
+  - "Verify Docker container runs as non-root user"
+  - "Verify seed script does not execute in production"
+  - "Run OWASP ZAP automated scan against staging"
+
+next_steps:
+  - "backend-dev: Start sprint 1 with XS fixes (SEC-REM-001,003,006,007)"
+  - "frontend-dev: Fix SEC-REM-004 (refresh token to memory-only)"
+  - "qa-engineer: Prepare test cases from qa_test_plan above"
+  - "all: Re-run security audit after sprint 4 to verify score improvement"
