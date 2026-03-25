@@ -3,6 +3,7 @@ import {
     IsNotEmpty,
     IsEmail,
     IsOptional,
+    IsIn,
     IsEnum,
     Matches,
     MinLength,
@@ -10,7 +11,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsCNPJ } from '../../../common/validators/cnpj.validator';
+import { IsDocument } from '../../../common/validators/document.validator';
 
 /**
  * Canais de envio do convite
@@ -28,15 +29,24 @@ export enum InvitationChannel {
  * via email e/ou WhatsApp para a facção completar o cadastro.
  */
 export class InviteSupplierDto {
+    @ApiPropertyOptional({
+        description: 'Tipo de documento: CNPJ ou CPF',
+        example: 'CNPJ',
+        default: 'CNPJ',
+        enum: ['CNPJ', 'CPF'],
+    })
+    @IsIn(['CNPJ', 'CPF'], { message: 'documentType deve ser CNPJ ou CPF' })
+    @IsOptional()
+    documentType?: string = 'CNPJ';
+
     @ApiProperty({
-        description: 'CNPJ da facção (apenas números ou formatado)',
+        description: 'CNPJ ou CPF da facção (apenas números ou formatado)',
         example: '12.345.678/0001-90',
     })
     @IsString()
-    @IsNotEmpty({ message: 'CNPJ é obrigatório' })
+    @IsNotEmpty({ message: 'CNPJ/CPF é obrigatório' })
     @Transform(({ value }) => value?.replace(/\D/g, ''))
-    @Matches(/^\d{14}$/, { message: 'CNPJ deve conter 14 dígitos' })
-    @IsCNPJ({ message: 'CNPJ inválido. Verifique o número informado.' })
+    @IsDocument({ message: 'Documento inválido. Verifique o número informado.' })
     cnpj: string;
 
     @ApiProperty({

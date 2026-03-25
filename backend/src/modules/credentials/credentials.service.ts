@@ -67,27 +67,29 @@ export class CredentialsService {
    */
   async create(dto: CreateCredentialDto, user: AuthUser) {
     const brandId = user.brandId || user.companyId;
-    const cleanCnpj = this.cleanCNPJ(dto.cnpj);
+    const documentType = dto.documentType || 'CNPJ';
+    const cleanDoc = this.cleanDocument(dto.cnpj);
 
-    // Valida duplicidade de CNPJ para esta marca
+    // Valida duplicidade de documento para esta marca
     const existingCredential = await this.prisma.supplierCredential.findFirst({
       where: {
         brandId,
-        cnpj: cleanCnpj,
+        cnpj: cleanDoc,
         status: { notIn: [SupplierCredentialStatus.BLOCKED] },
       },
     });
 
     if (existingCredential) {
       throw new ConflictException(
-        `CNPJ ${this.formatCNPJ(cleanCnpj)} já possui credenciamento ativo (ID: ${existingCredential.id})`,
+        `${documentType} ${this.formatDocument(cleanDoc, documentType)} já possui credenciamento ativo (ID: ${existingCredential.id})`,
       );
     }
 
     // Cria o credenciamento
     const credential = await this.prisma.supplierCredential.create({
       data: {
-        cnpj: cleanCnpj,
+        cnpj: cleanDoc,
+        documentType,
         contactName: dto.contactName.trim(),
         contactEmail: dto.contactEmail.toLowerCase().trim(),
         contactPhone: this.cleanPhone(dto.contactPhone),
@@ -119,7 +121,7 @@ export class CredentialsService {
     );
 
     this.logger.log(
-      `Credenciamento criado: ${credential.id} (CNPJ: ${this.formatCNPJ(cleanCnpj)})`,
+      `Credenciamento criado: ${credential.id} (${documentType}: ${this.formatDocument(cleanDoc, documentType)})`,
     );
     return credential;
   }
@@ -337,31 +339,38 @@ export class CredentialsService {
     if (dto.notes !== undefined) updateData.notes = dto.notes?.trim() || null;
     if (dto.priority !== undefined) updateData.priority = dto.priority;
 
-    // Se CNPJ mudou, precisa revalidar
-    let cnpjChanged = false;
-    if (dto.cnpj !== undefined) {
-      const cleanCnpj = this.cleanCNPJ(dto.cnpj);
+    // Update documentType if provided
+    if (dto.documentType !== undefined) {
+      updateData.documentType = dto.documentType;
+    }
 
-      if (cleanCnpj !== existing.cnpj) {
-        // Verifica duplicidade do novo CNPJ
-        const duplicateCnpj = await this.prisma.supplierCredential.findFirst({
+    const documentType = dto.documentType || existing.documentType || 'CNPJ';
+
+    // Se documento mudou, precisa revalidar
+    let documentChanged = false;
+    if (dto.cnpj !== undefined) {
+      const cleanDoc = this.cleanDocument(dto.cnpj);
+
+      if (cleanDoc !== existing.cnpj) {
+        // Verifica duplicidade do novo documento para esta marca
+        const duplicateDoc = await this.prisma.supplierCredential.findFirst({
           where: {
             brandId: companyId,
-            cnpj: cleanCnpj,
+            cnpj: cleanDoc,
             id: { not: id },
             status: { notIn: [SupplierCredentialStatus.BLOCKED] },
           },
         });
 
-        if (duplicateCnpj) {
+        if (duplicateDoc) {
           throw new ConflictException(
-            `CNPJ ${this.formatCNPJ(cleanCnpj)} já possui outro credenciamento`,
+            `${documentType} ${this.formatDocument(cleanDoc, documentType)} já possui outro credenciamento`,
           );
         }
 
-        updateData.cnpj = cleanCnpj;
+        updateData.cnpj = cleanDoc;
         updateData.legalName = null; // Reset dados da validação
-        cnpjChanged = true;
+        documentChanged = true;
       }
     }
 
@@ -375,8 +384,8 @@ export class CredentialsService {
       },
     });
 
-    // Se CNPJ mudou, invalida validações anteriores e reseta status
-    if (cnpjChanged) {
+    // Se documento mudou, invalida validações anteriores e reseta status
+    if (documentChanged) {
       await this.prisma.credentialValidation.updateMany({
         where: { credentialId: id },
         data: { isValid: false },
@@ -388,12 +397,12 @@ export class CredentialsService {
           id,
           SupplierCredentialStatus.DRAFT,
           user.id,
-          'CNPJ alterado, necessita nova validação',
+          'Documento alterado, necessita nova validação',
         );
       }
 
       this.logger.log(
-        `CNPJ alterado para credenciamento ${id}, validações resetadas`,
+        `Documento alterado para credenciamento ${id}, validações resetadas`,
       );
     }
 
@@ -887,6 +896,27 @@ export class CredentialsService {
       /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
       '$1.$2.$3/$4-$5',
     );
+  }
+
+  /**
+   * Remove caracteres não numéricos de qualquer documento (CPF ou CNPJ)
+   */
+  private cleanDocument(doc: string): string {
+    return doc.replace(/\D/g, '');
+  }
+
+  /**
+   * Formata documento para exibição conforme o tipo
+   */
+  private formatDocument(doc: string, type: string): string {
+    const clean = this.cleanDocument(doc);
+    if (type === 'CPF') {
+      return clean.replace(
+        /^(\d{3})(\d{3})(\d{3})(\d{2})$/,
+        '$1.$2.$3-$4',
+      );
+    }
+    return this.formatCNPJ(clean);
   }
 
   /**

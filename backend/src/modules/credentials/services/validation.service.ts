@@ -170,6 +170,12 @@ export class ValidationService {
       );
     }
 
+    // CPF: skip external API, validate algorithmically and advance to compliance
+    if (credential.documentType === 'CPF') {
+      return this.processCPFValidation(credentialId, credential, performedById);
+    }
+
+    // CNPJ: existing external API flow
     // Atualiza status para VALIDATING
     await this.updateCredentialStatus(
       credentialId,
@@ -316,6 +322,70 @@ export class ValidationService {
           'Ocorreu um erro durante a validação. Tente novamente mais tarde.',
       };
     }
+  }
+
+  /**
+   * Processa validação para CPF
+   *
+   * CPF não possui API pública de consulta como CNPJ.
+   * Valida algoritmicamente e avança direto para PENDING_COMPLIANCE.
+   */
+  private async processCPFValidation(
+    credentialId: string,
+    credential: any,
+    performedById: string,
+  ) {
+    // Atualiza status para VALIDATING
+    await this.updateCredentialStatus(
+      credentialId,
+      credential.status,
+      SupplierCredentialStatus.VALIDATING,
+      performedById,
+      'Processando validação de CPF',
+    );
+
+    // CPF validated algorithmically (check digits already passed via DTO)
+    const validationResult = {
+      isValid: true,
+      source: 'ALGORITHMIC',
+      data: null,
+      timestamp: new Date(),
+    };
+
+    // Salva resultado da validação no banco
+    const validation = await this.saveValidationResult(
+      credentialId,
+      validationResult,
+    );
+
+    // Atualiza status para PENDING_COMPLIANCE
+    await this.updateCredentialStatus(
+      credentialId,
+      SupplierCredentialStatus.VALIDATING,
+      SupplierCredentialStatus.PENDING_COMPLIANCE,
+      performedById,
+      'CPF validado algoritmicamente. Sem consulta pública disponível.',
+    );
+
+    this.logger.log(
+      `CPF validado algoritmicamente para credential ${credentialId}`,
+    );
+
+    // Envia notificação para marca
+    await this.notificationsService
+      .notifyBrandValidationComplete(credentialId, true)
+      .catch((error) => {
+        this.logger.error(`Falha ao enviar notificação: ${error.message}`);
+      });
+
+    return {
+      success: true,
+      validation,
+      data: null,
+      nextStep: 'COMPLIANCE_ANALYSIS',
+      message:
+        'CPF validado com sucesso. Próximo passo: análise de compliance.',
+    };
   }
 
   // ==================== REVALIDATE ====================
@@ -568,6 +638,7 @@ export class ValidationService {
       SERASA: ValidationSource.SERASA,
       SPC: ValidationSource.SPC,
       SINTEGRA: ValidationSource.SINTEGRA,
+      ALGORITHMIC: ValidationSource.MANUAL, // CPF algorithmic validation maps to MANUAL
     };
 
     return mapping[source] || ValidationSource.MANUAL;

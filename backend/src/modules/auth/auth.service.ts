@@ -95,6 +95,8 @@ export class AuthService {
         },
       });
 
+      const documentType = dto.documentType || 'CNPJ';
+
       // Create Company and Profile for both SUPPLIER and BRAND
       let company: { id: string } | null = null;
       if (dto.role === 'SUPPLIER') {
@@ -103,6 +105,7 @@ export class AuthService {
             legalName: dto.legalName,
             tradeName: dto.tradeName || dto.legalName,
             document: dto.document || `PENDING_${user.id}`,
+            documentType,
             type: 'SUPPLIER',
             city: dto.city || '',
             state: dto.state || '',
@@ -148,6 +151,7 @@ export class AuthService {
             legalName: dto.legalName,
             tradeName: dto.tradeName || dto.legalName,
             document: dto.document || `PENDING_${user.id}`,
+            documentType,
             type: 'BRAND',
             city: dto.city || '',
             state: dto.state || '',

@@ -512,7 +512,8 @@ model Company {
   id        String        @id @default(uuid())
   legalName String
   tradeName String?
-  document  String        @unique // CNPJ or CPF
+  document      String        @unique // CNPJ or CPF
+  documentType  String        @default("CNPJ")  // "CNPJ" | "CPF"
   type      CompanyType
   city      String
   state     String
@@ -1033,6 +1034,7 @@ model SupplierCredential {
 
   // Dados da facção (informados pela marca)
   cnpj            String
+  documentType    String   @default("CNPJ")  // "CNPJ" | "CPF"
   tradeName       String?
   legalName       String?
   contactName     String?

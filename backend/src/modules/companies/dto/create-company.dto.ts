@@ -1,6 +1,6 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { CompanyType } from '@prisma/client';
-import { IsCNPJ } from '../../../common/validators/cnpj.validator';
+import { IsDocument } from '../../../common/validators/document.validator';
 
 export class CreateCompanyDto {
   @IsString()
@@ -11,9 +11,13 @@ export class CreateCompanyDto {
   @IsOptional()
   tradeName?: string;
 
+  @IsIn(['CNPJ', 'CPF'], { message: 'documentType deve ser CNPJ ou CPF' })
+  @IsOptional()
+  documentType?: string = 'CNPJ';
+
   @IsString()
   @IsNotEmpty()
-  @IsCNPJ({ message: 'CNPJ inválido. Verifique o número informado.' })
+  @IsDocument({ message: 'Documento inválido. Verifique o número informado.' })
   document: string; // CNPJ or CPF
 
   @IsEnum(CompanyType)

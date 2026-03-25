@@ -1,6 +1,7 @@
 import {
   IsEmail,
   IsEnum,
+  IsIn,
   IsOptional,
   IsString,
   IsArray,
@@ -8,7 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { CompanyType } from '@prisma/client';
-import { IsCNPJ } from '../../../common/validators/cnpj.validator';
+import { IsDocument } from '../../../common/validators/document.validator';
 
 export class AdminRegisterCompanyDto {
   // Owner user fields
@@ -36,8 +37,12 @@ export class AdminRegisterCompanyDto {
   @IsString()
   tradeName?: string;
 
-  @IsString({ message: 'CNPJ é obrigatório' })
-  @IsCNPJ({ message: 'CNPJ inválido. Verifique o número informado.' })
+  @IsIn(['CNPJ', 'CPF'], { message: 'documentType deve ser CNPJ ou CPF' })
+  @IsOptional()
+  documentType?: string = 'CNPJ';
+
+  @IsString({ message: 'Documento é obrigatório' })
+  @IsDocument({ message: 'Documento inválido. Verifique o número informado.' })
   document: string;
 
   @IsEnum(CompanyType, { message: 'Tipo deve ser BRAND ou SUPPLIER' })

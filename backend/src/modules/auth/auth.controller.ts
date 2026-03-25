@@ -40,8 +40,14 @@ export class AuthController {
   @ThrottleAuth() // 5 requests per minute - prevent abuse
   async cnpjLookup(@Param('cnpj') cnpj: string) {
     const clean = cnpj.replace(/\D/g, '');
+
+    // CPF (11 digits) - no public lookup API available
+    if (clean.length === 11) {
+      return { found: false, isCPF: true, message: 'Consulta pública não disponível para CPF.' };
+    }
+
     if (clean.length !== 14) {
-      throw new BadRequestException('CNPJ deve conter 14 dígitos.');
+      throw new BadRequestException('Documento deve conter 11 (CPF) ou 14 (CNPJ) dígitos.');
     }
     const result = await this.integrationService.validateCNPJ(clean);
     if (!result.isValid || !result.data) {
