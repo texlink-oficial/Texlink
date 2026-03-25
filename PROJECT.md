@@ -64,10 +64,10 @@
 
 | Campo             | Valor                                    |
 |-------------------|------------------------------------------|
-| **Fase Atual**    | Onda 1 — Estabilização (Sprint 1+2 completos) |
-| **Agente Ativo**  | backend-dev + frontend-dev                     |
+| **Fase Atual**    | Onda 1 completa (Sprints 1-3)                  |
+| **Agente Ativo**  | —                                              |
 | **Última Atualiz.**| 2026-03-25                                    |
-| **Progresso**     | 10/18 security issues resolvidos nesta sessão  |
+| **Progresso**     | 15/18 security issues resolvidos (3 P1 remain) |
 
 ## Pipeline (AI Dev Squad)
 
@@ -77,8 +77,8 @@
 | 01   | product-strategist  | ⏭️     | Pulado (brownfield)                 | —          |
 | 02   | ux-designer         | ✅     | Legado: 14 files, design completo   | 2026-02-03 |
 | 03   | architect           | 🟡     | Legado: parcial (falta API spec)    | 2026-02-18 |
-| 04   | frontend-dev        | 🔄     | Sprint 1-2: SEC-REM-004,011 done   | 2026-03-25 |
-| 05   | backend-dev         | 🔄     | Sprint 1-2: 7 P0 fixes done        | 2026-03-25 |
+| 04   | frontend-dev        | ✅     | Sprint 1-3: tokens, logger, deps   | 2026-03-25 |
+| 05   | backend-dev         | ✅     | Sprint 1-3: 12 fixes + CORS unify  | 2026-03-25 |
 | 06   | ai-engineer         | 🟡     | Legado: Gemini Vision integrado     | —          |
 | 07   | data-engineer       | ⏭️     | Pulado (Prisma schema estável)      | —          |
 | 08   | qa-engineer         | 🟡     | Legado: 410 testes, E2E stubs       | 2026-03-14 |
