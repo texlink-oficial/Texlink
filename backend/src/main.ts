@@ -36,11 +36,11 @@ async function bootstrap() {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", "data:", "https://*.amazonaws.com"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          imgSrc: ["'self'", "data:", "blob:", "https://*.amazonaws.com"],
           connectSrc: ["'self'", "https://*.amazonaws.com"],
-          fontSrc: ["'self'"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com"],
           objectSrc: ["'none'"],
           frameAncestors: ["'self'"],
         },
