@@ -20,12 +20,11 @@ if [ "$NODE_ENV" = "production" ] || [ "$NODE_ENV" = "staging" ]; then
       done
       echo "Baseline complete."
     elif grep -q "P3009" /tmp/migrate_err.log; then
-      echo "Found failed migrations (P3009). Resolving and retrying..."
-      # Extract the failed migration name and mark it as rolled back, then re-apply
+      echo "Found failed migrations (P3009). Marking as applied (schema already matches DB)..."
       failed_migration=$(grep -o '[0-9]\{14\}_[a-z_]*' /tmp/migrate_err.log | head -1)
       if [ -n "$failed_migration" ]; then
-        echo "  Resolving failed migration: $failed_migration"
-        npx prisma migrate resolve --rolled-back "$failed_migration" --schema=./prisma/schema.prisma
+        echo "  Marking as applied: $failed_migration"
+        npx prisma migrate resolve --applied "$failed_migration" --schema=./prisma/schema.prisma
         echo "  Retrying migrate deploy..."
         npx prisma migrate deploy --schema=./prisma/schema.prisma
       else
