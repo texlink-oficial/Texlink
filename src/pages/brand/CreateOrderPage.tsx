@@ -21,6 +21,8 @@ interface SupplierOption {
         productTypes: string[];
         specialties: string[];
         dailyCapacity: number;
+        origin?: 'SELF_REGISTERED' | 'INVITED';
+        invitedByCompanyId?: string | null;
     };
 }
 
@@ -265,7 +267,16 @@ const CreateOrderPage: React.FC = () => {
     };
 
     const totalValue = (Number(formData.quantity) || 0) * (Number(formData.pricePerUnit) || 0);
-    const platformFee = totalValue * 0.10; // 10% fee simulation
+
+    // Determine fee percentage based on selected supplier's origin
+    const selectedSupplierId = formData.assignmentType === 'DIRECT'
+        ? formData.supplierId
+        : formData.targetSupplierIds.length === 1 ? formData.targetSupplierIds[0] : '';
+    const selectedSupplier = selectedSupplierId ? suppliers.find(s => s.id === selectedSupplierId) : null;
+    const isOwnSupplier = selectedSupplier?.supplierProfile?.origin === 'INVITED'
+        && selectedSupplier?.supplierProfile?.invitedByCompanyId === authUser?.companyId;
+    const feePercentage = isOwnSupplier ? 0 : 10;
+    const platformFee = totalValue * (feePercentage / 100);
     const netValue = totalValue - platformFee;
 
     // Sort suppliers: favorites first, then by rating
@@ -540,12 +551,16 @@ const CreateOrderPage: React.FC = () => {
                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
                             </p>
                             <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700/50 space-y-1">
-                                <div className="flex justify-between text-xs text-gray-500">
-                                    <span>Taxa de Serviço (10%)</span>
-                                    <span>- {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(platformFee)}</span>
+                                <div className={`flex justify-between text-xs ${feePercentage === 0 ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-gray-500'}`}>
+                                    <span>
+                                        {feePercentage === 0
+                                            ? 'Taxa de Servico (0%) — Fornecedor proprio'
+                                            : `Taxa de Servico (${feePercentage}%)`}
+                                    </span>
+                                    <span>{feePercentage === 0 ? 'R$ 0,00' : `- ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(platformFee)}`}</span>
                                 </div>
                                 <div className="flex justify-between text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                                    <span>Líquido para Facção</span>
+                                    <span>Liquido para Faccao</span>
                                     <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(netValue)}</span>
                                 </div>
                             </div>

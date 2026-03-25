@@ -175,11 +175,20 @@ const OrderDetailsPage: React.FC = () => {
                                     <p className="text-xs text-brand-600 dark:text-brand-400 font-medium">Financeiro</p>
                                     <div className="mt-1 space-y-0.5">
                                         <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(Number(order.totalValue))}</p>
-                                        {order.platformFee && (
+                                        {order.platformFee != null && (
                                             <>
-                                                <p className="text-[10px] text-gray-500">Taxa: {formatCurrency(Number(order.platformFee))}</p>
+                                                {Number(order.platformFeePercentage) === 0 || Number(order.platformFee) === 0 ? (
+                                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5">
+                                                        <CheckCircle className="w-3 h-3" />
+                                                        Taxa: 0% — Fornecedor proprio
+                                                    </p>
+                                                ) : (
+                                                    <p className="text-[10px] text-gray-500">
+                                                        Taxa: {order.platformFeePercentage != null ? `${Number(order.platformFeePercentage)}%` : ''} ({formatCurrency(Number(order.platformFee))})
+                                                    </p>
+                                                )}
                                                 <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                                                    Líquido Facção: {formatCurrency(Number(order.netValue || (order.totalValue as any) - (order.platformFee as any)))}
+                                                    Liquido Faccao: {formatCurrency(Number(order.netValue || (order.totalValue as any) - (order.platformFee as any)))}
                                                 </p>
                                             </>
                                         )}

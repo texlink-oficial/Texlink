@@ -30,6 +30,7 @@ export interface Order {
     pricePerUnit: number;
     totalValue: number;
     platformFee?: number;
+    platformFeePercentage?: number;
     netValue?: number;
     deliveryDeadline: string;
     paymentTerms?: string;
