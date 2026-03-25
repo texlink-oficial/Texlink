@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { adminService } from '../../services/admin.service';
 import { formatDocument as formatDoc, detectDocumentType, getDocumentLabel } from '../../utils/document';
+import CompanyHistoryPanel from './CompanyHistoryPanel';
 
 interface CompanyBasic {
     id: string;
@@ -347,6 +348,9 @@ export default function CompanyDetailsModal({ company, onClose }: Props) {
                                     </div>
                                 </>
                             )}
+                            {/* ===== HISTORICO DO CLIENTE ===== */}
+                            <SectionTitle icon={<FileText className="w-4 h-4" />} title="Historico do Cliente" />
+                            <CompanyHistoryPanel companyId={company.id} />
                         </>
                     )}
                 </div>

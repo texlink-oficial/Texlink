@@ -315,4 +315,30 @@ export const adminService = {
         const response = await api.delete(`/admin/companies/${id}`);
         return response.data;
     },
+
+    // ========== Company Notes & Audit Log ==========
+
+    getCompanyNotes(companyId: string, params: { category?: string; search?: string; page?: number; limit?: number }) {
+        return api.get(`/admin/companies/${companyId}/notes`, { params });
+    },
+
+    createCompanyNote(companyId: string, formData: FormData) {
+        return api.post(`/admin/companies/${companyId}/notes`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+    },
+
+    deleteCompanyNote(companyId: string, noteId: string) {
+        return api.delete(`/admin/companies/${companyId}/notes/${noteId}`);
+    },
+
+    downloadNoteAttachment(companyId: string, noteId: string, attachmentId: string) {
+        return api.get(`/admin/companies/${companyId}/notes/${noteId}/attachments/${attachmentId}/download`, {
+            responseType: 'blob',
+        });
+    },
+
+    getCompanyAuditLog(companyId: string, params: { page?: number; limit?: number }) {
+        return api.get(`/admin/companies/${companyId}/audit-log`, { params });
+    },
 };
