@@ -1193,23 +1193,21 @@ export class OrdersService {
     });
 
     // Validate plannedStartDate when starting production
+    // Use date-only strings (YYYY-MM-DD) in São Paulo timezone to avoid UTC offset issues
     let startAfterDeadline = false;
     if (dto.plannedStartDate) {
-      const planned = new Date(dto.plannedStartDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      planned.setHours(0, 0, 0, 0);
+      const plannedStr = dto.plannedStartDate.substring(0, 10); // "YYYY-MM-DD"
+      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); // "YYYY-MM-DD"
 
-      if (planned < today) {
+      if (plannedStr < todayStr) {
         throw new BadRequestException(
           'A data de início não pode ser anterior à data atual.',
         );
       }
 
       if (order.deliveryDeadline) {
-        const deadline = new Date(order.deliveryDeadline);
-        deadline.setHours(0, 0, 0, 0);
-        startAfterDeadline = planned >= deadline;
+        const deadlineStr = new Date(order.deliveryDeadline).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+        startAfterDeadline = plannedStr >= deadlineStr;
       }
     }
 

@@ -578,20 +578,7 @@ export class SuppliersService {
       throw new ForbiddenException('Pedidos diretos não aceitam demonstração de interesse. Use a ação "Aceitar Pedido".');
     }
 
-    // Check if another supplier is already negotiating this order
-    const activeNegotiation = await this.prisma.orderTargetSupplier.findFirst({
-      where: {
-        orderId,
-        supplierId: { not: company.id },
-        status: { in: [OrderTargetStatus.INTERESTED, OrderTargetStatus.ACCEPTED] },
-      },
-    });
-
-    if (activeNegotiation) {
-      throw new ForbiddenException('Este pedido já está em negociação com outra facção.');
-    }
-
-    // Check if already has a target record
+    // Atomic check-and-set to prevent race condition between concurrent suppliers
     const existingTarget = order.targetSuppliers[0];
 
     if (existingTarget) {
@@ -601,28 +588,43 @@ export class SuppliersService {
       if (existingTarget.status === OrderTargetStatus.ACCEPTED) {
         throw new ForbiddenException('Você já foi aceito neste pedido');
       }
-
-      // Update existing PENDING target to INTERESTED
-      await this.prisma.orderTargetSupplier.update({
-        where: { id: existingTarget.id },
-        data: {
-          status: OrderTargetStatus.INTERESTED,
-          message: message || null,
-          respondedAt: new Date(),
-        },
-      });
-    } else {
-      // Create new target record with INTERESTED status (for DISPONIVEL_PARA_OUTRAS)
-      await this.prisma.orderTargetSupplier.create({
-        data: {
-          orderId,
-          supplierId: company.id,
-          status: OrderTargetStatus.INTERESTED,
-          message: message || null,
-          respondedAt: new Date(),
-        },
-      });
     }
+
+    await this.prisma.$transaction(async (tx) => {
+      // Re-check inside transaction for atomicity
+      const activeNegotiation = await tx.orderTargetSupplier.findFirst({
+        where: {
+          orderId,
+          supplierId: { not: company.id },
+          status: { in: [OrderTargetStatus.INTERESTED, OrderTargetStatus.ACCEPTED] },
+        },
+      });
+
+      if (activeNegotiation) {
+        throw new ForbiddenException('Este pedido já está em negociação com outra facção.');
+      }
+
+      if (existingTarget) {
+        await tx.orderTargetSupplier.update({
+          where: { id: existingTarget.id },
+          data: {
+            status: OrderTargetStatus.INTERESTED,
+            message: message || null,
+            respondedAt: new Date(),
+          },
+        });
+      } else {
+        await tx.orderTargetSupplier.create({
+          data: {
+            orderId,
+            supplierId: company.id,
+            status: OrderTargetStatus.INTERESTED,
+            message: message || null,
+            respondedAt: new Date(),
+          },
+        });
+      }
+    });
 
     // Emit event to notify the brand
     this.eventEmitter.emit(SUPPLIER_INTEREST_EXPRESSED, {
@@ -869,10 +871,16 @@ export class SuppliersService {
     const receitaWsResult = await this.tryReceitaWs(cleanedCnpj);
     if (receitaWsResult) return receitaWsResult;
 
+    // Both APIs failed but check digits are valid — allow manual entry
     return {
-      isValid: false,
-      error: 'Não foi possível consultar o CNPJ. Verifique a conexão ou preencha os dados manualmente.',
+      isValid: true,
+      data: {
+        cnpj: this.formatCnpj(cleanedCnpj),
+        razaoSocial: '',
+        nomeFantasia: '',
+      },
       source: 'FALLBACK',
+      warning: 'Não foi possível consultar os dados do CNPJ automaticamente. Preencha os dados manualmente.',
       timestamp: new Date(),
     };
   }
