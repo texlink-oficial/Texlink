@@ -6,7 +6,7 @@ import {
     ArrowLeft, Package, Calendar, DollarSign, Factory,
     CheckCircle, Send, MessageSquare,
     ChevronRight, Loader2, FileText,
-    Star, Image as ImageIcon
+    Star, Image as ImageIcon, AlertTriangle
 } from 'lucide-react';
 import { OrderTimeline, StatusActionBar } from '../../components/orders';
 import { RatingModal } from '../../components/ratings/RatingModal';
@@ -200,6 +200,14 @@ const OrderDetailsPage: React.FC = () => {
                                 <div className="mt-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                     <Calendar className="w-4 h-4" />
                                     <span>Início previsto: <strong className="text-gray-900 dark:text-white">{new Date(order.plannedStartDate).toLocaleDateString('pt-BR')}</strong></span>
+                                </div>
+                            )}
+                            {order.startAfterDeadline && (
+                                <div className="mt-3 flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                    <p className="text-sm text-amber-800 dark:text-amber-400">
+                                        A facção informou início de produção posterior ao prazo de entrega. A produção pode atrasar.
+                                    </p>
                                 </div>
                             )}
                         </div>

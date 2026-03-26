@@ -1183,12 +1183,36 @@ export class OrdersService {
       select: { name: true },
     });
 
+    // Validate plannedStartDate when starting production
+    let startAfterDeadline = false;
+    if (dto.plannedStartDate) {
+      const planned = new Date(dto.plannedStartDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      planned.setHours(0, 0, 0, 0);
+
+      if (planned < today) {
+        throw new BadRequestException(
+          'A data de início não pode ser anterior à data atual.',
+        );
+      }
+
+      if (order.deliveryDeadline) {
+        const deadline = new Date(order.deliveryDeadline);
+        deadline.setHours(0, 0, 0, 0);
+        startAfterDeadline = planned >= deadline;
+      }
+    }
+
     const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status: dto.status,
         ...(dto.rejectionReason && { rejectionReason: dto.rejectionReason }),
-        ...(dto.plannedStartDate && { plannedStartDate: new Date(dto.plannedStartDate) }),
+        ...(dto.plannedStartDate && {
+          plannedStartDate: new Date(dto.plannedStartDate),
+          startAfterDeadline,
+        }),
         statusHistory: {
           create: {
             previousStatus: order.status,

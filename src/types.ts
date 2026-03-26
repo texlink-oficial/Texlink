@@ -66,6 +66,7 @@ export interface Order {
   attachments?: Attachment[];
   materialsProvided: boolean;
   plannedStartDate?: string;
+  startAfterDeadline?: boolean;
   createdAt: string;
   updatedAt?: string;
   timeline: TimelineEvent[];

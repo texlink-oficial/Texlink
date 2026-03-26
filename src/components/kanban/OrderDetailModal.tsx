@@ -166,6 +166,8 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
     // Planned start date modal state (shown when supplier confirms receipt)
     const [showPlannedDateModal, setShowPlannedDateModal] = useState(false);
     const [plannedStartDate, setPlannedStartDate] = useState('');
+    const [showDeadlineWarning, setShowDeadlineWarning] = useState(false);
+    const [dateError, setDateError] = useState<string | null>(null);
 
     const REVIEW_RESULT_TO_STATUS: Record<string, OrderStatus> = {
         APPROVED: OrderStatus.PAYMENT_PROCESS,
@@ -210,9 +212,31 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
 
     const handlePlannedDateConfirm = () => {
         if (!plannedStartDate) return;
+
+        const selected = new Date(plannedStartDate + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (selected < today) {
+            setDateError('A data de início não pode ser anterior a hoje.');
+            return;
+        }
+
+        // Check if start date is on or after delivery deadline
+        if (order.deliveryDeadline) {
+            const deadline = new Date(order.deliveryDeadline);
+            deadline.setHours(0, 0, 0, 0);
+            if (selected >= deadline && !showDeadlineWarning) {
+                setShowDeadlineWarning(true);
+                return;
+            }
+        }
+
         onStatusChange(order.id, OrderStatus.PRODUCTION_QUEUE, { plannedStartDate });
         setShowPlannedDateModal(false);
+        setShowDeadlineWarning(false);
         setPlannedStartDate('');
+        setDateError(null);
         onClose();
     };
 
@@ -732,23 +756,44 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                             </div>
                         </div>
 
-                        <div className="mb-6">
+                        <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Início previsto da produção *
                             </label>
                             <input
                                 type="date"
                                 value={plannedStartDate}
-                                onChange={(e) => setPlannedStartDate(e.target.value)}
+                                onChange={(e) => {
+                                    setPlannedStartDate(e.target.value);
+                                    setDateError(null);
+                                    setShowDeadlineWarning(false);
+                                }}
                                 min={new Date().toISOString().split('T')[0]}
-                                className="w-full px-4 py-3 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all"
+                                className={`w-full px-4 py-3 bg-white dark:bg-gray-900/50 border rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all ${dateError ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'}`}
                                 autoFocus
                             />
+                            {dateError && (
+                                <p className="mt-2 text-sm text-red-600 dark:text-red-400">{dateError}</p>
+                            )}
                         </div>
+
+                        {showDeadlineWarning && (
+                            <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                                <div className="flex items-start gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-semibold text-amber-900 dark:text-amber-300">Atenção</p>
+                                        <p className="text-sm text-amber-800 dark:text-amber-400 mt-1">
+                                            A data de início selecionada ({new Date(plannedStartDate + 'T00:00:00').toLocaleDateString('pt-BR')}) é posterior ao prazo de entrega ({order.deliveryDeadline ? new Date(order.deliveryDeadline).toLocaleDateString('pt-BR') : '—'}). A produção pode não ser concluída dentro do prazo.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="flex gap-3">
                             <button
-                                onClick={() => { setShowPlannedDateModal(false); setPlannedStartDate(''); }}
+                                onClick={() => { setShowPlannedDateModal(false); setPlannedStartDate(''); setDateError(null); setShowDeadlineWarning(false); }}
                                 className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-xl transition-colors"
                             >
                                 Cancelar
@@ -756,9 +801,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                             <button
                                 onClick={handlePlannedDateConfirm}
                                 disabled={!plannedStartDate}
-                                className="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className={`flex-1 px-4 py-3 font-semibold rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${showDeadlineWarning ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-brand-600 hover:bg-brand-700 text-white'}`}
                             >
-                                Confirmar
+                                {showDeadlineWarning ? 'Confirmar mesmo assim' : 'Confirmar'}
                             </button>
                         </div>
                     </div>

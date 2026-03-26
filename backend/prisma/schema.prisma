@@ -783,6 +783,7 @@ model Order {
   plannedEndDate         DateTime?
   actualStartDate        DateTime?
   actualEndDate          DateTime?
+  startAfterDeadline     Boolean   @default(false)
 
   // Métricas de revisão agregadas
   totalReviewCount   Int @default(0)
