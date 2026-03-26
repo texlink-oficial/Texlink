@@ -9,6 +9,7 @@ export interface AdminDashboard {
         activeSuppliers: number;
         pendingSuppliers: number;
         totalBrands: number;
+        pendingBrands: number;
         totalRevenue: number;
     };
     recentOrders: {

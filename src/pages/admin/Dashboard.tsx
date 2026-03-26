@@ -337,7 +337,7 @@ const AdminDashboard: React.FC = () => {
                     />
                 </div>
 
-                {/* Pending Approvals Alert */}
+                {/* Pending Approvals Alerts */}
                 {metrics.pendingSuppliers > 0 && (
                     <Link
                         to="/admin/approvals"
@@ -356,6 +356,28 @@ const AdminDashboard: React.FC = () => {
                                 </div>
                             </div>
                             <ChevronRight className="w-5 h-5 text-amber-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                    </Link>
+                )}
+
+                {metrics.pendingBrands > 0 && (
+                    <Link
+                        to="/admin/brands"
+                        className="group relative overflow-hidden block bg-gradient-to-r from-violet-500/20 to-purple-500/10 border border-violet-500/30 rounded-2xl p-6 hover:from-violet-500/30 hover:to-purple-500/20 transition-all hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] dashboard-section"
+                    >
+                        <div className="absolute -top-8 -right-8 w-24 h-24 bg-violet-500/20 rounded-full blur-2xl" />
+
+                        <div className="relative z-10 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-violet-500/20 rounded-xl flex items-center justify-center">
+                                    <AlertCircle className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                                </div>
+                                <div>
+                                    <p className="text-violet-900 dark:text-white font-semibold">{metrics.pendingBrands} Aprovações Pendentes</p>
+                                    <p className="text-violet-800/80 dark:text-violet-400/70 text-sm">Marcas aguardando aprovação</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-violet-600 dark:text-violet-400 group-hover:translate-x-1 transition-transform" />
                         </div>
                     </Link>
                 )}

@@ -29,6 +29,7 @@ export class AdminService {
       activeSuppliers,
       pendingSuppliers,
       totalBrands,
+      pendingBrands,
       totalRevenue,
     ] = await Promise.all([
       this.prisma.order.count(),
@@ -52,6 +53,9 @@ export class AdminService {
         where: { type: CompanyType.SUPPLIER, status: CompanyStatus.PENDING },
       }),
       this.prisma.company.count({ where: { type: CompanyType.BRAND } }),
+      this.prisma.company.count({
+        where: { type: CompanyType.BRAND, status: CompanyStatus.PENDING },
+      }),
       this.prisma.order.aggregate({
         where: { status: OrderStatus.FINALIZADO },
         _sum: { totalValue: true },
@@ -77,6 +81,7 @@ export class AdminService {
         activeSuppliers,
         pendingSuppliers,
         totalBrands,
+        pendingBrands,
         totalRevenue: totalRevenue._sum.totalValue || 0,
       },
       recentOrders,
