@@ -7,6 +7,7 @@ import {
   IsUrl,
   Min,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import {
   EducationalContentType,
   EducationalContentCategory,
@@ -38,10 +39,12 @@ export class CreateEducationalContentDto {
 
   @IsOptional()
   @IsBoolean()
+  @Type(() => Boolean)
   isActive?: boolean;
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Type(() => Number)
   displayOrder?: number;
 }
