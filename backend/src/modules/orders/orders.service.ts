@@ -298,10 +298,10 @@ export class OrdersService {
     ],
     [OrderStatus.AGUARDANDO_RETRABALHO]: [
       {
-        nextStatus: OrderStatus.ACEITO_PELA_FACCAO,
+        nextStatus: OrderStatus.FILA_DE_PRODUCAO,
         allowedRoles: ['SUPPLIER'],
-        label: 'Aceitar Retrabalho',
-        description: 'Aceitar o retrabalho e iniciar o fluxo de produção',
+        label: 'Iniciar Retrabalho',
+        description: 'Aceitar e enviar para produção de retrabalho',
         requiresConfirmation: true,
         requiresNotes: false,
         requiresReview: false,
