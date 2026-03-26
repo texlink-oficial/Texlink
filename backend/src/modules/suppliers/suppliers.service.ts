@@ -578,6 +578,19 @@ export class SuppliersService {
       throw new ForbiddenException('Pedidos diretos não aceitam demonstração de interesse. Use a ação "Aceitar Pedido".');
     }
 
+    // Check if another supplier is already negotiating this order
+    const activeNegotiation = await this.prisma.orderTargetSupplier.findFirst({
+      where: {
+        orderId,
+        supplierId: { not: company.id },
+        status: { in: [OrderTargetStatus.INTERESTED, OrderTargetStatus.ACCEPTED] },
+      },
+    });
+
+    if (activeNegotiation) {
+      throw new ForbiddenException('Este pedido já está em negociação com outra facção.');
+    }
+
     // Check if already has a target record
     const existingTarget = order.targetSuppliers[0];
 

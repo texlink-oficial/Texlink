@@ -646,6 +646,15 @@ export class OrdersService {
                 assignmentType: 'HYBRID',
                 status: 'LANCADO_PELA_MARCA',
                 supplierId: null,
+                // Exclude orders already in negotiation with another supplier
+                NOT: {
+                  targetSuppliers: {
+                    some: {
+                      supplierId: { not: companyUser.companyId },
+                      status: { in: [OrderTargetStatus.INTERESTED, OrderTargetStatus.ACCEPTED] },
+                    },
+                  },
+                },
               },
               // Orders available to all suppliers (after original supplier rejected)
               {
