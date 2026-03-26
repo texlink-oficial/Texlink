@@ -94,7 +94,7 @@ const AdminDashboard: React.FC = () => {
     const metrics = dashboard?.metrics || {
         totalOrders: 0, activeOrders: 0, completedOrders: 0,
         totalSuppliers: 0, activeSuppliers: 0, pendingSuppliers: 0,
-        totalBrands: 0, totalRevenue: 0,
+        totalBrands: 0, pendingBrands: 0, totalRevenue: 0,
     };
 
     // Transform orders for the table

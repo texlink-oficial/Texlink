@@ -39,7 +39,6 @@ export class CreateEducationalContentDto {
 
   @IsOptional()
   @IsBoolean()
-  @Type(() => Boolean)
   isActive?: boolean;
 
   @IsOptional()
