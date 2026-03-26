@@ -806,10 +806,29 @@ export class SuppliersService {
   // ==================== INVITATION METHODS ====================
 
   /**
-   * Validate CNPJ using Brasil API
+   * Validate CNPJ check digits locally (modulo-11)
+   */
+  private isValidCnpjCheckDigits(cnpj: string): boolean {
+    if (cnpj.length !== 14) return false;
+    // Reject all-same-digit patterns
+    if (/^(\d)\1+$/.test(cnpj)) return false;
+    const digits = cnpj.split('').map(Number);
+    const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const w2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    let sum1 = 0;
+    for (let i = 0; i < 12; i++) sum1 += digits[i] * w1[i];
+    const d1 = sum1 % 11 < 2 ? 0 : 11 - (sum1 % 11);
+    if (digits[12] !== d1) return false;
+    let sum2 = 0;
+    for (let i = 0; i < 13; i++) sum2 += digits[i] * w2[i];
+    const d2 = sum2 % 11 < 2 ? 0 : 11 - (sum2 % 11);
+    return digits[13] === d2;
+  }
+
+  /**
+   * Validate CNPJ using Brasil API with ReceitaWS fallback
    */
   async validateCnpj(cnpj: string) {
-    // Clean CNPJ (remove non-numeric characters)
     const cleanedCnpj = cnpj.replace(/\D/g, '');
 
     if (cleanedCnpj.length !== 14) {
@@ -821,27 +840,63 @@ export class SuppliersService {
       };
     }
 
+    if (!this.isValidCnpjCheckDigits(cleanedCnpj)) {
+      return {
+        isValid: false,
+        error: 'CNPJ inválido — dígitos verificadores incorretos',
+        source: 'LOCAL',
+        timestamp: new Date(),
+      };
+    }
+
+    // Try Brasil API first, then ReceitaWS as fallback
+    const brasilApiResult = await this.tryBrasilApi(cleanedCnpj);
+    if (brasilApiResult) return brasilApiResult;
+
+    const receitaWsResult = await this.tryReceitaWs(cleanedCnpj);
+    if (receitaWsResult) return receitaWsResult;
+
+    return {
+      isValid: false,
+      error: 'Não foi possível consultar o CNPJ. Verifique a conexão ou preencha os dados manualmente.',
+      source: 'FALLBACK',
+      timestamp: new Date(),
+    };
+  }
+
+  private async tryBrasilApi(cleanedCnpj: string) {
     try {
-      // Use Brasil API directly (free, no auth required)
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch(
         `https://brasilapi.com.br/api/cnpj/v1/${cleanedCnpj}`,
+        { signal: controller.signal },
       );
+      clearTimeout(timeout);
 
+      if (response.status === 404) {
+        return {
+          isValid: false,
+          error: 'CNPJ não encontrado na Receita Federal',
+          source: 'BRASIL_API',
+          timestamp: new Date(),
+        };
+      }
+      if (response.status === 400) {
+        return {
+          isValid: false,
+          error: 'CNPJ inválido',
+          source: 'BRASIL_API',
+          timestamp: new Date(),
+        };
+      }
       if (!response.ok) {
-        if (response.status === 404) {
-          return {
-            isValid: false,
-            error: 'CNPJ não encontrado na Receita Federal',
-            source: 'BRASIL_API',
-            timestamp: new Date(),
-          };
-        }
-        throw new Error(`API error: ${response.status}`);
+        this.logger.warn(`Brasil API returned ${response.status} for CNPJ ${cleanedCnpj}`);
+        return null; // fallback to ReceitaWS
       }
 
       const data = await response.json();
-
-      // Parse and return normalised data
       return {
         isValid: true,
         data: {
@@ -877,13 +932,75 @@ export class SuppliersService {
         rawResponse: data,
       };
     } catch (error) {
-      this.logger.error(`CNPJ validation error: ${error}`);
+      this.logger.warn(`Brasil API failed for CNPJ ${cleanedCnpj}: ${error.message}`);
+      return null; // fallback to ReceitaWS
+    }
+  }
+
+  private async tryReceitaWs(cleanedCnpj: string) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(
+        `https://receitaws.com.br/v1/cnpj/${cleanedCnpj}`,
+        { signal: controller.signal },
+      );
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        this.logger.warn(`ReceitaWS returned ${response.status} for CNPJ ${cleanedCnpj}`);
+        return null;
+      }
+
+      const data = await response.json();
+
+      if (data.status === 'ERROR') {
+        return {
+          isValid: false,
+          error: data.message || 'CNPJ não encontrado',
+          source: 'RECEITAWS',
+          timestamp: new Date(),
+        };
+      }
+
       return {
-        isValid: false,
-        error: 'Erro ao consultar CNPJ. Tente novamente.',
-        source: 'BRASIL_API',
+        isValid: true,
+        data: {
+          cnpj: this.formatCnpj(cleanedCnpj),
+          razaoSocial: data.nome,
+          nomeFantasia: data.fantasia,
+          situacao: data.situacao,
+          dataSituacao: data.data_situacao,
+          dataAbertura: data.abertura,
+          naturezaJuridica: data.natureza_juridica,
+          capitalSocial: data.capital_social ? parseFloat(data.capital_social.replace(/\./g, '').replace(',', '.')) : null,
+          porte: data.porte,
+          endereco: {
+            logradouro: data.logradouro,
+            numero: data.numero,
+            complemento: data.complemento,
+            bairro: data.bairro,
+            municipio: data.municipio,
+            uf: data.uf,
+            cep: data.cep,
+          },
+          atividadePrincipal: data.atividade_principal?.[0]
+            ? {
+              codigo: data.atividade_principal[0].code,
+              descricao: data.atividade_principal[0].text,
+            }
+            : null,
+          telefone: data.telefone,
+          email: data.email,
+        },
+        source: 'RECEITAWS',
         timestamp: new Date(),
+        rawResponse: data,
       };
+    } catch (error) {
+      this.logger.warn(`ReceitaWS failed for CNPJ ${cleanedCnpj}: ${error.message}`);
+      return null;
     }
   }
 
