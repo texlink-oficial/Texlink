@@ -987,7 +987,7 @@ export class SuppliersService {
           dataSituacao: data.data_situacao,
           dataAbertura: data.abertura,
           naturezaJuridica: data.natureza_juridica,
-          capitalSocial: data.capital_social ? parseFloat(data.capital_social.replace(/\./g, '').replace(',', '.')) : null,
+          capitalSocial: data.capital_social ? (typeof data.capital_social === 'string' ? parseFloat(data.capital_social.replace(/\./g, '').replace(',', '.')) : Number(data.capital_social)) || null : null,
           porte: data.porte,
           endereco: {
             logradouro: data.logradouro,

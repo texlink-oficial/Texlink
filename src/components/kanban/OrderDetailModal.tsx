@@ -784,7 +784,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                     <div>
                                         <p className="text-sm font-semibold text-amber-900 dark:text-amber-300">Atenção</p>
                                         <p className="text-sm text-amber-800 dark:text-amber-400 mt-1">
-                                            A data de início selecionada ({new Date(plannedStartDate + 'T00:00:00').toLocaleDateString('pt-BR')}) é posterior ao prazo de entrega ({order.deliveryDeadline ? new Date(order.deliveryDeadline).toLocaleDateString('pt-BR') : '—'}). A produção pode não ser concluída dentro do prazo.
+                                            A data de início selecionada ({new Date(plannedStartDate + 'T00:00:00').toLocaleDateString('pt-BR')}) é igual ou posterior ao prazo de entrega ({order.deliveryDeadline ? new Date(order.deliveryDeadline).toLocaleDateString('pt-BR') : '—'}). A produção pode não ser concluída dentro do prazo.
                                         </p>
                                     </div>
                                 </div>
