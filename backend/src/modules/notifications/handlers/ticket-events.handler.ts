@@ -44,6 +44,7 @@ export class TicketEventsHandler {
           displayId: event.displayId,
           title: event.title,
           type: 'created',
+          companyId: event.companyId,
         });
       }
     } catch (error) {
@@ -98,6 +99,7 @@ export class TicketEventsHandler {
             type: 'message',
             senderName: event.senderName,
             actionUrl,
+            companyId: ticket.companyId,
           });
         }
 
@@ -119,6 +121,7 @@ export class TicketEventsHandler {
             type: 'message',
             senderName: event.senderName,
             actionUrl: `/admin/suporte/${event.ticketId}`,
+            companyId: ticket.companyId,
           });
         }
 
@@ -149,7 +152,7 @@ export class TicketEventsHandler {
       // Get ticket details
       const ticket = await this.prisma.supportTicket.findUnique({
         where: { id: event.ticketId },
-        select: { title: true },
+        select: { title: true, companyId: true },
       });
 
       if (!ticket) return;
@@ -171,6 +174,7 @@ export class TicketEventsHandler {
         title: ticket.title,
         type: 'status_changed',
         newStatus: statusLabels[event.newStatus] || event.newStatus,
+        companyId: ticket.companyId,
       });
     } catch (error) {
       this.logger.error(

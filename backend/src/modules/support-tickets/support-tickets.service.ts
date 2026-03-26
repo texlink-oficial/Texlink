@@ -35,7 +35,10 @@ export class SupportTicketsService {
   // ========== SUPPLIER/BRAND ENDPOINTS ==========
 
   // Create a new ticket
-  async create(dto: CreateTicketDto, userId: string, companyId: string) {
+  async create(dto: CreateTicketDto, userId: string, companyId: string | null) {
+    if (!companyId) {
+      throw new ForbiddenException('Você precisa estar vinculado a uma empresa para abrir chamados.');
+    }
     const displayId = await this.generateDisplayId();
 
     const ticket = await this.prisma.supportTicket.create({
@@ -96,10 +99,13 @@ export class SupportTicketsService {
 
   // Get my tickets (for company)
   async getMyTickets(
-    companyId: string,
+    companyId: string | null,
     status?: SupportTicketStatus,
     category?: SupportTicketCategory,
   ) {
+    if (!companyId) {
+      return [];
+    }
     return this.prisma.supportTicket.findMany({
       where: {
         companyId,

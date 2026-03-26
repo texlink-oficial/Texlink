@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     HelpCircle, Search, Clock,
     Package, CreditCard, Key, Wrench, MoreHorizontal,
+    Factory, BarChart3, Lightbulb,
     ChevronRight, RefreshCw, AlertCircle, User, Send,
     X
 } from 'lucide-react';
@@ -26,6 +27,9 @@ const CATEGORY_ICONS: Record<SupportTicketCategory, React.ElementType> = {
     PAGAMENTOS: CreditCard,
     ACESSO: Key,
     TECNICO: Wrench,
+    FORNECEDORES: Factory,
+    RELATORIOS: BarChart3,
+    SUGESTAO: Lightbulb,
     OUTROS: MoreHorizontal,
 };
 

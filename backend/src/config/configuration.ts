@@ -58,7 +58,7 @@ export default () => {
       refreshExpiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d',
     },
     cors: {
-      origins: process.env.CORS_ORIGINS?.split(',') || [
+      origins: process.env.CORS_ORIGINS?.split(',').map(s => s.trim()).filter(Boolean) || [
         'http://localhost:5173',
         'http://localhost:3001',
       ],
