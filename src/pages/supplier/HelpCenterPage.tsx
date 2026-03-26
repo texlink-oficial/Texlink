@@ -41,6 +41,7 @@ const HelpCenterPage: React.FC = () => {
     const navigate = useNavigate();
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<SupportTicketStatus | ''>('');
     const [selectedCategory, setSelectedCategory] = useState<SupportTicketCategory | ''>('');
@@ -53,13 +54,15 @@ const HelpCenterPage: React.FC = () => {
     const loadTickets = async () => {
         try {
             setIsLoading(true);
+            setLoadError(null);
             const data = await supportTicketsService.getMyTickets(
                 selectedStatus || undefined,
                 selectedCategory || undefined,
             );
             setTickets(data);
-        } catch (error) {
-            console.error('Error loading tickets:', error);
+        } catch (error: any) {
+            const msg = error?.message || 'Erro ao carregar chamados. Tente novamente.';
+            setLoadError(msg);
         } finally {
             setIsLoading(false);
         }
@@ -166,7 +169,22 @@ const HelpCenterPage: React.FC = () => {
 
             {/* Tickets List */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-                {filteredTickets.length === 0 ? (
+                {loadError && (
+                    <div className="mb-4 flex items-center justify-between gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400">
+                        <div className="flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                            <span className="text-sm">{loadError}</span>
+                        </div>
+                        <button
+                            onClick={loadTickets}
+                            className="flex items-center gap-1 text-sm font-medium text-red-600 dark:text-red-400 hover:underline"
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                            Tentar novamente
+                        </button>
+                    </div>
+                )}
+                {filteredTickets.length === 0 && !loadError ? (
                     <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
                         <HelpCircle className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -270,6 +288,7 @@ interface CreateTicketModalProps {
 
 const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreated }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [createError, setCreateError] = useState<string | null>(null);
     const [formData, setFormData] = useState<CreateTicketDto>({
         title: '',
         description: '',
@@ -283,10 +302,12 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
 
         try {
             setIsSubmitting(true);
+            setCreateError(null);
             const ticket = await supportTicketsService.create(formData);
             onCreated(ticket);
-        } catch (error) {
-            console.error('Error creating ticket:', error);
+        } catch (error: any) {
+            const msg = error?.message || 'Erro ao criar chamado. Tente novamente.';
+            setCreateError(msg);
         } finally {
             setIsSubmitting(false);
         }
@@ -308,6 +329,12 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    {createError && (
+                        <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
+                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                            {createError}
+                        </div>
+                    )}
                     {/* Title */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
