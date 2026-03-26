@@ -1080,7 +1080,9 @@ export class SuppliersService {
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         // Store address if validated
         ...(validation.isValid &&
-          validation.data?.endereco && {
+          validation.data &&
+          'endereco' in validation.data &&
+          validation.data.endereco && {
           addressStreet: validation.data.endereco.logradouro,
           addressNumber: validation.data.endereco.numero,
           addressComplement: validation.data.endereco.complemento,
