@@ -469,6 +469,7 @@ export class NotificationsService {
       newStatus?: string;
       senderName?: string;
       actionUrl?: string;
+      companyId?: string;
     },
   ) {
     let notificationType: NotificationType;
@@ -496,6 +497,7 @@ export class NotificationsService {
     return this.notify({
       type: notificationType,
       recipientId,
+      companyId: data.companyId,
       title: notificationTitle,
       body,
       data,
