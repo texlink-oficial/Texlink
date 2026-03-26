@@ -91,8 +91,8 @@ export class MessageEventsHandler {
       for (const user of recipientUsers) {
         const actionUrl =
           user.companyId === event.brandId
-            ? `/brand/pedidos/${event.orderId}/chat`
-            : `/portal/pedidos/${event.orderId}/chat`;
+            ? `/brand/pedidos/${event.orderId}`
+            : `/portal/pedidos/${event.orderId}`;
 
         await this.notificationsService.notify({
           type: NotificationType.MESSAGE_RECEIVED,
@@ -146,8 +146,8 @@ export class MessageEventsHandler {
       for (const user of recipientUsers) {
         const actionUrl =
           user.companyId === event.brandId
-            ? `/brand/pedidos/${event.orderId}/chat`
-            : `/portal/pedidos/${event.orderId}/chat`;
+            ? `/brand/pedidos/${event.orderId}`
+            : `/portal/pedidos/${event.orderId}`;
 
         let body = `${event.senderName} enviou uma proposta para o pedido ${order.displayId}`;
         if (event.proposedPrice) {
@@ -209,8 +209,8 @@ export class MessageEventsHandler {
 
       const actionUrl =
         proposerCompanyUser?.companyId === order.brandId
-          ? `/brand/pedidos/${event.orderId}/chat`
-          : `/portal/pedidos/${event.orderId}/chat`;
+          ? `/brand/pedidos/${event.orderId}`
+          : `/portal/pedidos/${event.orderId}`;
 
       const isAccepted = event.status === 'ACCEPTED';
 

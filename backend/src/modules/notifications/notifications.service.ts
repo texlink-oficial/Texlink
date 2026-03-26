@@ -335,7 +335,7 @@ export class NotificationsService {
       title: 'Nova Mensagem',
       body: `${data.senderName}: ${data.messagePreview.substring(0, 100)}${data.messagePreview.length > 100 ? '...' : ''}`,
       data,
-      actionUrl: `/pedidos/${data.orderId}/chat`,
+      actionUrl: `/portal/pedidos/${data.orderId}`,
       entityType: 'order',
       entityId: data.orderId,
       skipEmail: true, // Chat messages don't need email
@@ -368,7 +368,7 @@ export class NotificationsService {
       title: 'Nova Proposta Recebida',
       body,
       data,
-      actionUrl: `/pedidos/${data.orderId}/chat`,
+      actionUrl: `/portal/pedidos/${data.orderId}`,
       entityType: 'order',
       entityId: data.orderId,
     });
