@@ -72,7 +72,14 @@ const convertApiOrder = (apiOrder: ApiOrder): Order => ({
         url: a.url,
         size: a.mimeType,
     })),
-    timeline: [
+    timeline: (apiOrder as any).parentOrderId ? [
+        { step: 'Retrabalho Criado', completed: true, date: new Date(apiOrder.createdAt).toLocaleDateString('pt-BR'), icon: 'check' },
+        { step: 'Fila de Produção', completed: ['FILA_DE_PRODUCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'EM_REVISAO', 'EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'clock' },
+        { step: 'Em Produção', completed: ['EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'EM_REVISAO', 'EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'scissors' },
+        { step: 'Em Trânsito → Marca', completed: ['EM_TRANSITO_PARA_MARCA', 'EM_REVISAO', 'EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'truck' },
+        { step: 'Aprovação', completed: ['EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'check' },
+        { step: 'Finalizado', completed: apiOrder.status === 'FINALIZADO', icon: 'check' },
+    ] : [
         { step: 'Pedido Criado', completed: true, date: new Date(apiOrder.createdAt).toLocaleDateString('pt-BR'), icon: 'check' },
         { step: 'Aceite da Facção', completed: ['ACEITO_PELA_FACCAO', 'EM_PREPARACAO_SAIDA_MARCA', 'EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'FILA_DE_PRODUCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'EM_REVISAO', 'EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'check' },
         { step: 'Preparação (Marca)', completed: ['EM_PREPARACAO_SAIDA_MARCA', 'EM_TRANSITO_PARA_FACCAO', 'EM_PREPARACAO_ENTRADA_FACCAO', 'FILA_DE_PRODUCAO', 'EM_PRODUCAO', 'PRONTO', 'EM_TRANSITO_PARA_MARCA', 'EM_REVISAO', 'EM_PROCESSO_PAGAMENTO', 'FINALIZADO'].includes(apiOrder.status), icon: 'box' },
