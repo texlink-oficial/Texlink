@@ -48,26 +48,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         setUnreadCount(count);
     }, []);
 
-    // Handle connection change — use ref to avoid stale closure
-    const fetchNotificationsRef = useRef(fetchNotifications);
-    fetchNotificationsRef.current = fetchNotifications;
-
-    const handleConnectionChange = useCallback((connected: boolean) => {
-        if (connected) {
-            // Sync notifications when reconnected
-            fetchNotificationsRef.current();
-        }
-    }, []);
-
-    // WebSocket connection
-    const { isConnected, markAsRead: wsMarkAsRead, markAllAsRead: wsMarkAllAsRead } = useNotificationSocket({
-        token,
-        onNotification: handleNewNotification,
-        onUnreadCountChange: handleUnreadCountChange,
-        onConnectionChange: handleConnectionChange,
-    });
-
-    // Fetch notifications from API
+    // Fetch notifications from API (declared before ref to avoid TDZ)
     const fetchNotifications = useCallback(async (cursor?: string) => {
         if (!token) return;
 
@@ -111,6 +92,25 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
             setIsLoading(false);
         }
     }, [token, user?.id]);
+
+    // Handle connection change — use ref to avoid stale closure
+    const fetchNotificationsRef = useRef(fetchNotifications);
+    fetchNotificationsRef.current = fetchNotifications;
+
+    const handleConnectionChange = useCallback((connected: boolean) => {
+        if (connected) {
+            // Sync notifications when reconnected
+            fetchNotificationsRef.current();
+        }
+    }, []);
+
+    // WebSocket connection
+    const { isConnected, markAsRead: wsMarkAsRead, markAllAsRead: wsMarkAllAsRead } = useNotificationSocket({
+        token,
+        onNotification: handleNewNotification,
+        onUnreadCountChange: handleUnreadCountChange,
+        onConnectionChange: handleConnectionChange,
+    });
 
     // Mark a single notification as read
     const markAsRead = useCallback(async (notificationId: string) => {
