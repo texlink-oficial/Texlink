@@ -641,6 +641,15 @@ export class OrdersService {
                     status: { not: OrderTargetStatus.REJECTED },
                   },
                 },
+                // Exclude orders in active negotiation with another supplier
+                NOT: {
+                  targetSuppliers: {
+                    some: {
+                      supplierId: { not: companyUser.companyId },
+                      status: { in: [OrderTargetStatus.INTERESTED, OrderTargetStatus.ACCEPTED] },
+                    },
+                  },
+                },
               },
               {
                 assignmentType: 'HYBRID',
@@ -1156,7 +1165,7 @@ export class OrdersService {
     userId: string,
     dto: UpdateOrderStatusDto,
   ) {
-    const { order, role } = await this.verifyOrderAccess(orderId, userId);
+    const { order, companyUser, role } = await this.verifyOrderAccess(orderId, userId);
 
     // Validate transition
     const currentStatus = order.status as string;
@@ -1235,6 +1244,22 @@ export class OrdersService {
         statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
     });
+
+    // When a supplier starts negotiation on a HYBRID/BIDDING order,
+    // mark them as INTERESTED in OrderTargetSupplier so the visibility
+    // filter can exclude the order from other suppliers' dashboards.
+    if (
+      dto.status === OrderStatus.EM_NEGOCIACAO &&
+      role === 'SUPPLIER' &&
+      companyUser?.companyId
+    ) {
+      const supplierId = companyUser.companyId;
+      await this.prisma.orderTargetSupplier.upsert({
+        where: { orderId_supplierId: { orderId, supplierId } },
+        update: { status: OrderTargetStatus.INTERESTED, respondedAt: new Date() },
+        create: { orderId, supplierId, status: OrderTargetStatus.INTERESTED, respondedAt: new Date() },
+      });
+    }
 
     // Emit status changed event
     const statusEvent: OrderStatusChangedEvent = {
