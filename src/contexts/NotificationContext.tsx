@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { useNotificationSocket } from '../hooks/useNotificationSocket';
@@ -48,11 +48,14 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         setUnreadCount(count);
     }, []);
 
-    // Handle connection change
+    // Handle connection change — use ref to avoid stale closure
+    const fetchNotificationsRef = useRef(fetchNotifications);
+    fetchNotificationsRef.current = fetchNotifications;
+
     const handleConnectionChange = useCallback((connected: boolean) => {
         if (connected) {
             // Sync notifications when reconnected
-            fetchNotifications();
+            fetchNotificationsRef.current();
         }
     }, []);
 

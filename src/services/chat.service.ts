@@ -38,8 +38,14 @@ export interface SendMessageDto {
 
 export const chatService = {
     async getMessages(orderId: string): Promise<Message[]> {
-        const response = await api.get<Message[]>(`/orders/${orderId}/chat`);
-        return response.data;
+        const response = await api.get(`/orders/${orderId}/chat`);
+        const data = response.data;
+        // Backend returns { messages, hasMore, nextCursor } — extract the array
+        if (data && typeof data === 'object' && 'messages' in data) {
+            return (data as { messages: Message[] }).messages;
+        }
+        // Fallback: if response is already an array
+        return Array.isArray(data) ? data : [];
     },
 
     async sendMessage(orderId: string, data: SendMessageDto): Promise<Message> {
