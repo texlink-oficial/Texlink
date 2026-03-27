@@ -110,7 +110,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                 { targetStatus: OrderStatus.TRANSIT_TO_BRAND, label: 'Produção Concluída', icon: 'advance', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Produção Concluída e Despacho', confirmMsg: 'Confirma que a produção está concluída e o pedido será despachado para a marca?' },
             ],
             [OrderStatus.AWAITING_REWORK]: [
-                { targetStatus: OrderStatus.ACCEPTED, label: 'Aceitar Retrabalho', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Aceitar Retrabalho?', confirmMsg: 'Aceitar o retrabalho e reiniciar o fluxo de produção?' },
+                { targetStatus: OrderStatus.PRODUCTION_QUEUE, label: 'Iniciar Retrabalho', icon: 'accept', color: 'bg-brand-600 hover:bg-brand-700', confirmTitle: 'Iniciar Retrabalho?', confirmMsg: 'Aceitar o retrabalho e enviar para a fila de produção?' },
                 { targetStatus: OrderStatus.CANCELLED, label: 'Cancelar Retrabalho', icon: 'advance', color: 'bg-red-600 hover:bg-red-700', confirmTitle: 'Cancelar Retrabalho?', confirmMsg: 'Tem certeza que deseja cancelar este pedido de retrabalho?' },
             ],
             // Backward compat: orders already in READY_SEND
