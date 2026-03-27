@@ -324,7 +324,9 @@ export const adminService = {
     },
 
     createCompanyNote(companyId: string, formData: FormData) {
-        return api.post(`/admin/companies/${companyId}/notes`, formData);
+        return api.post(`/admin/companies/${companyId}/notes`, formData, {
+            headers: { 'Content-Type': undefined },
+        });
     },
 
     deleteCompanyNote(companyId: string, noteId: string) {
