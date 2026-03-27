@@ -204,8 +204,8 @@ const SuppliersPage: React.FC = () => {
                         <p className="text-gray-500 max-w-sm mx-auto font-medium">Não encontramos resultados para os filtros aplicados.</p>
                     </div>
                 ) : (
-                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-2xl overflow-hidden shadow-sm">
-                        <div className="overflow-x-auto">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-2xl shadow-sm">
+                        <div className="overflow-x-auto rounded-2xl">
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-gray-100 dark:border-white/[0.06]">

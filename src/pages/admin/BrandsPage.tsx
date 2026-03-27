@@ -186,8 +186,8 @@ const BrandsPage: React.FC = () => {
                         </p>
                     </div>
                 ) : (
-                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-2xl overflow-hidden shadow-sm">
-                        <div className="overflow-x-auto">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/[0.06] rounded-2xl shadow-sm">
+                        <div className="overflow-x-auto rounded-2xl">
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="bg-gray-50 dark:bg-white/[0.02] border-b border-gray-100 dark:border-white/[0.06]">
