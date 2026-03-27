@@ -186,10 +186,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
 
     const executeAction = () => {
         if (pendingAction) {
-            // Intercept: when supplier confirms receipt → show planned date modal
+            // Intercept: any supplier transition to PRODUCTION_QUEUE → show planned date modal first
             if (
                 pendingAction.targetStatus === OrderStatus.PRODUCTION_QUEUE &&
-                order.status === OrderStatus.TRANSIT_TO_SUPPLIER &&
                 userRole === 'SUPPLIER'
             ) {
                 setPendingAction(null);
@@ -620,7 +619,21 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
                                                 {currentActions.map((action) => (
                                                     <button
                                                         key={action.targetStatus}
-                                                        onClick={() => setPendingAction(action)}
+                                                        onClick={() => {
+                                                            // Skip confirmation popup and go directly to date modal
+                                                            // when supplier sends to production queue from ACCEPTED
+                                                            // (materials provided by supplier — nothing to wait for from brand)
+                                                            if (
+                                                                action.targetStatus === OrderStatus.PRODUCTION_QUEUE &&
+                                                                order.status === OrderStatus.ACCEPTED &&
+                                                                userRole === 'SUPPLIER' &&
+                                                                !order.materialsProvided
+                                                            ) {
+                                                                setShowPlannedDateModal(true);
+                                                                return;
+                                                            }
+                                                            setPendingAction(action);
+                                                        }}
                                                         className={`w-full flex justify-center items-center gap-2 px-4 py-3 text-white text-sm font-bold rounded-lg shadow-sm transition-all transform active:scale-95 ${action.color}`}
                                                     >
                                                         {action.icon === 'receipt' ? <PackageCheck className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
