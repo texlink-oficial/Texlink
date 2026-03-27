@@ -324,9 +324,7 @@ export const adminService = {
     },
 
     createCompanyNote(companyId: string, formData: FormData) {
-        return api.post(`/admin/companies/${companyId}/notes`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        return api.post(`/admin/companies/${companyId}/notes`, formData);
     },
 
     deleteCompanyNote(companyId: string, noteId: string) {

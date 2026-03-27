@@ -24,7 +24,7 @@ import { QueryNotesDto } from './dto/query-notes.dto';
 
 @ApiTags('Company Notes')
 @ApiBearerAuth()
-@Controller('companies/:companyId/notes')
+@Controller('admin/companies/:companyId/notes')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class CompanyNotesController {
